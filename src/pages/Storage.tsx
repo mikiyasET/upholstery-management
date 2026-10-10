@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { PageHeader } from '../components/common';
+import { PageHeader, TablePagination } from '../components/common';
 
 type MaterialStock = {
   id: string;
@@ -75,6 +75,8 @@ export default function Storage() {
   const [search, setSearch] = useState('');
   const [activeStore, setActiveStore] = useState<'MAIN' | 'MINI'>('MINI');
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [historyMaterial, setHistoryMaterial] = useState<Material | null>(null);
@@ -248,6 +250,12 @@ export default function Storage() {
     return true;
   });
 
+  const totalPages = Math.max(1, Math.ceil((filteredMaterials?.length || 0) / pageSize));
+  const paginatedMaterials = (filteredMaterials || []).slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   const getHistoryBadgeColor = (type: string) => {
     switch (type) {
       case 'RESTOCK': return 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400';
@@ -333,7 +341,10 @@ export default function Storage() {
           {/* Tabs */}
           <div className="inline-flex h-10 items-center rounded-lg bg-muted p-1 text-muted-foreground w-full md:w-max shrink-0 overflow-x-auto custom-scrollbar">
             <button
-              onClick={() => setActiveStore('MINI')}
+              onClick={() => {
+                setActiveStore('MINI');
+                setCurrentPage(1);
+              }}
               className={`flex-1 md:flex-none inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 md:px-8 py-1.5 text-sm font-medium transition-all ${
                 activeStore === 'MINI'
                   ? 'bg-amber-600 text-white shadow-sm font-semibold'
@@ -343,7 +354,10 @@ export default function Storage() {
               {t('storage.miniStore', 'Mini Store')}
             </button>
             <button
-              onClick={() => setActiveStore('MAIN')}
+              onClick={() => {
+                setActiveStore('MAIN');
+                setCurrentPage(1);
+              }}
               className={`flex-1 md:flex-none inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 md:px-8 py-1.5 text-sm font-medium transition-all ${
                 activeStore === 'MAIN'
                   ? 'bg-amber-600 text-white shadow-sm font-semibold'
@@ -355,10 +369,12 @@ export default function Storage() {
           </div>
           
           {/* Right Actions */}
-          {/* Right Actions */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 w-full md:w-auto md:ml-auto md:flex-1 min-w-0">
             <button
-              onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+              onClick={() => {
+                setShowLowStockOnly(!showLowStockOnly);
+                setCurrentPage(1);
+              }}
               className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 h-10 text-sm font-medium transition-all border shrink-0 w-full sm:w-auto ${
                 showLowStockOnly
                   ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400'
@@ -372,7 +388,10 @@ export default function Storage() {
             <div className="w-full sm:w-64 md:w-auto md:flex-1 md:min-w-[150px] md:max-w-[320px] shrink relative">
               <TableSearch 
                 value={search} 
-                onChange={setSearch} 
+                onChange={(val) => {
+                  setSearch(val);
+                  setCurrentPage(1);
+                }} 
                 placeholder={t('storage.searchPlaceholder', 'Search inventory...')} 
                 className="w-full" 
               />
@@ -400,7 +419,7 @@ export default function Storage() {
                   <TableCell colSpan={4} className="text-center py-8 text-gray-500">{t('storage.noMaterials', 'No materials found.')}</TableCell>
                 </TableRow>
               ) : (
-                filteredMaterials?.map((m) => {
+                paginatedMaterials.map((m) => {
                   const stock = getStock(m, activeStore);
                   const mainStock = getStock(m, 'MAIN');
 
@@ -495,6 +514,20 @@ export default function Storage() {
             </TableBody>
           </Table>
         </div>
+
+        <TablePagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={filteredMaterials?.length || 0}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          itemLabel="materials"
+          disabled={isLoading}
+        />
       </div>
 
       <ImagePreviewModal

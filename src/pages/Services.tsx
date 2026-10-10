@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
-import { PageHeader, ExecutiveAddButton } from '../components/common';
+import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 
 type Material = {
   id: string;
@@ -59,6 +59,8 @@ export default function Services() {
   const [serviceFormData, setServiceFormData] = useState({ nameEn: '', nameAm: '', description: '' });
   const [serviceFile, setServiceFile] = useState<File | null>(null);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
   
   // Deletion state
   const [catToDelete, setCatToDelete] = useState<{serviceId: string, catId: string, name: string} | null>(null);
@@ -207,6 +209,16 @@ export default function Services() {
     setMaterialUsages(materialUsages.filter((_, i) => i !== index));
   };
 
+  const filteredServices = services?.filter(s => 
+    s.nameEn.toLowerCase().includes(search.toLowerCase()) || s.nameAm.includes(search)
+  ) ?? [];
+
+  const totalPages = Math.max(1, Math.ceil(filteredServices.length / pageSize));
+  const paginatedServices = filteredServices.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* 1. Executive PageHeader */}
@@ -231,7 +243,10 @@ export default function Services() {
       <div className="bg-card p-3 rounded-xl border border-border shadow-sm flex items-center justify-between">
         <TableSearch 
           value={search} 
-          onChange={setSearch} 
+          onChange={(val) => {
+            setSearch(val);
+            setCurrentPage(1);
+          }} 
           placeholder={t('services.searchPlaceholder', 'Search services by name or keyword...')} 
           className="w-full sm:w-[480px]"
         />
@@ -239,11 +254,11 @@ export default function Services() {
 
       {servicesLoading ? (
         <div className="text-center py-8 text-muted-foreground">{t('common.loading', 'Loading...')}</div>
-      ) : services?.length === 0 ? (
+      ) : filteredServices.length === 0 ? (
         <div className="text-center p-8 bg-card rounded-md border text-muted-foreground">{t('services.noServices', 'No services found.')}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {services?.filter(s => s.nameEn.toLowerCase().includes(search.toLowerCase()) || s.nameAm.includes(search)).map((service) => (
+          {paginatedServices.map((service) => (
             <Card key={service.id} className="rounded-2xl border-border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow bg-card">
               {/* Header: Image & Name */}
               <div className="p-5 flex items-start gap-4 border-b border-border">
@@ -342,6 +357,24 @@ export default function Services() {
           ))}
         </div>
       )}
+
+      {/* Pagination Bar */}
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <TablePagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={filteredServices.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          pageSizeOptions={['6', '12', '24', '48']}
+          itemLabel="services"
+          disabled={servicesLoading}
+        />
+      </div>
 
       <ImagePreviewModal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} imageUrl={previewImage} />
 

@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import { Edit2, Trash2, ImageOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { PageHeader, ExecutiveAddButton } from '../components/common';
+import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 
 type Material = {
   id: string;
@@ -37,8 +37,6 @@ type Material = {
   imageUrl?: string;
 };
 
-const ITEMS_PER_PAGE = 20;
-
 export default function Materials() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -47,6 +45,7 @@ export default function Materials() {
   const [search, setSearch] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   // Delete state
   const [materialToDelete, setMaterialToDelete] = useState<Material | null>(null);
@@ -153,10 +152,10 @@ export default function Materials() {
   ) ?? [];
 
   // Pagination
-  const totalPages = Math.ceil(filteredMaterials.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filteredMaterials.length / pageSize));
   const paginatedMaterials = filteredMaterials.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
 
   // Reset to page 1 when search changes
@@ -258,32 +257,19 @@ export default function Materials() {
         </Table>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-800">
-            <span className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredMaterials.length)} of {filteredMaterials.length} materials
-            </span>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <div className="text-sm font-medium">Page {currentPage} of {totalPages}</div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={filteredMaterials.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          itemLabel="materials"
+          disabled={isLoading}
+        />
       </div>
 
       <ImagePreviewModal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} imageUrl={previewImage} />

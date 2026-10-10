@@ -39,7 +39,7 @@ import {
   RiPhoneLine,
 } from "react-icons/ri";
 import { printOrderReceipt } from "../lib/receipt-printer";
-import { ExecutiveAddButton } from "../components/common";
+import { ExecutiveAddButton, TablePagination } from "../components/common";
 import dayjs from "dayjs";
 
 export default function Dashboard() {
@@ -49,6 +49,13 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState<string | null>("bay");
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [bayPage, setBayPage] = useState(1);
+  const [bayPageSize, setBayPageSize] = useState(5);
+  const [salesPage, setSalesPage] = useState(1);
+  const [salesPageSize, setSalesPageSize] = useState(5);
+  const [invPage, setInvPage] = useState(1);
+  const [invPageSize, setInvPageSize] = useState(5);
 
   const canViewOrders = usePermission("orders.view");
   const canViewMaterials = usePermission("catalog.materials.view");
@@ -118,6 +125,15 @@ export default function Dashboard() {
   const directSalesTotalRevenue = Array.isArray(directSales)
     ? directSales.reduce((acc: number, s: any) => acc + Number(s.totalPrice || s.subTotal || 0), 0)
     : 0;
+
+  const bayTotalPages = Math.max(1, Math.ceil(activeOrders.length / bayPageSize));
+  const paginatedBayOrders = activeOrders.slice((bayPage - 1) * bayPageSize, bayPage * bayPageSize);
+
+  const salesTotalPages = Math.max(1, Math.ceil(directSales.length / salesPageSize));
+  const paginatedSales = directSales.slice((salesPage - 1) * salesPageSize, salesPage * salesPageSize);
+
+  const invTotalPages = Math.max(1, Math.ceil(lowStockMaterials.length / invPageSize));
+  const paginatedInv = lowStockMaterials.slice((invPage - 1) * invPageSize, invPage * invPageSize);
 
   return (
     <Stack gap="xl" pb="xl" className="animate-in fade-in duration-300">
@@ -392,103 +408,119 @@ export default function Dashboard() {
                 </Text>
               </Box>
             ) : (
-              <Table.ScrollContainer minWidth={600}>
-                <Table verticalSpacing="sm" highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Order #</Table.Th>
-                      <Table.Th>Plate / Vehicle</Table.Th>
-                      <Table.Th>Customer</Table.Th>
-                      <Table.Th>Status</Table.Th>
-                      <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {activeOrders.slice(0, 8).map((order: any) => {
-                      const plate = order.vehicle?.plateNumber ? formatPlateNumber(order.vehicle.plateNumber) : "—";
-                      const vehicleModel = [order.vehicle?.carModel?.brand?.name, order.vehicle?.carModel?.name].filter(Boolean).join(" ");
+              <>
+                <Table.ScrollContainer minWidth={600}>
+                  <Table verticalSpacing="sm" highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Order #</Table.Th>
+                        <Table.Th>Plate / Vehicle</Table.Th>
+                        <Table.Th>Customer</Table.Th>
+                        <Table.Th>Status</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {paginatedBayOrders.map((order: any) => {
+                        const plate = order.vehicle?.plateNumber ? formatPlateNumber(order.vehicle.plateNumber) : "—";
+                        const vehicleModel = [order.vehicle?.carModel?.brand?.name, order.vehicle?.carModel?.name].filter(Boolean).join(" ");
 
-                      return (
-                        <Table.Tr key={order.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/orders/${order.id}`)}>
-                          <Table.Td>
-                            <Text fw={700} size="sm" style={{ color: "var(--primary-accent)" }}>
-                              {order.orderNumber}
-                            </Text>
-                            <Text size="11px" c="dimmed">
-                              {dayjs(order.orderDateTime).format("MMM D, HH:mm")}
-                            </Text>
-                          </Table.Td>
+                        return (
+                          <Table.Tr key={order.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/orders/${order.id}`)}>
+                            <Table.Td>
+                              <Text fw={700} size="sm" style={{ color: "var(--primary-accent)" }}>
+                                {order.orderNumber}
+                              </Text>
+                              <Text size="11px" c="dimmed">
+                                {dayjs(order.orderDateTime).format("MMM D, HH:mm")}
+                              </Text>
+                            </Table.Td>
 
-                          <Table.Td>
-                            <Badge variant="light" color="amber" size="sm" mb={2}>
-                              {plate}
-                            </Badge>
-                            <Text size="11px" c="dimmed">
-                              {vehicleModel || "Vehicle"}
-                            </Text>
-                          </Table.Td>
+                            <Table.Td>
+                              <Badge variant="light" color="amber" size="sm" mb={2}>
+                                {plate}
+                              </Badge>
+                              <Text size="11px" c="dimmed">
+                                {vehicleModel || "Vehicle"}
+                              </Text>
+                            </Table.Td>
 
-                          <Table.Td>
-                            <Text size="sm" fw={600}>
-                              {order.customer?.name || "Walk-in"}
-                            </Text>
-                            {order.customer?.phoneNumber && (
-                              <Group gap={4} align="center">
-                                <RiPhoneLine size={11} color="var(--text-muted)" />
-                                <Text size="11px" c="dimmed">
-                                  {order.customer.phoneNumber}
-                                </Text>
+                            <Table.Td>
+                              <Text size="sm" fw={600}>
+                                {order.customer?.name || "Walk-in"}
+                              </Text>
+                              {order.customer?.phoneNumber && (
+                                <Group gap={4} align="center">
+                                  <RiPhoneLine size={11} color="var(--text-muted)" />
+                                  <Text size="11px" c="dimmed">
+                                    {order.customer.phoneNumber}
+                                  </Text>
+                                </Group>
+                              )}
+                            </Table.Td>
+
+                            <Table.Td>
+                              <Badge
+                                color={
+                                  (order.status || order.orderStatus) === "IN_PROGRESS"
+                                    ? "amber"
+                                    : (order.status || order.orderStatus) === "DELIVERED"
+                                    ? "green"
+                                    : "blue"
+                                }
+                                variant="light"
+                                size="sm"
+                              >
+                                {formatStatus(order.status || order.orderStatus || "OPEN")}
+                              </Badge>
+                            </Table.Td>
+
+                            <Table.Td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                              <Group gap={6} justify="flex-end" wrap="nowrap">
+                                <Tooltip label="View Order Detail" withArrow>
+                                  <ActionIcon
+                                    variant="subtle"
+                                    color="amber"
+                                    size="sm"
+                                    onClick={() => navigate(`/orders/${order.id}`)}
+                                  >
+                                    <RiEyeLine size={16} />
+                                  </ActionIcon>
+                                </Tooltip>
+
+                                <Tooltip label="Print Invoice" withArrow>
+                                  <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
+                                    onClick={() => printOrderReceipt(order)}
+                                  >
+                                    <RiPrinterLine size={16} />
+                                  </ActionIcon>
+                                </Tooltip>
                               </Group>
-                            )}
-                          </Table.Td>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </Table.ScrollContainer>
 
-                          <Table.Td>
-                            <Badge
-                              color={
-                                (order.status || order.orderStatus) === "IN_PROGRESS"
-                                  ? "amber"
-                                  : (order.status || order.orderStatus) === "DELIVERED"
-                                  ? "green"
-                                  : "blue"
-                              }
-                              variant="light"
-                              size="sm"
-                            >
-                              {formatStatus(order.status || order.orderStatus || "OPEN")}
-                            </Badge>
-                          </Table.Td>
-
-                          <Table.Td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
-                            <Group gap={6} justify="flex-end" wrap="nowrap">
-                              <Tooltip label="View Order Detail" withArrow>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="amber"
-                                  size="sm"
-                                  onClick={() => navigate(`/orders/${order.id}`)}
-                                >
-                                  <RiEyeLine size={16} />
-                                </ActionIcon>
-                              </Tooltip>
-
-                              <Tooltip label="Print Invoice" withArrow>
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="gray"
-                                  size="sm"
-                                  onClick={() => printOrderReceipt(order)}
-                                >
-                                  <RiPrinterLine size={16} />
-                                </ActionIcon>
-                              </Tooltip>
-                            </Group>
-                          </Table.Td>
-                        </Table.Tr>
-                      );
-                    })}
-                  </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
+                <TablePagination
+                  page={bayPage}
+                  pageSize={bayPageSize}
+                  total={activeOrders.length}
+                  totalPages={bayTotalPages}
+                  onPageChange={setBayPage}
+                  onPageSizeChange={(newSize) => {
+                    setBayPageSize(newSize);
+                    setBayPage(1);
+                  }}
+                  pageSizeOptions={["5", "10", "20"]}
+                  itemLabel="active orders"
+                />
+              </>
             )}
           </Tabs.Panel>
 
@@ -501,65 +533,81 @@ export default function Dashboard() {
                 </Text>
               </Box>
             ) : (
-              <Table.ScrollContainer minWidth={600}>
-                <Table verticalSpacing="sm" highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Transaction #</Table.Th>
-                      <Table.Th>Date & Time</Table.Th>
-                      <Table.Th>Customer</Table.Th>
-                      <Table.Th>Total Amount</Table.Th>
-                      <Table.Th>Payment Method</Table.Th>
-                      <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {directSales.slice(0, 8).map((sale: any) => (
-                      <Table.Tr key={sale.id}>
-                        <Table.Td>
-                          <Text fw={700} size="sm" style={{ color: "var(--primary-accent)" }}>
-                            {sale.invoiceNumber || sale.id?.slice(0, 8)}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="xs">
-                            {dayjs(sale.createdAt || sale.date).format("MMM D, HH:mm")}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm" fw={500}>
-                            {sale.customerName || sale.customer?.name || "Walk-in Retail Client"}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text fw={700} size="sm">
-                            {formatCurrency(sale.totalPrice || sale.netTotal || 0)}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Badge variant="light" color="blue" size="sm">
-                            {sale.paymentMethod || "CASH"}
-                          </Badge>
-                        </Table.Td>
-                        <Table.Td style={{ textAlign: "right" }}>
-                          <Group gap={6} justify="flex-end" wrap="nowrap">
-                            <Tooltip label="View History" withArrow>
-                              <ActionIcon
-                                variant="subtle"
-                                color="amber"
-                                size="sm"
-                                onClick={() => navigate("/direct-sales/history")}
-                              >
-                                <RiEyeLine size={16} />
-                              </ActionIcon>
-                            </Tooltip>
-                          </Group>
-                        </Table.Td>
+              <>
+                <Table.ScrollContainer minWidth={600}>
+                  <Table verticalSpacing="sm" highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Transaction #</Table.Th>
+                        <Table.Th>Date & Time</Table.Th>
+                        <Table.Th>Customer</Table.Th>
+                        <Table.Th>Total Amount</Table.Th>
+                        <Table.Th>Payment Method</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
                       </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {paginatedSales.map((sale: any) => (
+                        <Table.Tr key={sale.id}>
+                          <Table.Td>
+                            <Text fw={700} size="sm" style={{ color: "var(--primary-accent)" }}>
+                              {sale.invoiceNumber || sale.id?.slice(0, 8)}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="xs">
+                              {dayjs(sale.createdAt || sale.date).format("MMM D, HH:mm")}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="sm" fw={500}>
+                              {sale.customerName || sale.customer?.name || "Walk-in Retail Client"}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text fw={700} size="sm">
+                              {formatCurrency(sale.totalPrice || sale.netTotal || 0)}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Badge variant="light" color="blue" size="sm">
+                              {sale.paymentMethod || "CASH"}
+                            </Badge>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "right" }}>
+                            <Group gap={6} justify="flex-end" wrap="nowrap">
+                              <Tooltip label="View History" withArrow>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="amber"
+                                  size="sm"
+                                  onClick={() => navigate("/direct-sales/history")}
+                                >
+                                  <RiEyeLine size={16} />
+                                </ActionIcon>
+                              </Tooltip>
+                            </Group>
+                          </Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </Table.ScrollContainer>
+
+                <TablePagination
+                  page={salesPage}
+                  pageSize={salesPageSize}
+                  total={directSales.length}
+                  totalPages={salesTotalPages}
+                  onPageChange={setSalesPage}
+                  onPageSizeChange={(newSize) => {
+                    setSalesPageSize(newSize);
+                    setSalesPage(1);
+                  }}
+                  pageSizeOptions={["5", "10", "20"]}
+                  itemLabel="sales"
+                />
+              </>
             )}
           </Tabs.Panel>
 
@@ -575,67 +623,83 @@ export default function Dashboard() {
                 </Text>
               </Box>
             ) : (
-              <Table.ScrollContainer minWidth={600}>
-                <Table verticalSpacing="sm" highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Material</Table.Th>
-                      <Table.Th>Mini Store (Floor)</Table.Th>
-                      <Table.Th>Main Warehouse</Table.Th>
-                      <Table.Th>Threshold</Table.Th>
-                      <Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {lowStockMaterials.slice(0, 8).map((mat: any) => {
-                      const miniStock = mat.materialStocks?.find((s: any) => s.store?.type === "MINI");
-                      const mainStock = mat.materialStocks?.find((s: any) => s.store?.type === "MAIN");
-                      const miniQty = miniStock ? Number(miniStock.quantity) : 0;
-                      const mainQty = mainStock ? Number(mainStock.quantity) : 0;
-                      const threshold = mat.lowStockThreshold || 10;
+              <>
+                <Table.ScrollContainer minWidth={600}>
+                  <Table verticalSpacing="sm" highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Material</Table.Th>
+                        <Table.Th>Mini Store (Floor)</Table.Th>
+                        <Table.Th>Main Warehouse</Table.Th>
+                        <Table.Th>Threshold</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {paginatedInv.map((mat: any) => {
+                        const miniStock = mat.materialStocks?.find((s: any) => s.store?.type === "MINI");
+                        const mainStock = mat.materialStocks?.find((s: any) => s.store?.type === "MAIN");
+                        const miniQty = miniStock ? Number(miniStock.quantity) : 0;
+                        const mainQty = mainStock ? Number(mainStock.quantity) : 0;
+                        const threshold = mat.lowStockThreshold || 10;
 
-                      return (
-                        <Table.Tr key={mat.id}>
-                          <Table.Td>
-                            <Text fw={600} size="sm">
-                              {getLocName(mat)}
-                            </Text>
-                            <Text size="11px" c="dimmed">
-                              Unit: {mat.unit || "Meter"}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Badge color={miniQty <= threshold ? "red" : "gray"} variant="light">
-                              {miniQty} {mat.unit}
-                            </Badge>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="sm" fw={600}>
-                              {mainQty} {mat.unit}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td>
-                            <Text size="xs" c="dimmed">
-                              {threshold} {mat.unit}
-                            </Text>
-                          </Table.Td>
-                          <Table.Td style={{ textAlign: "right" }}>
-                            <Button
-                              size="xs"
-                              variant="light"
-                              color="amber"
-                              leftSection={<RiExchangeDollarLine size={14} />}
-                              onClick={() => navigate("/storage")}
-                            >
-                              Transfer
-                            </Button>
-                          </Table.Td>
-                        </Table.Tr>
-                      );
-                    })}
-                  </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
+                        return (
+                          <Table.Tr key={mat.id}>
+                            <Table.Td>
+                              <Text fw={600} size="sm">
+                                {getLocName(mat)}
+                              </Text>
+                              <Text size="11px" c="dimmed">
+                                Unit: {mat.unit || "Meter"}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Badge color={miniQty <= threshold ? "red" : "gray"} variant="light">
+                                {miniQty} {mat.unit}
+                              </Badge>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm" fw={600}>
+                                {mainQty} {mat.unit}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="xs" c="dimmed">
+                                {threshold} {mat.unit}
+                              </Text>
+                            </Table.Td>
+                            <Table.Td style={{ textAlign: "right" }}>
+                              <Button
+                                size="xs"
+                                variant="light"
+                                color="amber"
+                                leftSection={<RiExchangeDollarLine size={14} />}
+                                onClick={() => navigate("/storage")}
+                              >
+                                Transfer
+                              </Button>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </Table.ScrollContainer>
+
+                <TablePagination
+                  page={invPage}
+                  pageSize={invPageSize}
+                  total={lowStockMaterials.length}
+                  totalPages={invTotalPages}
+                  onPageChange={setInvPage}
+                  onPageSizeChange={(newSize) => {
+                    setInvPageSize(newSize);
+                    setInvPage(1);
+                  }}
+                  pageSizeOptions={["5", "10", "20"]}
+                  itemLabel="materials"
+                />
+              </>
             )}
           </Tabs.Panel>
         </Tabs>

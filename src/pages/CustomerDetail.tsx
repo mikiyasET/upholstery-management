@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -10,7 +11,7 @@ import { Badge } from '../components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Anchor, ActionIcon, Tooltip } from '@mantine/core';
 import { RiRefreshLine, RiGroupLine, RiArrowLeftLine } from 'react-icons/ri';
-import { ExecutiveAddButton } from '../components/common';
+import { ExecutiveAddButton, TablePagination } from '../components/common';
 
 const renderPlateBadge = (plateStr: string) => {
   const parsed = parsePlateNumber(plateStr);
@@ -59,6 +60,8 @@ export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderPageSize, setOrderPageSize] = useState(5);
 
   const { data: customer, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['customer', id],
@@ -68,6 +71,9 @@ export default function CustomerDetail() {
     },
     enabled: !!id
   });
+
+  const orderTotalPages = Math.max(1, Math.ceil((customer?.orders?.length || 0) / orderPageSize));
+  const paginatedOrders = (customer?.orders || []).slice((orderPage - 1) * orderPageSize, orderPage * orderPageSize);
 
   if (isLoading) return (
     <div className="flex h-[calc(100vh-100px)] items-center justify-center">
@@ -297,58 +303,74 @@ export default function CustomerDetail() {
                     <p className="text-sm text-muted-foreground mt-1">{t('customers.detail.noOrdersDesc', 'This customer doesn\'t have any service history.')}</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border/50">
-                    {customer.orders.map((o: any) => (
-                      <Link to={`/orders/${o.id}`} key={o.id} className="block hover:bg-muted/30 transition-colors">
-                        <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
-                          <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-xl shrink-0 ${
-                              o.orderStatus === 'DELIVERED' ? 'bg-green-500/10 text-green-500' :
-                              o.orderStatus === 'IN_PROGRESS' ? 'bg-blue-500/10 text-blue-500' :
-                              'bg-orange-500/10 text-orange-500'
-                            }`}>
-                              <Wrench className="w-5 h-5" />
+                  <>
+                    <div className="divide-y divide-border/50">
+                      {paginatedOrders.map((o: any) => (
+                        <Link to={`/orders/${o.id}`} key={o.id} className="block hover:bg-muted/30 transition-colors">
+                          <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
+                            <div className="flex items-start gap-4">
+                              <div className={`p-3 rounded-xl shrink-0 ${
+                                o.orderStatus === 'DELIVERED' ? 'bg-green-500/10 text-green-500' :
+                                o.orderStatus === 'IN_PROGRESS' ? 'bg-blue-500/10 text-blue-500' :
+                                'bg-orange-500/10 text-orange-500'
+                              }`}>
+                                <Wrench className="w-5 h-5" />
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-bold text-foreground text-sm sm:text-base">{t('common.order', 'Order')} #{o.id.substring(o.id.length - 6).toUpperCase()}</span>
+                                  <Badge variant="outline" className={`text-[10px] uppercase tracking-wider font-bold border ${
+                                    o.orderStatus === 'DELIVERED' ? 'bg-green-500/5 text-green-500 border-green-500/20' :
+                                    o.orderStatus === 'IN_PROGRESS' ? 'bg-blue-500/5 text-blue-500 border-blue-500/20' :
+                                    'bg-orange-500/5 text-orange-500 border-orange-500/20'
+                                  }`}>
+                                    {formatStatus(o.orderStatus)}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5" /> 
+                                    {formatAppDate(o.createdAt, true)}
+                                  </span>
+                                  {o.vehicle && (
+                                    <>
+                                      <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                                      <span className="flex items-center gap-1.5 font-medium text-foreground/70">
+                                        <Car className="w-3.5 h-3.5" />
+                                        {formatPlateNumber(o.vehicle.plateNumber)}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-bold text-foreground text-sm sm:text-base">{t('common.order', 'Order')} #{o.id.substring(o.id.length - 6).toUpperCase()}</span>
-                                <Badge variant="outline" className={`text-[10px] uppercase tracking-wider font-bold border ${
-                                  o.orderStatus === 'DELIVERED' ? 'bg-green-500/5 text-green-500 border-green-500/20' :
-                                  o.orderStatus === 'IN_PROGRESS' ? 'bg-blue-500/5 text-blue-500 border-blue-500/20' :
-                                  'bg-orange-500/5 text-orange-500 border-orange-500/20'
-                                }`}>
-                                  {formatStatus(o.orderStatus)}
-                                </Badge>
-                              </div>
-                              
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5" /> 
-                                  {formatAppDate(o.createdAt, true)}
-                                </span>
-                                {o.vehicle && (
-                                  <>
-                                    <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                                    <span className="flex items-center gap-1.5 font-medium text-foreground/70">
-                                      <Car className="w-3.5 h-3.5" />
-                                      {formatPlateNumber(o.vehicle.plateNumber)}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
+                            
+                            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center pl-14 sm:pl-0">
+                              <span className="text-sm font-medium text-muted-foreground sm:hidden">{t('common.total', 'Total')}</span>
+                              <span className="font-bold text-lg text-primary tracking-tight">
+                                {formatCurrency(o.subTotal)}
+                              </span>
                             </div>
                           </div>
-                          
-                          <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center pl-14 sm:pl-0">
-                            <span className="text-sm font-medium text-muted-foreground sm:hidden">{t('common.total', 'Total')}</span>
-                            <span className="font-bold text-lg text-primary tracking-tight">
-                              {formatCurrency(o.subTotal)}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                        </Link>
+                      ))}
+                    </div>
+
+                    <TablePagination
+                      page={orderPage}
+                      pageSize={orderPageSize}
+                      total={customer.orders.length}
+                      totalPages={orderTotalPages}
+                      onPageChange={setOrderPage}
+                      onPageSizeChange={(newSize) => {
+                        setOrderPageSize(newSize);
+                        setOrderPage(1);
+                      }}
+                      pageSizeOptions={['5', '10', '20']}
+                      itemLabel="orders"
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>

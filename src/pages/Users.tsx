@@ -12,7 +12,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '../components/ui/switch';
-import { PageHeader, ExecutiveAddButton } from '../components/common';
+import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 
 // -------------------------------------------------------
 // Types
@@ -225,6 +225,8 @@ export default function Users() {
   const [isActive, setIsActive] = useState(true);
   const [permissions, setPermissions] = useState<Record<string, boolean | number>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
@@ -266,6 +268,12 @@ export default function Users() {
     if (activeTab === 'managers') return u.role === 'MANAGER';
     return u.role === 'EMPLOYEE';
   }) || [];
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const getRoleDisplayName = (role: UserRole) => {
     if (role === 'ADMIN') return t('users.roles.admin', 'Admin');
@@ -380,7 +388,10 @@ export default function Users() {
         {tabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              setActiveTab(tab.key);
+              setCurrentPage(1);
+            }}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               activeTab === tab.key
                 ? 'bg-background text-foreground shadow-sm border border-border'
@@ -403,74 +414,90 @@ export default function Users() {
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground">{t('users.loadingUsers', 'Loading users...')}</div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('common.name', 'Name')}</TableHead>
-                <TableHead>{t('users.table.contact', 'Contact')}</TableHead>
-                <TableHead>{t('common.status', 'Status')}</TableHead>
-                {activeTab !== 'admins' && <TableHead>{t('users.table.salary', 'Salary (Birr)')}</TableHead>}
-                {activeTab === 'managers' && <TableHead>{t('users.table.permissions', 'Permissions')}</TableHead>}
-                <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user: any) => {
-                const permCount = user.permissions
-                  ? Object.entries(user.permissions).filter(([k, v]) => v === true && k !== 'orders.limitCount').length
-                  : 0;
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('common.name', 'Name')}</TableHead>
+                  <TableHead>{t('users.table.contact', 'Contact')}</TableHead>
+                  <TableHead>{t('common.status', 'Status')}</TableHead>
+                  {activeTab !== 'admins' && <TableHead>{t('users.table.salary', 'Salary (Birr)')}</TableHead>}
+                  {activeTab === 'managers' && <TableHead>{t('users.table.permissions', 'Permissions')}</TableHead>}
+                  <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedUsers.map((user: any) => {
+                  const permCount = user.permissions
+                    ? Object.entries(user.permissions).filter(([k, v]) => v === true && k !== 'orders.limitCount').length
+                    : 0;
 
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="font-semibold">{user.name}</div>
-                      <div className="text-muted-foreground text-xs">{user.phone}</div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                        user.role === 'ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' :
-                        user.role === 'MANAGER' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400' :
-                        'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
-                      }`}>
-                        {user.role === 'ADMIN' ? t('users.roles.ADMIN', 'Super Admin') : user.role === 'MANAGER' ? t('users.roles.MANAGER', 'Manager') : t('users.roles.EMPLOYEE', 'Employee')}
-                      </span>
-                      {user.employee?.contactInfo && <div className="text-xs text-muted-foreground mt-1">{user.employee.contactInfo}</div>}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`flex items-center gap-1.5 text-xs font-medium ${user.isActive ? 'text-green-600' : 'text-red-500'}`}>
-                        <span className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
-                        {user.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
-                      </span>
-                    </TableCell>
-                    {activeTab !== 'admins' && (
-                      <TableCell className="text-muted-foreground font-medium">
-                        {user.employee?.baseSalary ? formatCurrency(user.employee.baseSalary) : '-'}
-                      </TableCell>
-                    )}
-                    {activeTab === 'managers' && (
+                  return (
+                    <TableRow key={user.id}>
                       <TableCell>
-                        <span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-bold">
-                          {t('users.table.activePerms', '{{count}} active', { count: permCount })}
+                        <div className="font-semibold">{user.name}</div>
+                        <div className="text-muted-foreground text-xs">{user.phone}</div>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                          user.role === 'ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' :
+                          user.role === 'MANAGER' ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400' :
+                          'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
+                        }`}>
+                          {user.role === 'ADMIN' ? t('users.roles.ADMIN', 'Super Admin') : user.role === 'MANAGER' ? t('users.roles.MANAGER', 'Manager') : t('users.roles.EMPLOYEE', 'Employee')}
+                        </span>
+                        {user.employee?.contactInfo && <div className="text-xs text-muted-foreground mt-1">{user.employee.contactInfo}</div>}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`flex items-center gap-1.5 text-xs font-medium ${user.isActive ? 'text-green-600' : 'text-red-500'}`}>
+                          <span className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                          {user.isActive ? t('common.active', 'Active') : t('common.inactive', 'Inactive')}
                         </span>
                       </TableCell>
-                    )}
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openModal(user)}>
-                        <Edit2 className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                      </Button>
+                      {activeTab !== 'admins' && (
+                        <TableCell className="text-muted-foreground font-medium">
+                          {user.employee?.baseSalary ? formatCurrency(user.employee.baseSalary) : '-'}
+                        </TableCell>
+                      )}
+                      {activeTab === 'managers' && (
+                        <TableCell>
+                          <span className="px-2 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-bold">
+                            {t('users.table.activePerms', '{{count}} active', { count: permCount })}
+                          </span>
+                        </TableCell>
+                      )}
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => openModal(user)}>
+                          <Edit2 className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredUsers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={activeTab === 'managers' ? 6 : 5} className="text-center text-muted-foreground py-8">
+                      {t('users.noUsersFound', 'No {{role}} found', { role: tabs.find(t => t.key === activeTab)?.label })}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {filteredUsers.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={activeTab === 'managers' ? 6 : 5} className="text-center text-muted-foreground py-8">
-                    {t('users.noUsersFound', 'No {{role}} found', { role: tabs.find(t => t.key === activeTab)?.label })}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+
+            <TablePagination
+              page={currentPage}
+              pageSize={pageSize}
+              total={filteredUsers.length}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+              itemLabel="users"
+              disabled={isLoading}
+            />
+          </>
         )}
       </div>
 

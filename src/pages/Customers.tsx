@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
@@ -16,7 +16,7 @@ import { formatPlateNumber } from '../utils/plate';
 import { Car, Phone, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
-import { PageHeader } from '../components/common/PageHeader';
+import { PageHeader, TablePagination } from '../components/common';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { RiEyeLine } from 'react-icons/ri';
 
@@ -47,6 +47,8 @@ export default function Customers() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: customers, isLoading: isLoadingCustomers, refetch, isFetching } = useQuery<Customer[]>({
     queryKey: ['customers', search],
@@ -55,6 +57,11 @@ export default function Customers() {
       return res.data;
     },
   });
+
+  const totalPages = Math.max(1, Math.ceil((customers?.length || 0) / pageSize));
+  const paginatedCustomers = useMemo(() => {
+    return (customers || []).slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [customers, currentPage, pageSize]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -69,7 +76,14 @@ export default function Customers() {
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
-          <TableSearch value={search} onChange={setSearch} placeholder={t('customers.search')} />
+          <TableSearch
+            value={search}
+            onChange={(val) => {
+              setSearch(val);
+              setCurrentPage(1);
+            }}
+            placeholder={t('customers.search')}
+          />
         </div>
 
         <div className="overflow-x-auto">
@@ -94,7 +108,7 @@ export default function Customers() {
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t('customers.noneFound')}</TableCell>
                   </TableRow>
                 ) : (
-                  customers?.map((c) => (
+                  paginatedCustomers.map((c) => (
                     <TableRow 
                       key={c.id} 
                       onClick={() => navigate(`/customers/${c.id}`)}
@@ -153,6 +167,20 @@ export default function Customers() {
               </TableBody>
             </Table>
         </div>
+
+        <TablePagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={customers?.length || 0}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          itemLabel="clients"
+          disabled={isLoadingCustomers}
+        />
       </div>
     </div>
   );

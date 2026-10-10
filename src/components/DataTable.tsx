@@ -825,5 +825,5 @@ export const TableSelectDropdown: React.FC<TableSelectDropdownProps> = ({
   );
 };
 
-
-
+export { TablePagination } from './common/TablePagination';
+export type { TablePaginationProps } from './common/TablePagination';

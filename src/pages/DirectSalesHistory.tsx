@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Printer } from 'lucide-react';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
-import { PageHeader, ExecutiveAddButton } from '../components/common';
+import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { RiEyeLine, RiPrinterLine } from 'react-icons/ri';
 
@@ -21,7 +21,7 @@ export default function DirectSalesHistory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const getLocName = (item: any) =>
     i18n?.language === 'am' && item?.nameAm ? item.nameAm : (item?.nameEn || t('common.unknown', 'Unknown Item'));
@@ -213,34 +213,19 @@ export default function DirectSalesHistory() {
             </tbody>
           </table>
           
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between p-4 border-t">
-              <span className="text-sm text-muted-foreground">
-                {t('common.showing', 'Showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('common.to', 'to')} {Math.min(currentPage * itemsPerPage, filteredSales.length)} {t('common.of', 'of')} {filteredSales.length} {t('common.sales', 'sales')}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  {t('common.previous', 'Previous')}
-                </Button>
-                <div className="text-sm font-medium">
-                  {t('common.page', 'Page')} {currentPage} {t('common.of', 'of')} {totalPages}
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  {t('common.next', 'Next')}
-                </Button>
-              </div>
-            </div>
-          )}
+          <TablePagination
+            page={currentPage}
+            pageSize={itemsPerPage}
+            total={filteredSales.length}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setItemsPerPage(newSize);
+              setCurrentPage(1);
+            }}
+            itemLabel={t('common.sales', 'sales')}
+            disabled={isLoading}
+          />
         </div>
       </div>
 

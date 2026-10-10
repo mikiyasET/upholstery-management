@@ -21,7 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
-import { PageHeader, ExecutiveAddButton } from '../components/common';
+import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 import {
   Box,
   Group,
@@ -55,6 +55,8 @@ export default function Orders() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [paymentFilter, setPaymentFilter] = useState<string>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -138,6 +140,11 @@ export default function Orders() {
       return true;
     });
   }, [orders, statusFilter, paymentFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const paginatedOrders = useMemo(() => {
+    return filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
 
   const STATUS_TABS = [
     {
@@ -234,7 +241,10 @@ export default function Orders() {
                 ) : null
               }
               value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearch(e.currentTarget.value);
+                setCurrentPage(1);
+              }}
               style={{ flex: '1 1 280px', minWidth: 240 }}
               radius="md"
               size="sm"
@@ -251,7 +261,10 @@ export default function Orders() {
                   { value: 'PAID', label: t('orders.payment.paid', 'Fully Paid') },
                 ]}
                 value={paymentFilter}
-                onChange={(val) => setPaymentFilter(val || 'ALL')}
+                onChange={(val) => {
+                  setPaymentFilter(val || 'ALL');
+                  setCurrentPage(1);
+                }}
                 size="sm"
                 radius="md"
                 w={{ base: '100%', sm: 160 }}
@@ -269,6 +282,7 @@ export default function Orders() {
                     setStatusFilter('ALL');
                     setPaymentFilter('ALL');
                     setSearch('');
+                    setCurrentPage(1);
                   }}
                   leftSection={<RiCloseLine size={13} />}
                   style={{
@@ -280,11 +294,6 @@ export default function Orders() {
                   {t('common.clear', 'Reset')}
                 </Button>
               )}
-
-              {/* Counter Pill */}
-              <Text size="xs" fw={600} c="dimmed">
-                Showing <span style={{ color: 'var(--primary-accent, #F59E0B)', fontWeight: 700 }}>{filteredOrders.length}</span> of {orders.length} orders
-              </Text>
             </Group>
           </Group>
 
@@ -300,7 +309,10 @@ export default function Orders() {
                   <button
                     key={tab.key}
                     type="button"
-                    onClick={() => setStatusFilter(tab.key)}
+                    onClick={() => {
+                      setStatusFilter(tab.key);
+                      setCurrentPage(1);
+                    }}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -421,7 +433,7 @@ export default function Orders() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredOrders?.map((order: any) => (
+                paginatedOrders.map((order: any) => (
                   <TableRow key={order.id}>
                     <TableCell>
                       <div 
@@ -543,6 +555,20 @@ export default function Orders() {
             </TableBody>
           </Table>
         </div>
+
+        <TablePagination
+          page={currentPage}
+          pageSize={pageSize}
+          total={filteredOrders.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setPageSize(newSize);
+            setCurrentPage(1);
+          }}
+          itemLabel={t('common.orders', 'orders')}
+          disabled={isLoading}
+        />
       </div>
 
       <UpdateOrderStatusDialog 
