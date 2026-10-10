@@ -11,7 +11,6 @@ import {
   ActionIcon,
   Tooltip,
   Breadcrumbs,
-  Anchor,
   Text,
   Button as MantineButton,
   Badge as MantineBadge,
@@ -208,22 +207,22 @@ export default function CustomerDetail() {
     <div className="space-y-6 animate-in fade-in duration-300 pb-16 max-w-7xl mx-auto">
       {/* 1. Breadcrumbs */}
       <Breadcrumbs separator="›" separatorMargin="xs" mb="xs">
-        <Anchor
+        <Text
           size="xs"
+          fw={600}
           c="dimmed"
           onClick={() => navigate('/customers')}
+          className="hover:text-foreground transition-colors cursor-pointer"
           style={{
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 4,
-            textDecoration: 'none',
           }}
         >
-          <RiGroupLine size={13} style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} />
+          <RiGroupLine size={13} style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: '5px' }} />
           <span>{t('customers.title', 'Customers & Vehicles')}</span>
-        </Anchor>
-        <Text size="xs" fw={600} c="dimmed" style={{ display: 'inline-flex', alignItems: 'center',marginRight: '5px'}}>
+        </Text>
+        <Text size="xs" fw={600} c="dimmed" style={{ display: 'inline-flex', alignItems: 'center' }}>
           {customer.name}
         </Text>
         <MantineBadge size="xs" variant="light" color="amber">
