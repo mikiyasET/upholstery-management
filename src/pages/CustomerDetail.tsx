@@ -11,7 +11,6 @@ import {
   ActionIcon,
   Tooltip,
   Breadcrumbs,
-  Anchor,
   Button as MantineButton,
   Badge as MantineBadge,
   TextInput,
@@ -206,20 +205,23 @@ export default function CustomerDetail() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-16 max-w-7xl mx-auto">
       {/* 1. Breadcrumbs */}
-      <Breadcrumbs separator="›" separatorMargin="xs">
-        <Anchor
-          size="xs"
-          c="dimmed"
+      <Breadcrumbs
+        separator="›"
+        separatorMargin="xs"
+        className="flex items-center flex-wrap gap-1 mb-1"
+      >
+        <button
+          type="button"
           onClick={() => navigate('/customers')}
-          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer whitespace-nowrap bg-transparent border-0 p-0 focus:outline-none"
         >
-          <RiGroupLine size={13} />
-          {t('customers.title', 'Customers')}
-        </Anchor>
-        <span className="text-xs font-semibold text-muted-foreground">
+          <RiGroupLine size={14} className="shrink-0 inline-block text-muted-foreground" style={{ display: 'inline-block', verticalAlign: 'middle' }} />
+          <span className="whitespace-nowrap">{t('customers.title', 'Customers & Vehicles')}</span>
+        </button>
+        <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap inline-flex items-center">
           {customer.name}
         </span>
-        <MantineBadge size="xs" variant="light" color="amber">
+        <MantineBadge size="xs" variant="light" color="amber" className="inline-flex items-center">
           {activeTab === 'fleet' ? t('customers.detail.tabFleet', 'Vehicle Fleet') : activeTab === 'orders' ? t('customers.detail.tabOrders', 'Work Orders') : t('customers.detail.tabProfile', 'Client Profile')}
         </MantineBadge>
       </Breadcrumbs>
