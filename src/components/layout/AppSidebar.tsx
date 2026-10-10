@@ -207,6 +207,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
+    if (path === "/direct-sales") return location.pathname === "/direct-sales";
+    if (path === "/storage") return location.pathname === "/storage";
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 

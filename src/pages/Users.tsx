@@ -363,7 +363,7 @@ export default function Users() {
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             {t('users.title', 'Users & Employees')}
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -372,7 +372,7 @@ export default function Users() {
         </div>
         <Button
           onClick={() => openModal()}
-          className="bg-[#c9a84c] text-white hover:bg-[#b89842] shadow-sm"
+          className="bg-amber-600 text-white hover:bg-amber-700 shadow-sm font-semibold"
         >
           <Plus className="w-4 h-4 mr-2" />
           {t('users.addRole', 'Add {{role}}', { role: getRoleDisplayName(activeTab === 'admins' ? 'ADMIN' : activeTab === 'managers' ? 'MANAGER' : 'EMPLOYEE') })}
@@ -670,7 +670,7 @@ export default function Users() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeModal}>{t('common.cancel', 'Cancel')}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-[#c9a84c] text-white hover:bg-[#b89842]">
+            <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm">
               {saveMutation.isPending ? t('common.saving', 'Saving...') : t('users.saveRole', 'Save {{role}}', { role: getRoleDisplayName(modalRole) })}
             </Button>
           </DialogFooter>

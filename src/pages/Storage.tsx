@@ -327,16 +327,16 @@ export default function Storage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#161616] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden mt-4">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-gray-50/50 dark:bg-[#111]">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden mt-4">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-card">
           {/* Tabs */}
-          <div className="inline-flex h-10 items-center rounded-lg bg-gray-100 dark:bg-[#1e1e1e] p-1 text-muted-foreground w-full md:w-max shrink-0 overflow-x-auto custom-scrollbar">
+          <div className="inline-flex h-10 items-center rounded-lg bg-muted p-1 text-muted-foreground w-full md:w-max shrink-0 overflow-x-auto custom-scrollbar">
             <button
               onClick={() => setActiveStore('MINI')}
               className={`flex-1 md:flex-none inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 md:px-8 py-1.5 text-sm font-medium transition-all ${
                 activeStore === 'MINI'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-[#2c2c2c] dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
+                  ? 'bg-amber-600 text-white shadow-sm font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
               }`}
             >
               {t('storage.miniStore', 'Mini Store')}
@@ -345,8 +345,8 @@ export default function Storage() {
               onClick={() => setActiveStore('MAIN')}
               className={`flex-1 md:flex-none inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 md:px-8 py-1.5 text-sm font-medium transition-all ${
                 activeStore === 'MAIN'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-[#2c2c2c] dark:text-gray-100'
-                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
+                  ? 'bg-amber-600 text-white shadow-sm font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
               }`}
             >
               {t('storage.mainStore', 'Main Store')}
@@ -428,7 +428,7 @@ export default function Storage() {
                       <TableCell>
                         <div className="font-semibold text-gray-900 dark:text-white">{stock} {formatUnit(m.unit)}</div>
                         {activeStore === 'MAIN' ? (
-                          m.isBulkTracked && <div className="text-xs text-[#c9a84c]">{t('storage.bulkTracked', 'Bulk Tracked')}</div>
+                          m.isBulkTracked && <div className="text-xs text-amber-500 font-medium">{t('storage.bulkTracked', 'Bulk Tracked')}</div>
                         ) : (
                           !m.isBulkTracked && <div className="text-xs text-blue-500">{t('storage.directDelivery', 'Direct Delivery')}</div>
                         )}
@@ -461,7 +461,7 @@ export default function Storage() {
                               <Button 
                                 variant="default" 
                                 size="sm" 
-                                className="h-8 gap-1.5 bg-[#c9a84c] hover:bg-[#b3933c] text-white disabled:pointer-events-none"
+                                className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm disabled:pointer-events-none"
                                 onClick={() => handleOpenTransfer(m)}
                                 disabled={mainStock <= 0 && getStock(m, 'MINI') <= 0}
                               >
@@ -507,7 +507,7 @@ export default function Storage() {
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <History className="w-5 h-5 text-[#c9a84c]" />
+              <History className="w-5 h-5 text-amber-500" />
               {t('storage.stockHistory', 'Stock History')} — {historyMaterial ? getLocName(historyMaterial) : ''}
             </DialogTitle>
           </DialogHeader>
@@ -675,7 +675,7 @@ export default function Storage() {
             <Button 
               onClick={() => restockMutation.mutate()} 
               disabled={restockMutation.isPending || !restockForm.quantityAdded}
-              className="bg-[#c9a84c] hover:bg-[#b3933c] text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
             >
               {restockMutation.isPending ? t('storage.restocking', 'Restocking...') : t('storage.confirmRestock', 'Confirm Restock')}
             </Button>
@@ -749,7 +749,7 @@ export default function Storage() {
             <Button 
               onClick={() => transferMutation.mutate()} 
               disabled={transferMutation.isPending || !transferForm.quantityTransferred || Number(transferForm.quantityTransferred) > (transferMaterial ? getStock(transferMaterial, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI') : 0) || Number(transferForm.quantityTransferred) <= 0}
-              className="bg-[#c9a84c] hover:bg-[#b3933c] text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
             >
               {transferMutation.isPending ? t('storage.transferring', 'Transferring...') : t('storage.confirmTransfer', 'Confirm Transfer')}
             </Button>
@@ -823,7 +823,7 @@ export default function Storage() {
             <Button 
               onClick={() => adjustMutation.mutate()} 
               disabled={adjustMutation.isPending || !adjustForm.quantityDelta}
-              className="bg-[#c9a84c] hover:bg-[#b3933c] text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
             >
               {adjustMutation.isPending ? t('storage.adjusting', 'Adjusting...') : t('storage.confirmAdjustment', 'Confirm Adjustment')}
             </Button>
@@ -884,7 +884,7 @@ export default function Storage() {
             <Button 
               onClick={() => countMutation.mutate()} 
               disabled={countMutation.isPending || !countForm.countedQuantity}
-              className="bg-[#c9a84c] hover:bg-[#b3933c] text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
             >
               {countMutation.isPending ? t('storage.recording', 'Recording...') : t('storage.recordCount', 'Record Count')}
             </Button>

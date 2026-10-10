@@ -21,7 +21,7 @@ import {
   RiShoppingBag3Line,
   RiExchangeDollarLine,
 } from "react-icons/ri";
-import { useMantineColorScheme } from "@mantine/core";
+import { useMantineColorScheme, useComputedColorScheme } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
@@ -34,7 +34,14 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const { setColorScheme } = useMantineColorScheme();
+  const computedColorScheme = useComputedColorScheme("dark", { getInitialValueInEffect: true });
+  const isDark = computedColorScheme === "dark";
+
+  const toggleTheme = () => {
+    const next = isDark ? "light" : "dark";
+    setColorScheme(next);
+  };
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
@@ -194,15 +201,15 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
         </Tooltip>
 
         {/* Dark / Light Mode Toggle */}
-        <Tooltip label={colorScheme === "dark" ? "Light Mode" : "Dark Mode"}>
+        <Tooltip label={isDark ? "Light Mode" : "Dark Mode"}>
           <ActionIcon
             variant="default"
             size="md"
             radius="md"
-            onClick={() => toggleColorScheme()}
+            onClick={toggleTheme}
             aria-label="Toggle theme"
           >
-            {colorScheme === "dark" ? (
+            {isDark ? (
               <RiSunLine size={18} color="var(--primary-accent)" />
             ) : (
               <RiMoonLine size={18} />

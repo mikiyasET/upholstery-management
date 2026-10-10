@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Outfit", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
   
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -39,67 +39,69 @@
 
 @layer base {
   :root {
-    /* Premium Light Theme - Warm Gold Accent */
-    --background: 210 20% 98%; /* #f9fafb gray-50 */
-    --foreground: 220 30% 12%;
+    /* Luxury Automotive Palette - Light Mode */
+    --background: 40 20% 97%;       /* #F7F5F2 */
+    --foreground: 24 10% 10%;       /* #1C1917 */
 
-    --card: 0 0% 100%; /* #ffffff */
-    --card-foreground: 220 30% 12%;
+    --card: 0 0% 100%;             /* #FFFFFF */
+    --card-foreground: 24 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 12%;
+    --popover-foreground: 24 10% 10%;
 
-    --primary: 39 79% 58%; /* #e8ab3e */
+    --primary: 38 92% 44%;         /* #D97706 Warm Amber / Gold */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 96%; /* gray-100 */
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 35 15% 94%;       /* #F0EDE8 */
+    --secondary-foreground: 24 10% 10%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 35 15% 94%;
+    --muted-foreground: 25 5% 45%; /* #78716C */
 
-    --accent: 210 20% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 35 15% 94%;
+    --accent-foreground: 24 10% 10%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%; /* gray-200 */
-    --input: 220 13% 91%;
-    --ring: 39 79% 58%;
+    --border: 35 15% 89%;          /* #E8E4DF */
+    --input: 35 15% 89%;
+    --ring: 38 92% 44%;
 
     --radius: 0.75rem;
   }
 
-  .dark {
-    /* Premium Dark Theme - Midnight & Gold */
-    --background: 0 0% 0%; /* #000000 */
-    --foreground: 210 40% 98%;
+  .dark,
+  [data-mantine-color-scheme="dark"],
+  :root[data-mantine-color-scheme="dark"] {
+    /* Luxury Automotive Palette - Dark Mode (Deep Carbon Obsidian & Luminous Gold) */
+    --background: 240 7% 7%;        /* #121215 */
+    --foreground: 60 9% 98%;        /* #FAFAF9 */
 
-    --card: 0 0% 7%; /* #121212 */
-    --card-foreground: 210 40% 98%;
+    --card: 240 6% 10%;            /* #18181B */
+    --card-foreground: 60 9% 98%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 6% 10%;         /* #18181B */
+    --popover-foreground: 60 9% 98%;
 
-    --primary: 39 79% 58%; /* #e8ab3e */
-    --primary-foreground: 222 47% 11%;
+    --primary: 38 92% 50%;         /* #F59E0B Warm Amber */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 10%; /* #1a1a1a */
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 5% 14%;       /* #222227 */
+    --secondary-foreground: 60 9% 98%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 240 5% 15%;          /* #26262B */
+    --muted-foreground: 240 5% 65%;/* #A1A1AA */
 
-    --accent: 0 0% 10%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 240 5% 15%;
+    --accent-foreground: 60 9% 98%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 60 9% 98%;
 
-    --border: 0 0% 15%; /* #262626 */
-    --input: 0 0% 15%;
-    --ring: 39 79% 58%;
+    --border: 240 5% 16%;          /* #27272A */
+    --input: 240 5% 16%;
+    --ring: 38 92% 50%;
   }
 }
 
@@ -110,32 +112,16 @@
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary;
   }
-  
-  /* Custom scrollbar for a premium feel */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
-  }
 }
 
 /* Glassmorphism Utilities */
 @layer utilities {
-/* Benjamin-Plate Utilities */
   .header-input {
     @apply h-[42px] border border-border bg-card outline-none rounded-lg px-4 py-2.5 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all duration-200 shadow-sm text-sm font-medium text-foreground cursor-pointer;
   }
 
   .header-btn-primary {
-    @apply h-[42px] px-4 py-2.5 rounded-lg bg-foreground hover:bg-foreground/80 text-background flex items-center justify-center gap-2 font-semibold transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm;
+    @apply h-[42px] px-4 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 font-semibold transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm;
   }
 
   .header-btn-secondary {
@@ -144,22 +130,5 @@
 
   .header-btn-danger {
     @apply h-[42px] px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 flex items-center justify-center gap-2 font-medium transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 5px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 10px;
-  }
-  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background: rgba(156, 163, 175, 0.5);
-  }
-  .dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background: rgba(75, 85, 99, 0.5);
   }
 }

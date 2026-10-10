@@ -81,7 +81,7 @@ export default function Receipt() {
   const formattedDate = order.orderDateTime ? format(new Date(order.orderDateTime), 'MMMM dd, yyyy • h:mm a') : 'N/A';
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-[#0c0c0c]">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Navigation & Print Controls */}
@@ -89,7 +89,7 @@ export default function Receipt() {
           <Button 
             variant="outline" 
             onClick={() => navigate(-1)} 
-            className="border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 rounded-xl"
+            className="border-border text-foreground rounded-xl"
           >
             <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back', 'Back')}
           </Button>

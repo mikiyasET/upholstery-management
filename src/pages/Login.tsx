@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TextInput,
   PasswordInput,
@@ -14,6 +14,7 @@ import {
   Badge,
   Tooltip,
   useMantineColorScheme,
+  useComputedColorScheme,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useNavigate, Navigate } from "react-router-dom";
@@ -41,9 +42,23 @@ export default function Login() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const { setColorScheme } = useMantineColorScheme();
+  const computedColorScheme = useComputedColorScheme("dark", { getInitialValueInEffect: true });
+  const isDark = computedColorScheme === "dark";
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const toggleTheme = () => {
+    const next = isDark ? "light" : "dark";
+    setColorScheme(next);
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.setAttribute("data-mantine-color-scheme", computedColorScheme);
+    localStorage.setItem("mantine-color-scheme-value", computedColorScheme);
+    localStorage.setItem("vite-ui-theme", computedColorScheme);
+  }, [isDark, computedColorScheme]);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -216,15 +231,15 @@ export default function Login() {
       >
         {/* Top-Right Theme Toggle */}
         <Box style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-          <Tooltip label={colorScheme === "dark" ? "Light Mode" : "Dark Mode"}>
+          <Tooltip label={isDark ? "Light Mode" : "Dark Mode"}>
             <ActionIcon
               variant="default"
               size="lg"
               radius="md"
-              onClick={() => toggleColorScheme()}
+              onClick={toggleTheme}
               aria-label="Toggle color scheme"
             >
-              {colorScheme === "dark" ? (
+              {isDark ? (
                 <RiSunLine size={20} color="var(--primary-accent)" />
               ) : (
                 <RiMoonLine size={20} />

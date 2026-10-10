@@ -176,8 +176,8 @@ export default function Materials() {
         </PermissionGate>
       </div>
 
-      <div className="bg-white dark:bg-[#161616] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-[#161616]">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
           <TableSearch 
             value={search} 
             onChange={handleSearchChange} 

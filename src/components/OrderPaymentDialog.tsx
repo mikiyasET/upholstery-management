@@ -97,23 +97,23 @@ export function OrderPaymentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white">
+      <DialogContent className="sm:max-w-[425px] bg-card border border-border text-foreground">
         <DialogHeader>
           <DialogTitle>{t('orders.actions.addPayment')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-5 pt-4">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label className="text-gray-500 dark:text-gray-400">{t('orders.amountPaid')}</Label>
+              <Label className="text-muted-foreground">{t('orders.amountPaid')}</Label>
               {targetAutofillAmount > 0 && (
                 <span className="text-[11px] text-muted-foreground">
                   {isUnpaid ? t('orders.fullTotal') : t('orders.due')}{' '}
-                  <strong className="text-gray-900 dark:text-gray-100 font-semibold">{formatCurrency(targetAutofillAmount)}</strong>
+                  <strong className="text-foreground font-semibold">{formatCurrency(targetAutofillAmount)}</strong>
                 </span>
               )}
             </div>
             <div className="relative flex items-center">
-              <span className="absolute left-4 text-gray-500 font-bold text-sm pointer-events-none select-none">
+              <span className="absolute left-4 text-muted-foreground font-bold text-sm pointer-events-none select-none">
                 ETB
               </span>
               <Input 
@@ -121,7 +121,7 @@ export function OrderPaymentDialog({
                 value={paymentForm.amount} 
                 onChange={e => setPaymentForm({ ...paymentForm, amount: formatInputNumber(e.target.value) })}
                 placeholder="0.00"
-                className="pl-14 pr-28 text-xl font-bold h-14 border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-900 focus-visible:ring-primary"
+                className="pl-14 pr-28 text-xl font-bold h-14 border-border rounded-xl bg-background text-foreground focus-visible:ring-primary"
               />
               {targetAutofillAmount > 0 && (
                 <button

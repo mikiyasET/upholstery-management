@@ -77,10 +77,10 @@ export default function Orders() {
 
   const getPaymentColor = (status: string) => {
     switch(status) {
-      case 'UNPAID': return 'bg-red-100 text-red-800';
-      case 'PARTIALLY_PAID': return 'bg-amber-100 text-amber-800';
-      case 'PAID': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'UNPAID': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+      case 'PARTIALLY_PAID': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+      case 'PAID': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-zinc-300';
     }
   };
 
@@ -88,11 +88,11 @@ export default function Orders() {
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{t('common.orders')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('orders.subtitle')}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('common.orders')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('orders.subtitle')}</p>
         </div>
         <PermissionGate permission="orders.create">
-          <Button onClick={() => navigate('/orders/new')} className="bg-[#c9a84c] hover:bg-[#b3933c] text-white gap-2">
+          <Button onClick={() => navigate('/orders/new')} className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold">
             <Plus className="w-4 h-4" />
             {t('orders.createNew')}
           </Button>
@@ -106,8 +106,8 @@ export default function Orders() {
             onClick={() => setStatusFilter(status)}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
               statusFilter === status 
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm'
-                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 dark:bg-[#1e1e1e] dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-card text-muted-foreground hover:bg-muted border border-border hover:text-foreground'
             }`}
           >
             {formatStatus(status)}
@@ -115,8 +115,8 @@ export default function Orders() {
         ))}
       </div>
 
-      <div className="bg-white dark:bg-[#161616] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-[#161616]">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
           <TableSearch value={search} onChange={setSearch} placeholder={t('orders.searchPlaceholder')} />
         </div>
 
@@ -168,8 +168,8 @@ export default function Orders() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{order.customer.name}</div>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      <div className="font-medium text-foreground">{order.customer.name}</div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                         <Phone className="w-3 h-3" />
                         {order.customer.phoneNumber}
                       </div>

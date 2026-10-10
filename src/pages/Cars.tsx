@@ -203,12 +203,12 @@ export default function Cars() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-foreground">
           {t('cars.title', 'Car Catalog')}
         </h1>
         <PermissionGate permission="catalog.cars.add">
           <Button 
-            className="bg-[#c9a84c] hover:bg-[#b59640] text-white shadow-sm"
+            className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold"
             onClick={() => {
               setEditingBrandId(null);
               setBrandName('');
@@ -224,9 +224,9 @@ export default function Cars() {
 
       <div className="grid md:grid-cols-3 gap-6">
         {/* BRANDS SIDEBAR */}
-        <div className="md:col-span-1 border rounded-xl bg-card flex flex-col h-[600px] overflow-hidden shadow-sm">
+        <div className="md:col-span-1 border border-border rounded-xl bg-card flex flex-col h-[600px] overflow-hidden shadow-sm">
           {showBrandSearch ? (
-            <div className="p-2.5 border-b bg-muted/30 flex items-center gap-1.5 min-h-[52px] animate-in fade-in duration-200">
+            <div className="p-2.5 border-b border-border bg-muted/30 flex items-center gap-1.5 min-h-[52px] animate-in fade-in duration-200">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input 
@@ -234,7 +234,7 @@ export default function Cars() {
                   placeholder={t('cars.searchBrands', 'Search brands...')} 
                   value={brandSearch} 
                   onChange={e => setBrandSearch(e.target.value)}
-                  className="pl-8 pr-7 h-8 text-xs bg-background rounded-lg border-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-[#c9a84c]"
+                  className="pl-8 pr-7 h-8 text-xs bg-background rounded-lg border-border focus-visible:ring-1 focus-visible:ring-amber-500"
                 />
                 {brandSearch && (
                   <button 
@@ -259,9 +259,9 @@ export default function Cars() {
               </Button>
             </div>
           ) : (
-            <div className="p-3 border-b bg-muted/20 flex items-center justify-between min-h-[52px]">
+            <div className="p-3 border-b border-border bg-muted/20 flex items-center justify-between min-h-[52px]">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm text-gray-900 dark:text-white">{t('cars.brands', 'Brands')}</span>
+                <span className="font-semibold text-sm text-foreground">{t('cars.brands', 'Brands')}</span>
                 <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                   {filteredBrands.length}
                 </span>
@@ -294,8 +294,8 @@ export default function Cars() {
                   }}
                   className={`p-3 rounded-lg cursor-pointer flex items-center justify-between gap-3 transition-colors group ${
                     selectedBrand?.id === brand.id 
-                      ? 'bg-[#c9a84c] text-white shadow-sm' 
-                      : 'hover:bg-muted/70 text-gray-700 dark:text-gray-200'
+                      ? 'bg-amber-600 text-white shadow-sm font-semibold' 
+                      : 'hover:bg-muted/70 text-foreground'
                   }`}
                 >
                   <div className="flex items-center gap-3 flex-1 overflow-hidden">
@@ -375,7 +375,7 @@ export default function Cars() {
                       placeholder={t('cars.searchModels', 'Search models...')} 
                       value={modelSearch} 
                       onChange={e => setModelSearch(e.target.value)}
-                      className="pl-8 pr-7 h-8 text-xs bg-background rounded-lg border-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-[#c9a84c] w-full"
+                      className="pl-8 pr-7 h-8 text-xs bg-background rounded-lg border-border focus-visible:ring-1 focus-visible:ring-amber-500 w-full"
                     />
                     {modelSearch && (
                       <button 
@@ -402,7 +402,7 @@ export default function Cars() {
                     <PermissionGate permission="catalog.cars.add">
                       <Button 
                         size="sm" 
-                        className="h-8 gap-1.5 bg-[#c9a84c] hover:bg-[#b59640] text-white rounded-lg shadow-sm"
+                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
@@ -417,10 +417,10 @@ export default function Cars() {
                   </div>
                 </CardHeader>
               ) : (
-                <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3 pt-3 px-4 border-b bg-muted/10 min-h-[57px]">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-gray-900 dark:text-white truncate">
+                <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3 pt-3 px-4 border-b border-border bg-muted/10 min-h-[57px]">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground truncate">
                     {selectedBrand.logoUrl && (
-                      <img src={getImageUrl(selectedBrand.logoUrl)} alt="" className="h-7 w-7 object-contain bg-white rounded p-0.5 border shrink-0" />
+                      <img src={getImageUrl(selectedBrand.logoUrl)} alt="" className="h-7 w-7 object-contain bg-muted rounded p-0.5 border border-border shrink-0" />
                     )}
                     <span className="truncate">{t('cars.brandModels', '{{brand}} Models', { brand: selectedBrand.name })}</span>
                     <span className="text-xs font-normal text-muted-foreground ml-1">({filteredModels.length})</span>
@@ -438,7 +438,7 @@ export default function Cars() {
                     <PermissionGate permission="catalog.cars.add">
                       <Button 
                         size="sm" 
-                        className="h-8 gap-1.5 bg-[#c9a84c] hover:bg-[#b59640] text-white rounded-lg shadow-sm"
+                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');

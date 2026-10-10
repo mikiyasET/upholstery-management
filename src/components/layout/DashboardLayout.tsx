@@ -212,12 +212,12 @@ export default function DashboardLayout() {
     <div className="flex items-center gap-2 md:gap-3">
       <img src="/logo.png" alt="Yonatan Logo" className="h-9 w-auto object-contain drop-shadow-sm" />
       <div className="flex flex-col justify-center">
-        <h2 className="text-xl md:text-2xl leading-none font-black bg-gradient-to-r from-[#b38728] via-[#c9a84c] to-[#8c6b12] bg-clip-text text-transparent uppercase flex justify-between w-full">
+        <h2 className="text-xl md:text-2xl leading-none font-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent uppercase flex justify-between w-full">
           {'YONATAN'.split('').map((char, i) => (
             <span key={i}>{char}</span>
           ))}
         </h2>
-        <span className="text-[7.5px] md:text-[9px] leading-tight font-extrabold tracking-[0.1em] bg-gradient-to-r from-[#c9a84c] to-[#8c6b12] bg-clip-text text-transparent uppercase mt-0.5 whitespace-nowrap">
+        <span className="text-[7.5px] md:text-[9px] leading-tight font-extrabold tracking-[0.1em] bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent uppercase mt-0.5 whitespace-nowrap">
           CAR DECORATION & UPHOLSTERY
         </span>
       </div>

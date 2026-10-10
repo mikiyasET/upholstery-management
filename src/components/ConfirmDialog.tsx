@@ -32,13 +32,13 @@ export default function ConfirmDialog({
     const colors = {
         danger: 'bg-red-500 hover:bg-red-600 shadow-red-500/20',
         warning: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20',
-        info: 'bg-[#c9a84c] hover:bg-[#b3933c] shadow-[#c9a84c]/20'
+        info: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20 text-white'
     };
 
     const iconColors = {
         danger: 'text-red-500 bg-red-50 dark:bg-red-500/10',
         warning: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10',
-        info: 'text-[#c9a84c] bg-[#c9a84c]/10'
+        info: 'text-amber-500 bg-amber-500/10'
     };
 
     return (
@@ -50,7 +50,7 @@ export default function ConfirmDialog({
             ></div>
 
             {/* Dialog Content */}
-            <div className="relative bg-white dark:bg-[#161616] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-800">
+            <div className="relative bg-card text-foreground rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-border">
                 <div className="p-6 pb-4">
                     <div className="flex items-start justify-between gap-4 mb-2">
                         <div className="flex items-center gap-3">

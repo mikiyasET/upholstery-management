@@ -177,7 +177,7 @@ export default function Reports() {
                 onClick={() => setDatePreset(p.key)}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? 'bg-[#c9a84c] text-white shadow-sm ring-2 ring-[#c9a84c]/20'
+                    ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-500/30'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 }`}
               >
@@ -207,7 +207,7 @@ export default function Reports() {
                     }
                   }}
                   className={`h-8 text-xs font-medium rounded-lg ${
-                    isSingleDayMode ? 'bg-[#c9a84c] hover:bg-[#b89842] text-white' : ''
+                    isSingleDayMode ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5 mr-1" />
@@ -273,13 +273,13 @@ export default function Reports() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-[#c9a84c]/10 to-transparent border-[#c9a84c]/20">
+        <Card className="bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">{t('reports.kpi.totalRevenue', 'Total Revenue')}</CardTitle>
-            <TrendingUp className="h-4 w-4 text-[#c9a84c]" />
+            <TrendingUp className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#c9a84c]">{formatCurrency(totalRevenue)}</div>
+            <div className="text-2xl font-bold text-amber-500">{formatCurrency(totalRevenue)}</div>
             <p className="text-xs text-muted-foreground mt-1">{t('reports.kpi.forPeriod', 'For selected period')}</p>
           </CardContent>
         </Card>
@@ -348,7 +348,7 @@ export default function Reports() {
                       <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap transition-opacity z-10 pointer-events-none shadow-md border border-gray-700">
                         {item.date}: {formatCurrency(total)}
                       </div>
-                      <div className="w-full bg-[#c9a84c] rounded-t-sm transition-all duration-500 ease-out" style={{ height: `${heightPct}%` }} />
+                      <div className="w-full bg-amber-500 rounded-t-sm transition-all duration-500 ease-out" style={{ height: `${heightPct}%` }} />
                       {/* Only show labels if not too many bars */}
                       {revenue.length <= 15 && (
                         <div className="text-[10px] text-muted-foreground text-center mt-2 truncate w-full transform -rotate-45 origin-top-left">
@@ -458,8 +458,8 @@ export default function Reports() {
               {stockValuation?.summary?.map((store: any) => (
                 <div key={store.storeName} className="flex justify-between items-center p-3 border rounded-lg bg-muted/20">
                   <div className="flex items-center gap-3">
-                    <div className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm border">
-                      <Package className="w-5 h-5 text-[#c9a84c]" />
+                    <div className="bg-muted p-2 rounded-md shadow-sm border border-border">
+                      <Package className="w-5 h-5 text-amber-500" />
                     </div>
                     <div>
                       <p className="font-semibold">{getLocalizedStoreName(store.storeName)}</p>

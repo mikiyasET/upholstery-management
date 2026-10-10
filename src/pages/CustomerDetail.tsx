@@ -146,7 +146,7 @@ export default function CustomerDetail() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-muted/30 border border-border/50 transition-all hover:bg-muted/50">
-                  <Car className="w-6 h-6 text-[#c9a84c] mb-2" />
+                  <Car className="w-6 h-6 text-primary mb-2" />
                   <span className="text-2xl font-bold text-foreground">{customer.vehicles.length}</span>
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('customers.detail.vehicles', 'Vehicles')}</span>
                 </div>

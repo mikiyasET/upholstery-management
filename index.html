@@ -10,11 +10,14 @@
     <script>
       (function() {
         try {
-          var theme = localStorage.getItem('vite-ui-theme');
-          if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          var saved = localStorage.getItem('mantine-color-scheme-value') || localStorage.getItem('vite-ui-theme');
+          var isDark = saved ? saved === 'dark' : true; // Default to dark luxury theme
+          if (isDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
           } else {
             document.documentElement.classList.remove('dark');
+            document.documentElement.setAttribute('data-mantine-color-scheme', 'light');
           }
         } catch (e) {}
       })();

@@ -33,10 +33,12 @@
   --shadow-dropdown: 0 12px 30px -4px rgba(28, 25, 23, 0.14), 0 4px 8px -2px rgba(28, 25, 23, 0.06);
 }
 
-[data-mantine-color-scheme="dark"] {
+.dark,
+[data-mantine-color-scheme="dark"],
+:root[data-mantine-color-scheme="dark"] {
   /* Automotive & Luxury Upholstery Palette - Dark Mode */
-  --surface-bg: #121215;             /* Deep Carbon */
-  --surface-card: #18181B;           /* Rich Dark Obsidian */
+  --surface-bg: #121215;             /* Deep Carbon Obsidian */
+  --surface-card: #18181B;           /* Rich Dark Obsidian Zinc 900 */
   --surface-border: #27272A;         /* Subtle Zinc Border */
   --surface-border-subtle: #202023;
   --header-bg: rgba(18, 18, 21, 0.90);
@@ -154,8 +156,8 @@ body {
 
 /* Premium Card Container */
 .premium-card {
-  background: var(--surface-card);
-  border: 1px solid var(--surface-border);
+  background-color: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
   border-radius: 14px;
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.25s ease, border-color 0.25s ease;
@@ -163,13 +165,13 @@ body {
 
 .premium-card:hover {
   box-shadow: var(--shadow-card-hover);
-  border-color: rgba(245, 158, 11, 0.35);
+  border-color: rgba(245, 158, 11, 0.35) !important;
 }
 
 /* Metric / Stat Card */
 .stat-card-widget {
-  background: var(--surface-card);
-  border: 1px solid var(--surface-border);
+  background-color: var(--surface-card) !important;
+  border: 1px solid var(--surface-border) !important;
   border-radius: 14px;
   padding: 20px;
   position: relative;
@@ -181,7 +183,7 @@ body {
 .stat-card-widget:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
-  border-color: rgba(245, 158, 11, 0.4);
+  border-color: rgba(245, 158, 11, 0.4) !important;
 }
 
 /* Table Pagination Bar (Exact Exporter-Docs UI) */
@@ -216,6 +218,163 @@ body {
   gap: 8px;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+/* ============================================================
+   AUTOMATIC DARK MODE RESILIENCE OVERRIDES FOR TABLES & CARDS
+   ============================================================ */
+
+.dark body,
+[data-mantine-color-scheme="dark"] body {
+  background-color: var(--surface-bg) !important;
+  color: var(--text-main) !important;
+}
+
+/* Elements with .bg-white automatically turn to dark card in dark mode */
+.dark .bg-white:not(.bg-white-keep):not(.barcode-container):not(.qr-container):not(.plate-container):not(img),
+[data-mantine-color-scheme="dark"] .bg-white:not(.bg-white-keep):not(.barcode-container):not(.qr-container):not(.plate-container):not(img) {
+  background-color: var(--surface-card) !important;
+}
+
+/* Header/Filter strips in tables */
+.dark .bg-gray-50,
+[data-mantine-color-scheme="dark"] .bg-gray-50,
+.dark .bg-gray-50\/75,
+[data-mantine-color-scheme="dark"] .bg-gray-50\/75,
+.dark .bg-gray-100,
+[data-mantine-color-scheme="dark"] .bg-gray-100 {
+  background-color: #151518 !important;
+}
+
+/* Ensure headings & titles turn to bright text-main in dark mode */
+.dark .text-gray-900,
+[data-mantine-color-scheme="dark"] .text-gray-900,
+.dark .text-gray-800,
+[data-mantine-color-scheme="dark"] .text-gray-800,
+.dark h1,
+[data-mantine-color-scheme="dark"] h1,
+.dark h2,
+[data-mantine-color-scheme="dark"] h2,
+.dark h3,
+[data-mantine-color-scheme="dark"] h3,
+.dark h4,
+[data-mantine-color-scheme="dark"] h4 {
+  color: var(--text-main) !important;
+}
+
+/* Ensure secondary text turns to text-muted in dark mode */
+.dark .text-gray-600,
+[data-mantine-color-scheme="dark"] .text-gray-600,
+.dark .text-gray-500,
+[data-mantine-color-scheme="dark"] .text-gray-500,
+.dark .text-gray-700,
+[data-mantine-color-scheme="dark"] .text-gray-700 {
+  color: var(--text-muted) !important;
+}
+
+/* Legacy Color Override to Luxury Amber / Gold */
+.text-\[\#c9a84c\],
+[class*="text-[#c9a84c]"] {
+  color: var(--primary-accent) !important;
+}
+
+.bg-\[\#c9a84c\],
+[class*="bg-[#c9a84c]"] {
+  background-color: var(--primary-accent) !important;
+}
+
+.hover\:bg-\[\#b59640\]:hover,
+.hover\:bg-\[\#b89842\]:hover,
+.hover\:bg-\[\#b3933c\]:hover {
+  background-color: #D97706 !important;
+}
+
+.border-\[\#c9a84c\],
+[class*="border-[#c9a84c]"] {
+  border-color: var(--primary-accent) !important;
+}
+
+/* Cards & Dialogs in dark mode */
+.dark [data-slot="card"],
+[data-mantine-color-scheme="dark"] [data-slot="card"],
+.dark .card,
+[data-mantine-color-scheme="dark"] .card {
+  background-color: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-main) !important;
+}
+
+.dark [data-slot="dialog-content"],
+[data-mantine-color-scheme="dark"] [data-slot="dialog-content"] {
+  background-color: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-main) !important;
+}
+
+/* Borders in dark mode */
+.dark .border-gray-200,
+[data-mantine-color-scheme="dark"] .border-gray-200,
+.dark .border-gray-100,
+[data-mantine-color-scheme="dark"] .border-gray-100,
+.dark .border-gray-300,
+[data-mantine-color-scheme="dark"] .border-gray-300 {
+  border-color: var(--surface-border) !important;
+}
+
+/* Tables in dark mode */
+.dark table,
+[data-mantine-color-scheme="dark"] table {
+  color: var(--text-main) !important;
+  background-color: transparent !important;
+}
+
+.dark table thead,
+[data-mantine-color-scheme="dark"] table thead {
+  background-color: #141417 !important;
+  border-color: var(--surface-border) !important;
+}
+
+.dark table th,
+[data-mantine-color-scheme="dark"] table th {
+  color: var(--text-muted) !important;
+  background-color: #141417 !important;
+  border-color: var(--surface-border) !important;
+}
+
+.dark table td,
+[data-mantine-color-scheme="dark"] table td {
+  color: var(--text-main) !important;
+  border-color: var(--surface-border-subtle) !important;
+}
+
+.dark table tbody tr:hover,
+[data-mantine-color-scheme="dark"] table tbody tr:hover {
+  background-color: rgba(245, 158, 11, 0.05) !important;
+}
+
+/* Mantine Paper & Card styling */
+[data-mantine-color-scheme="dark"] .mantine-Paper-root,
+.dark .mantine-Paper-root {
+  background-color: var(--surface-card);
+  border-color: var(--surface-border);
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Table-thead,
+.dark .mantine-Table-thead {
+  background-color: #141417 !important;
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Table-th,
+.dark .mantine-Table-th {
+  background-color: #141417 !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-muted) !important;
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Table-td,
+.dark .mantine-Table-td {
+  border-color: var(--surface-border-subtle) !important;
+  color: var(--text-main) !important;
 }
 
 /* Animations */

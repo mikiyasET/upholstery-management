@@ -290,8 +290,8 @@ export default function CreateOrder() {
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{t('orders.createNew')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('orders.create.subtitle', 'Fill in the details below to create a comprehensive service order.')}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('orders.createNew')}</h1>
+          <p className="text-muted-foreground mt-2">{t('orders.create.subtitle', 'Fill in the details below to create a comprehensive service order.')}</p>
         </div>
         <ModernButton 
           size="md" 
@@ -316,7 +316,7 @@ export default function CreateOrder() {
             {/* Animated Search Border Background Overlay */}
             <div className={`absolute top-1/2 left-1/2 w-[1500px] h-[1500px] -translate-x-1/2 -translate-y-1/2 animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#3b82f6_50%,transparent_100%)] dark:bg-[conic-gradient(from_90deg_at_50%_50%,transparent_0%,#3b82f6_50%,transparent_100%)] z-0 transition-opacity duration-700 ${searchStatus === 'searching' ? 'opacity-100' : 'opacity-0'}`}></div>
 
-            <Card className="relative z-10 w-full h-full border-0 bg-white dark:bg-[#161616] rounded-[10px]">
+            <Card className="relative z-10 w-full h-full border-0 bg-card rounded-[10px]">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Car className="w-5 h-5 text-primary" />
@@ -335,8 +335,8 @@ export default function CreateOrder() {
                   </div>
                   
                   {matchingVehicles.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-800 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                      <div className="px-3 py-2 bg-gray-50 dark:bg-[#111111] border-b border-gray-100 dark:border-gray-800 text-xs font-bold uppercase tracking-wider text-gray-500">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="px-3 py-2 bg-muted/60 border-b border-border text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         {t('orders.create.selectMatchingVehicle')}
                       </div>
                       <div className="max-h-60 overflow-y-auto">
@@ -344,7 +344,7 @@ export default function CreateOrder() {
                           <div 
                             key={v.id} 
                             onClick={() => selectVehicle(v)}
-                            className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-[#222222] cursor-pointer border-b border-gray-100 dark:border-gray-800 last:border-0 transition-colors"
+                            className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b border-border last:border-0 transition-colors"
                           >
                             <div>
                               <div className="font-bold text-primary">{formatPlateNumber(v.plateNumber)}</div>
@@ -414,7 +414,7 @@ export default function CreateOrder() {
           </Card>
           </div>
 
-          <Card className="shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616] rounded-xl">
+          <Card className="shadow-sm border border-border bg-card rounded-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Settings2 className="w-5 h-5 text-primary" />
@@ -485,7 +485,7 @@ export default function CreateOrder() {
 
         {/* Right Column: Order Items & Assignments */}
         <div className="lg:col-span-7 space-y-6">
-          <Card className="shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616] rounded-xl">
+          <Card className="shadow-sm border border-border bg-card rounded-xl">
             <CardHeader className="pb-4 flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Settings2 className="w-5 h-5 text-primary" />
@@ -596,7 +596,7 @@ export default function CreateOrder() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616] rounded-xl">
+          <Card className="shadow-sm border border-border bg-card rounded-xl">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="w-5 h-5 text-primary" />
@@ -630,9 +630,9 @@ export default function CreateOrder() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                 {selectedAssignments.map(a => (
-                  <div key={a.tempId} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-[#222222] border border-gray-200 dark:border-gray-800">
+                  <div key={a.tempId} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border">
                     <div className="flex flex-col">
-                      <span className="font-medium text-sm">{a.name}</span>
+                      <span className="font-medium text-sm text-foreground">{a.name}</span>
                       <span className="text-xs text-primary/70">{a.role}</span>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => setSelectedAssignments(selectedAssignments.filter(x => x.tempId !== a.tempId))} className="h-8 w-8 p-0 text-red-500 hover:text-red-600"><Trash2 className="w-4 h-4" /></Button>

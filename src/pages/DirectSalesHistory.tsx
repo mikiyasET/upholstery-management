@@ -318,7 +318,7 @@ export default function DirectSalesHistory() {
             {fullSaleDetails?.paymentStatus === 'PAID' ? (
               <Button 
                 onClick={() => fullSaleDetails && printDirectSaleReceipt(fullSaleDetails)} 
-                className="bg-[#c9a84c] text-white hover:bg-[#b89842]"
+                className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
                 disabled={isDetailsLoading || !fullSaleDetails}
               >
                 <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
@@ -326,7 +326,7 @@ export default function DirectSalesHistory() {
             ) : (
               <Button 
                 onClick={() => navigate(`/direct-sales?editId=${selectedSale?.id}`)}
-                className="bg-[#c9a84c] text-white hover:bg-[#b89842]"
+                className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
                 disabled={isDetailsLoading || !fullSaleDetails}
               >
                 {t('directSales.editSale', 'Edit Sale / Add Payment')}

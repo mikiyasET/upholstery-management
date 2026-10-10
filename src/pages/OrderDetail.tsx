@@ -273,14 +273,14 @@ export default function OrderDetail() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="rounded-full w-10 h-10 border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616]">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="rounded-full w-10 h-10 border-border bg-card text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               {t('common.order')} {order.orderNumber}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-muted-foreground mt-1">
               {format(new Date(order.orderDateTime), 'MMMM d, yyyy h:mm a')}
             </p>
           </div>
@@ -303,9 +303,9 @@ export default function OrderDetail() {
             size="icon"
             onClick={handlePrint} 
             title="Print Receipt"
-            className="rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-[#161616] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] transition-all shadow-sm hover:-translate-y-0.5"
+            className="rounded-xl border-border bg-card hover:bg-muted text-foreground transition-all shadow-sm hover:-translate-y-0.5"
           >
-            <Printer className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+            <Printer className="w-4 h-4 text-foreground" />
           </Button>
         </div>
       </div>
@@ -333,13 +333,13 @@ export default function OrderDetail() {
             <div className="space-y-4 flex flex-col justify-between">
               
               {/* Customer Details Card */}
-              <Card className="shadow-sm border border-gray-200/90 dark:border-gray-800 bg-white dark:bg-[#141414] rounded-2xl overflow-hidden hover:border-gray-300 dark:hover:border-gray-700 transition-all">
-                <div className="p-3 px-4 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-white/[0.01] flex items-center justify-between">
+              <Card className="shadow-sm border border-border bg-card rounded-2xl overflow-hidden hover:border-amber-500/30 transition-all">
+                <div className="p-3 px-4 border-b border-border bg-muted/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                       <User className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t('orders.detail.customerDetails')}
                     </span>
                   </div>
@@ -391,13 +391,13 @@ export default function OrderDetail() {
               </Card>
 
               {/* Vehicle Details Card */}
-              <Card className="shadow-sm border border-gray-200/90 dark:border-gray-800 bg-white dark:bg-[#141414] rounded-2xl overflow-hidden hover:border-gray-300 dark:hover:border-gray-700 transition-all">
-                <div className="p-3 px-4 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-white/[0.01] flex items-center justify-between">
+              <Card className="shadow-sm border border-border bg-card rounded-2xl overflow-hidden hover:border-amber-500/30 transition-all">
+                <div className="p-3 px-4 border-b border-border bg-muted/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
                       <Car className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t('orders.detail.vehicleDetails')}
                     </span>
                   </div>
@@ -435,13 +435,13 @@ export default function OrderDetail() {
 
             {/* Column 2: Preset Conditions Card */}
             <div className="flex">
-              <Card className="w-full shadow-sm border border-gray-200/90 dark:border-gray-800 bg-white dark:bg-[#141414] rounded-2xl overflow-hidden flex flex-col hover:border-gray-300 dark:hover:border-gray-700 transition-all">
-                <div className="p-3 px-4 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-white/[0.01] flex items-center justify-between">
+              <Card className="w-full shadow-sm border border-border bg-card rounded-2xl overflow-hidden flex flex-col hover:border-amber-500/30 transition-all">
+                <div className="p-3 px-4 border-b border-border bg-muted/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                       <ClipboardList className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t('orders.detail.presetConditions')}
                     </span>
                   </div>
@@ -637,16 +637,16 @@ export default function OrderDetail() {
         <div className="space-y-6">
           
           {/* Main Financial Summary Card */}
-          <Card className="shadow-lg shadow-black/5 border border-gray-200/90 dark:border-gray-800 bg-white dark:bg-[#141414] rounded-2xl overflow-hidden transition-all">
+          <Card className="shadow-lg shadow-black/5 border border-border bg-card rounded-2xl overflow-hidden transition-all">
             
             {/* Header with Title and Payment Status Pill */}
-            <div className="p-5 pb-4 border-b border-gray-100 dark:border-gray-800/80 bg-gradient-to-b from-gray-50/80 to-transparent dark:from-white/[0.02] flex items-center justify-between">
+            <div className="p-5 pb-4 border-b border-border bg-muted/20 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#c9a84c]/10 text-[#c9a84c] border border-[#c9a84c]/20 flex items-center justify-center shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shadow-sm">
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-base tracking-tight leading-none">
+                  <h3 className="font-bold text-foreground text-base tracking-tight leading-none">
                     {t('orders.create.orderSummary')}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">{t('orders.detail.financialBreakdown')}</p>
@@ -672,24 +672,24 @@ export default function OrderDetail() {
             <CardContent className="p-5 space-y-5">
               
               {/* Settlement Progress Bar */}
-              <div className="space-y-2 bg-gray-50/60 dark:bg-[#1a1a1a]/60 p-3.5 rounded-xl border border-gray-100 dark:border-gray-800/80">
+              <div className="space-y-2 bg-muted/30 p-3.5 rounded-xl border border-border">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                    <Coins className="w-3.5 h-3.5 text-[#c9a84c]" /> {t('orders.detail.settlementProgress')}
+                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-amber-500" /> {t('orders.detail.settlementProgress')}
                   </span>
-                  <span className={`font-bold ${isFullyPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>
+                  <span className={`font-bold ${isFullyPaid ? 'text-emerald-500' : 'text-foreground'}`}>
                     {paidPercentage}% {t('orders.detail.paid')}
                   </span>
                 </div>
                 
                 {/* Progress track */}
-                <div className="w-full h-2.5 bg-gray-200/80 dark:bg-gray-800 rounded-full overflow-hidden p-0.5">
+                <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden p-0.5">
                   <div 
                     className={`h-full rounded-full transition-all duration-500 ${
                       isFullyPaid 
                         ? 'bg-gradient-to-r from-emerald-500 to-teal-500' 
                         : isPartiallyPaid
-                        ? 'bg-gradient-to-r from-amber-500 to-[#c9a84c]'
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600'
                         : 'bg-transparent'
                     }`}
                     style={{ width: `${paidPercentage}%` }}
@@ -817,7 +817,7 @@ export default function OrderDetail() {
                   {/* Direct Add Payment CTA */}
                   <Button 
                     onClick={() => setIsPaymentModalOpen(true)} 
-                    className="w-full gap-2 bg-[#c9a84c] hover:bg-[#b89842] text-white font-semibold rounded-xl h-11 shadow-sm transition-all hover:shadow-md"
+                    className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl h-11 shadow-sm transition-all hover:shadow-md"
                   >
                     <CreditCard className="w-4 h-4" /> {t('orders.detail.recordPayment')}
                   </Button>

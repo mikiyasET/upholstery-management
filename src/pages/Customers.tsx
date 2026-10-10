@@ -62,8 +62,8 @@ export default function Customers() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#161616] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-[#161616]">
+      <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
           <TableSearch value={search} onChange={setSearch} placeholder={t('customers.search')} />
         </div>
 
@@ -109,17 +109,17 @@ export default function Customers() {
                             <span className="text-gray-400 text-sm">{t('customers.none')}</span>
                           ) : (
                             c.vehicles.map((v) => (
-                              <div key={v.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                <Car className="w-3.5 h-3.5 text-[#c9a84c]" />
+                              <div key={v.id} className="flex items-center gap-2 text-sm text-foreground">
+                                <Car className="w-3.5 h-3.5 text-primary" />
                                 <span>{formatPlateNumber(v.plateNumber)}</span>
-                                <span className="text-gray-400">({v.carModel.brand.name} {v.carModel.name})</span>
+                                <span className="text-muted-foreground">({v.carModel.brand.name} {v.carModel.name})</span>
                               </div>
                             ))
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-gray-900 dark:text-white">{c._count.orders}</div>
+                        <div className="font-semibold text-foreground">{c._count.orders}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">

@@ -209,25 +209,25 @@ export default function Services() {
   return (
     <div className="space-y-6">
       {/* Page Header & Toolbar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-[#161616] p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-3xl border border-border shadow-sm">
         <div className="w-full md:w-max flex flex-col sm:flex-row sm:items-center justify-between md:justify-start gap-4 md:gap-6 shrink-0">
           <div>
             <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
+              <h1 className="text-3xl font-black tracking-tight text-foreground">
                 {t('common.services', 'Services')}
               </h1>
               <PermissionGate permission="catalog.services.add">
                 <Button 
                   onClick={() => handleOpenServiceDialog()}
                   size="sm"
-                  className="rounded-full px-4 h-8 bg-[#c9a84c] hover:bg-[#b59640] text-white shadow-[0_4px_14px_0_rgba(201,168,76,0.39)] hover:shadow-[0_6px_20px_rgba(201,168,76,0.23)] hover:-translate-y-0.5 transition-all hidden sm:flex shrink-0"
+                  className="rounded-full px-4 h-8 bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold hover:-translate-y-0.5 transition-all hidden sm:flex shrink-0"
                 >
                   <Plus className="mr-1 h-4 w-4" />
                   {t('services.newService', 'New Service')}
                 </Button>
               </PermissionGate>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
               {t('services.subtitle', 'Manage your service offerings, pricing categories, and required materials.')}
             </p>
           </div>
@@ -235,7 +235,7 @@ export default function Services() {
           <PermissionGate permission="catalog.services.add">
             <Button 
               onClick={() => handleOpenServiceDialog()}
-              className="w-full rounded-xl bg-[#c9a84c] hover:bg-[#b59640] text-white shadow-[0_4px_14px_0_rgba(201,168,76,0.39)] hover:-translate-y-0.5 transition-all sm:hidden"
+              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold hover:-translate-y-0.5 transition-all sm:hidden"
             >
               <Plus className="mr-2 h-4 w-4" />
               {t('services.newService', 'New Service')}
@@ -260,10 +260,10 @@ export default function Services() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {services?.filter(s => s.nameEn.toLowerCase().includes(search.toLowerCase()) || s.nameAm.includes(search)).map((service) => (
-            <Card key={service.id} className="rounded-2xl border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow bg-white dark:bg-[#161616]">
+            <Card key={service.id} className="rounded-2xl border-border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow bg-card">
               {/* Header: Image & Name */}
-              <div className="p-5 flex items-start gap-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="w-14 h-14 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="p-5 flex items-start gap-4 border-b border-border">
+                <div className="w-14 h-14 rounded-xl bg-muted border border-border shrink-0 flex items-center justify-center overflow-hidden">
                   {service.imageUrl ? (
                     <img 
                       src={getImageUrl(service.imageUrl)} 
@@ -278,10 +278,10 @@ export default function Services() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0 pt-1">
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white truncate" title={getLocName(service)}>
+                  <h3 className="font-bold text-base text-foreground truncate" title={getLocName(service)}>
                     {getLocName(service)}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-sm text-muted-foreground truncate">
                     {i18n?.language === 'am' ? service.nameEn : service.nameAm}
                   </p>
                 </div>
@@ -295,9 +295,9 @@ export default function Services() {
               </div>
 
               {/* Categories & Materials */}
-              <div className="p-5 flex-1 flex flex-col gap-4 bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="p-5 flex-1 flex flex-col gap-4 bg-muted/20">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('services.pricingCategories', 'Pricing Categories')}</h4>
+                  <h4 className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('services.pricingCategories', 'Pricing Categories')}</h4>
                   <PermissionGate permission="catalog.services.add">
                     <Button variant="ghost" size="sm" onClick={() => handleOpenCatDialog(service.id)} className="h-6 text-xs px-2 text-primary hover:bg-primary/10 rounded-md">
                       <Plus className="mr-1 h-3 w-3" /> {t('common.add', 'Add')}
@@ -308,11 +308,11 @@ export default function Services() {
                 {service.categories && service.categories.length > 0 ? (
                   <div className="space-y-3">
                     {service.categories.map(cat => (
-                      <div key={cat.id} className="bg-white dark:bg-[#161616] p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm relative group transition-all hover:border-gray-200 dark:hover:border-gray-700">
+                      <div key={cat.id} className="bg-card p-4 rounded-xl border border-border shadow-sm relative group transition-all hover:border-amber-500/40">
                         <div className="flex justify-between items-start mb-2 pr-12">
                           <div>
-                            <p className="font-semibold text-sm text-gray-900 dark:text-white">
-                              {getLocName(cat)} <span className="text-xs text-gray-500 font-normal">({i18n?.language === 'am' ? cat.nameEn : cat.nameAm})</span>
+                            <p className="font-semibold text-sm text-foreground">
+                              {getLocName(cat)} <span className="text-xs text-muted-foreground font-normal">({i18n?.language === 'am' ? cat.nameEn : cat.nameAm})</span>
                             </p>
                             <p className="font-bold text-primary mt-0.5">{formatCurrency(cat.price)}</p>
                           </div>

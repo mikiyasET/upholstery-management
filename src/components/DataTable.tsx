@@ -25,7 +25,7 @@ export const Table = React.forwardRef<HTMLTableElement, TableProps>(
         <table
           ref={ref}
           className={cn(
-            "w-full border-collapse text-left text-sm text-gray-700 dark:text-gray-300 align-middle",
+            "w-full border-collapse text-left text-sm text-foreground align-middle",
             className
           )}
           {...props}
@@ -43,7 +43,7 @@ export const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLA
       <thead
         ref={ref}
         className={cn(
-          "bg-gray-50/75 dark:bg-[#1f1f1f]/50 border-b border-gray-100 dark:border-gray-800/80 sticky top-0 backdrop-blur-md z-10",
+          "bg-muted/40 dark:bg-[#141417] border-b border-border sticky top-0 backdrop-blur-md z-10",
           className
         )}
         {...props}
@@ -68,7 +68,7 @@ export const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAtt
     return (
       <tbody
         ref={ref}
-        className={cn("divide-y divide-gray-100/50 dark:divide-gray-800/50", className)}
+        className={cn("divide-y divide-border/40", className)}
         {...props}
       >
         {childrenArray.map((child) => {
@@ -102,7 +102,7 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttr
     <th
       ref={ref}
       className={cn(
-        "h-12 px-4 text-left align-middle font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-xs select-none",
+        "h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase tracking-wider text-xs select-none",
         className
       )}
       {...props}
@@ -115,7 +115,7 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttr
   ({ className, ...props }, ref) => (
     <td
       ref={ref}
-      className={cn("p-4 align-middle text-gray-700 dark:text-gray-300", className)}
+      className={cn("p-4 align-middle text-foreground", className)}
       {...props}
     />
   )
@@ -218,7 +218,7 @@ export const TableContainer = React.forwardRef<HTMLDivElement, React.HTMLAttribu
     <div
       ref={ref}
       className={cn(
-        "bg-white dark:bg-[#161616] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden relative",
+        "bg-card rounded-2xl shadow-sm border border-border overflow-hidden relative",
         className
       )}
       {...props}
@@ -270,12 +270,12 @@ export const TableSearch: React.FC<TableSearchProps> = ({
 
   return (
     <div className={cn("group relative w-full sm:w-[480px] md:w-[540px] max-w-full shrink-0 no-print transition-all duration-300", className)}>
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#c9a84c] transition-colors duration-200" size={18} />
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors duration-200" size={18} />
       <input
         ref={inputRef}
         type="text"
         placeholder={placeholder}
-        className="w-full pl-10.5 pr-10 py-2.5 bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800/80 rounded-lg outline-none hover:border-gray-300 dark:hover:border-gray-700 focus:border-[#c9a84c] dark:focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/15 transition-all duration-200 shadow-sm text-sm h-[42px] font-medium text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-zinc-500"
+        className="w-full pl-10.5 pr-10 py-2.5 bg-background border border-border rounded-lg outline-none hover:border-border/80 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all duration-200 shadow-sm text-sm h-[42px] font-medium text-foreground placeholder:text-muted-foreground"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -648,24 +648,24 @@ export const FilterPills: React.FC<FilterPillsProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "px-4 font-medium transition-all duration-200 ease-out cursor-pointer select-none whitespace-nowrap flex items-center justify-between gap-2 border outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold shadow-sm active:scale-[0.98]",
+          "px-4 font-medium transition-all duration-200 ease-out cursor-pointer select-none whitespace-nowrap flex items-center justify-between gap-2 border outline-none focus:ring-2 focus:ring-amber-500/15 focus:border-amber-500 shadow-sm active:scale-[0.98]",
           triggerHeightClass,
-          "bg-white dark:bg-[#161616] hover:bg-gray-50/80 dark:hover:bg-[#1f1f1f]/50",
+          "bg-card hover:bg-muted/50",
           isFilterActive
-            ? "border-gold/30 dark:border-gold/45 hover:border-gold/40"
-            : "border-gray-200 dark:border-gray-800/80 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-900 dark:hover:text-zinc-100",
-          isOpen && "border-gold focus:ring-gold/20"
+            ? "border-amber-500/40 text-amber-500 hover:border-amber-500/60"
+            : "border-border text-foreground hover:border-border/80",
+          isOpen && "border-amber-500 focus:ring-amber-500/20"
         )}
       >
         <span className="truncate">{displayLabel}</span>
         <ChevronDown
           size={16}
-          className={cn("text-gray-400 dark:text-zinc-500 transition-transform duration-200 shrink-0", isOpen && "rotate-180 text-gold")}
+          className={cn("text-muted-foreground transition-transform duration-200 shrink-0", isOpen && "rotate-180 text-amber-500")}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 z-50 min-w-[190px] w-max max-w-[280px] bg-white dark:bg-[#1e1e1e] border border-gray-100 dark:border-gray-800 rounded-xl shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08),_0_4px_12px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.5)] p-1.5 focus:outline-none animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute left-0 mt-2 z-50 min-w-[190px] w-max max-w-[280px] bg-card border border-border rounded-xl shadow-xl p-1.5 focus:outline-none animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="max-h-60 overflow-y-auto custom-scrollbar">
             {options.map((opt) => {
               const isActive = opt.value === activeValue;
@@ -756,23 +756,23 @@ export const TableSelectDropdown: React.FC<TableSelectDropdownProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full px-4 h-[42px] rounded-lg text-sm font-medium transition-all duration-200 ease-out cursor-pointer select-none whitespace-nowrap flex items-center justify-between gap-2 border shadow-sm active:scale-[0.98] outline-none focus:ring-2 focus:ring-gold/15 focus:border-gold",
-          "bg-white dark:bg-[#161616] hover:bg-gray-50/80 dark:hover:bg-[#1f1f1f]/50",
+          "w-full px-4 h-[42px] rounded-lg text-sm font-medium transition-all duration-200 ease-out cursor-pointer select-none whitespace-nowrap flex items-center justify-between gap-2 border shadow-sm active:scale-[0.98] outline-none focus:ring-2 focus:ring-amber-500/15 focus:border-amber-500",
+          "bg-card hover:bg-muted/50",
           isFilterActive
-            ? "border-gold/30 dark:border-gold/45 text-gold-dark dark:text-gold hover:border-gold/40"
-            : "border-gray-200 dark:border-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-gray-50/80 dark:hover:bg-[#1f1f1f]/50 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-900 dark:hover:text-zinc-100",
-          isOpen && "border-gold text-gold dark:text-gold focus:ring-gold/20"
+            ? "border-amber-500/40 text-amber-500 hover:border-amber-500/60"
+            : "border-border text-foreground hover:border-border/80",
+          isOpen && "border-amber-500 text-amber-500 focus:ring-amber-500/20"
         )}
       >
         <span className="truncate">{displayLabel}</span>
         <ChevronDown
           size={16}
-          className={cn("text-gray-400 dark:text-zinc-500 transition-transform duration-200 shrink-0", isOpen && "rotate-180 text-gold")}
+          className={cn("text-muted-foreground transition-transform duration-200 shrink-0", isOpen && "rotate-180 text-amber-500")}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 z-50 min-w-[190px] w-full bg-white dark:bg-[#1e1e1e] border border-gray-100 dark:border-gray-800 rounded-xl shadow-[0_12px_30px_-4px_rgba(0,0,0,0.08),_0_4px_12px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.5)] p-1.5 focus:outline-none animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute left-0 mt-2 z-50 min-w-[190px] w-full bg-card border border-border rounded-xl shadow-xl p-1.5 focus:outline-none animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="max-h-60 overflow-y-auto custom-scrollbar">
             {placeholder && (
               <button

@@ -353,7 +353,7 @@ export default function DirectSales() {
             <Button 
               variant="outline" 
               size="icon" 
-              className="h-9 w-9 shrink-0 border-[#c9a84c] text-[#c9a84c] hover:bg-[#c9a84c]/10 hover:text-[#c9a84c]" 
+              className="h-9 w-9 shrink-0 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500" 
               title={t("directSales.viewHistory", "View History")} 
               onClick={() => navigate('/direct-sales/history')}
             >
@@ -376,10 +376,10 @@ export default function DirectSales() {
                 <div
                   key={m.id}
                   onClick={() => !isOutOfStock && addToCart(m)}
-                  className={`border rounded-lg overflow-hidden h-40 flex flex-col group relative ${
+                  className={`border border-border rounded-lg overflow-hidden h-40 flex flex-col group relative bg-card ${
                     isOutOfStock 
                       ? 'opacity-50 cursor-not-allowed grayscale' 
-                      : 'cursor-pointer hover:border-[#c9a84c] hover:shadow-md transition-all'
+                      : 'cursor-pointer hover:border-amber-500 hover:shadow-md transition-all'
                   }`}
                 >
                   {isOutOfStock && (
@@ -408,19 +408,19 @@ export default function DirectSales() {
                           {t('common.stock', 'Stock')}: {stock}
                         </div>
                       </div>
-                      <div className="p-2.5 border-t bg-card">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-xs line-clamp-1">{getLocName(m)}</h4>
-                        <div className="font-bold text-[#c9a84c] text-sm">{formatCurrency(m.currentPrice)}</div>
+                      <div className="p-2.5 border-t border-border bg-card">
+                        <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
+                        <div className="font-bold text-amber-500 text-sm">{formatCurrency(m.currentPrice)}</div>
                       </div>
                     </>
                   ) : (
-                    <div className={`flex-1 flex flex-col items-center justify-center p-3 bg-muted/30 ${!isOutOfStock && 'group-hover:bg-[#c9a84c]/5'} relative`}>
+                    <div className={`flex-1 flex flex-col items-center justify-center p-3 bg-muted/30 ${!isOutOfStock && 'group-hover:bg-amber-500/5'} relative`}>
                       <div className="absolute top-1 right-1 bg-muted-foreground/20 text-foreground text-[10px] px-1.5 py-0.5 rounded font-medium">
                         {t('common.stock', 'Stock')}: {stock}
                       </div>
                       <ImageOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                      <h4 className="font-semibold text-gray-900 dark:text-white text-sm text-center line-clamp-2">{getLocName(m)}</h4>
-                      <div className="mt-1.5 font-bold text-[#c9a84c]">{formatCurrency(m.currentPrice)}</div>
+                      <h4 className="font-semibold text-foreground text-sm text-center line-clamp-2">{getLocName(m)}</h4>
+                      <div className="mt-1.5 font-bold text-amber-500">{formatCurrency(m.currentPrice)}</div>
                     </div>
                   )}
                 </div>
@@ -431,8 +431,8 @@ export default function DirectSales() {
       </div>
 
       {/* Right side: Cart */}
-      <div id="cart-section" className="w-full md:w-[320px] lg:w-[420px] flex flex-col bg-card border rounded-lg shadow-sm overflow-hidden flex-shrink-0 min-h-[500px] md:min-h-0 md:h-auto scroll-mt-6">
-        <div className="p-4 border-b bg-[#c9a84c] text-white flex justify-between items-center">
+      <div id="cart-section" className="w-full md:w-[320px] lg:w-[420px] flex flex-col bg-card border border-border rounded-lg shadow-sm overflow-hidden flex-shrink-0 min-h-[500px] md:min-h-0 md:h-auto scroll-mt-6">
+        <div className="p-4 border-b border-amber-600/30 bg-amber-600 text-white flex justify-between items-center shadow-sm">
           <h2 className="font-bold flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" /> {t('directSales.currentSale', 'Current Sale')}
           </h2>
@@ -442,7 +442,7 @@ export default function DirectSales() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="space-y-4 bg-muted/10 p-3.5 rounded-xl border border-border/50">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-2">
-              <User className="w-4 h-4 text-[#c9a84c]" />
+              <User className="w-4 h-4 text-amber-500" />
               {t('common.customerDetails', 'Customer Details')}
               <span className="text-[10px] font-medium text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full uppercase tracking-wider">{t('common.optional', 'Optional')}</span>
             </div>
@@ -600,7 +600,7 @@ export default function DirectSales() {
           </div>
 
               <Button 
-                className="w-full h-12 text-lg font-semibold bg-[#c9a84c] text-white hover:bg-[#b89842]" 
+                className="w-full h-12 text-lg font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm" 
                 disabled={cart.length === 0 || checkoutMutation.isPending}
                 onClick={handleInitiateCheckout}
               >
@@ -705,7 +705,7 @@ export default function DirectSales() {
             <Button 
               onClick={() => checkoutMutation.mutate()} 
               disabled={checkoutMutation.isPending}
-              className="bg-[#c9a84c] text-white hover:bg-[#b89842] font-semibold"
+              className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
             >
               {checkoutMutation.isPending ? t('common.processing', 'Processing...') : (editId ? t('directSales.updateSale', 'Update Sale & Payments') : t('directSales.confirmAndProceed', 'Confirm & Complete Sale'))}
             </Button>
@@ -808,7 +808,7 @@ export default function DirectSales() {
             <Button variant="outline" onClick={() => setCompletedSale(null)}>{t("common.close", "Close")}</Button>
             <Button 
               onClick={() => printDirectSaleReceipt(completedSale)} 
-              className="bg-[#c9a84c] text-white hover:bg-[#b89842]"
+              className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
             >
               <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
             </Button>
@@ -820,7 +820,7 @@ export default function DirectSales() {
       {cart.length > 0 && (
         <a 
           href="#cart-section"
-          className={`md:hidden fixed bottom-6 right-6 z-50 bg-[#c9a84c] text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all ${isBouncing ? 'scale-125 duration-100 ease-out' : 'scale-100 duration-300 ease-in hover:bg-[#b89842] hover:scale-105'}`}
+          className={`md:hidden fixed bottom-6 right-6 z-50 bg-amber-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all ${isBouncing ? 'scale-125 duration-100 ease-out' : 'scale-100 duration-300 ease-in hover:bg-amber-700 hover:scale-105'}`}
         >
           <ShoppingCart className="w-6 h-6" />
           {/* Unique Items Count */}
