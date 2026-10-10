@@ -191,7 +191,7 @@ export default function Reports() {
   };
 
   return (
-    <Stack gap="xl" pb="xl" className="animate-in fade-in duration-300">
+    <Stack gap="md" pb="xl" className="animate-in fade-in duration-300">
       {/* 1. Page Header */}
       <PageHeader
         title={t('reports.title', 'Reports & Analytics')}
@@ -202,47 +202,80 @@ export default function Reports() {
         isRefreshing={isAnyLoading}
       />
 
-      {/* 2. Executive Timeframe Switcher Tabs (Luxury Pill Bar matching Exporter-Docs) */}
-      <Box className="premium-card" p="md">
-        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+      {/* 2. Executive Timeframe Switcher Tabs (Low-profile Luxury Pill Bar) */}
+      <Box
+        className="premium-card"
+        style={{
+          padding: '6px 12px',
+        }}
+      >
+        <Group justify="space-between" align="center" wrap="wrap" gap="xs">
           <Tabs
             value={datePreset}
             onChange={(v) => v && setDatePreset(v as DatePreset)}
             variant="pills"
             radius="md"
           >
-            <Tabs.List style={{ gap: 6, flexWrap: 'wrap' }}>
-              <Tabs.Tab value="today" leftSection={<RiTimeLine size={15} />}>
+            <Tabs.List style={{ gap: 4, flexWrap: 'wrap' }}>
+              <Tabs.Tab
+                value="today"
+                leftSection={<RiTimeLine size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.today', 'Today')}
               </Tabs.Tab>
-              <Tabs.Tab value="yesterday" leftSection={<RiHistoryLine size={15} />}>
+              <Tabs.Tab
+                value="yesterday"
+                leftSection={<RiHistoryLine size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.yesterday', 'Yesterday')}
               </Tabs.Tab>
-              <Tabs.Tab value="week" leftSection={<RiCalendarLine size={15} />}>
+              <Tabs.Tab
+                value="week"
+                leftSection={<RiCalendarLine size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.week', 'Last 7 Days')}
               </Tabs.Tab>
-              <Tabs.Tab value="month" leftSection={<RiCalendar2Line size={15} />}>
+              <Tabs.Tab
+                value="month"
+                leftSection={<RiCalendar2Line size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.month', 'This Month')}
               </Tabs.Tab>
-              <Tabs.Tab value="year" leftSection={<RiBarChartBoxLine size={15} />}>
+              <Tabs.Tab
+                value="year"
+                leftSection={<RiBarChartBoxLine size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.year', 'This Year')}
               </Tabs.Tab>
-              <Tabs.Tab value="all" leftSection={<RiArchiveLine size={15} />}>
+              <Tabs.Tab
+                value="all"
+                leftSection={<RiArchiveLine size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.all', 'All Time')}
               </Tabs.Tab>
-              <Tabs.Tab value="custom" leftSection={<RiCalendarScheduleLine size={15} />}>
+              <Tabs.Tab
+                value="custom"
+                leftSection={<RiCalendarScheduleLine size={13} />}
+                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+              >
                 {t('reports.timeframe.custom', 'Custom Range')}
               </Tabs.Tab>
             </Tabs.List>
           </Tabs>
 
           <Badge
-            size="lg"
+            size="md"
             radius="md"
             variant="light"
             color="amber"
-            leftSection={<RiCalendarEventLine size={14} />}
-            style={{ fontWeight: 600, textTransform: 'none', fontSize: '0.82rem' }}
+            leftSection={<RiCalendarEventLine size={13} />}
+            style={{ fontWeight: 600, textTransform: 'none', fontSize: '0.78rem', height: 26 }}
           >
             {getPeriodDisplay()}
           </Badge>
@@ -251,15 +284,15 @@ export default function Reports() {
         {/* Custom Range Expansion Panel */}
         {datePreset === 'custom' && (
           <Box
-            mt="md"
-            pt="md"
+            mt="xs"
+            pt="xs"
             className="animate-in fade-in duration-200"
             style={{
               borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.08))',
             }}
           >
-            <Group justify="space-between" align="center" wrap="wrap" gap="md">
-              <Group gap="md" align="center" wrap="wrap">
+            <Group justify="space-between" align="center" wrap="wrap" gap="xs">
+              <Group gap="sm" align="center" wrap="wrap">
                 <SegmentedControl
                   size="xs"
                   radius="md"
@@ -276,7 +309,7 @@ export default function Reports() {
                 />
 
                 {isSingleDayMode ? (
-                  <Group gap="xs" align="center">
+                  <Group gap={6} align="center">
                     <Text size="xs" fw={600} c="dimmed">
                       {t('reports.timeframe.selectSingleDay', 'Date')}:
                     </Text>
@@ -289,11 +322,11 @@ export default function Reports() {
                         setCustomStart(e.target.value);
                         setCustomEnd(e.target.value);
                       }}
-                      style={{ width: 160 }}
+                      style={{ width: 145 }}
                     />
                   </Group>
                 ) : (
-                  <Group gap="xs" align="center" wrap="wrap">
+                  <Group gap={6} align="center" wrap="wrap">
                     <Text size="xs" fw={600} c="dimmed">
                       {t('reports.timeframe.from', 'From')}:
                     </Text>
@@ -303,7 +336,7 @@ export default function Reports() {
                       radius="md"
                       value={customStart}
                       onChange={(e) => setCustomStart(e.target.value)}
-                      style={{ width: 155 }}
+                      style={{ width: 140 }}
                     />
                     <Text size="xs" fw={600} c="dimmed">
                       {t('reports.timeframe.to', 'To')}:
@@ -314,13 +347,13 @@ export default function Reports() {
                       radius="md"
                       value={customEnd}
                       onChange={(e) => setCustomEnd(e.target.value)}
-                      style={{ width: 155 }}
+                      style={{ width: 140 }}
                     />
                   </Group>
                 )}
               </Group>
 
-              <Text size="xs" c="dimmed">
+              <Text size="11px" c="dimmed">
                 Range applied automatically to all charts
               </Text>
             </Group>
@@ -466,20 +499,20 @@ export default function Reports() {
 
       {/* 4. Section Switcher Tabs (Unified Analytics Hub) */}
       <Tabs value={activeSection} onChange={setActiveSection} variant="pills" radius="md">
-        <Tabs.List style={{ gap: 8, flexWrap: 'wrap' }} mb="lg">
-          <Tabs.Tab value="all" leftSection={<RiBarChartBoxLine size={16} />}>
+        <Tabs.List style={{ gap: 4, flexWrap: 'wrap' }} mb="md">
+          <Tabs.Tab value="all" leftSection={<RiBarChartBoxLine size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
             All Reports & Charts
           </Tabs.Tab>
-          <Tabs.Tab value="revenue" leftSection={<RiExchangeDollarLine size={16} />}>
+          <Tabs.Tab value="revenue" leftSection={<RiExchangeDollarLine size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
             Revenue Trend
           </Tabs.Tab>
-          <Tabs.Tab value="services" leftSection={<RiToolsLine size={16} />}>
+          <Tabs.Tab value="services" leftSection={<RiToolsLine size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
             Top Services & Items
           </Tabs.Tab>
-          <Tabs.Tab value="staff" leftSection={<RiUser3Line size={16} />}>
+          <Tabs.Tab value="staff" leftSection={<RiUser3Line size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
             Staff Workload
           </Tabs.Tab>
-          <Tabs.Tab value="inventory" leftSection={<RiStore2Line size={16} />}>
+          <Tabs.Tab value="inventory" leftSection={<RiStore2Line size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
             Store Valuations
           </Tabs.Tab>
         </Tabs.List>
