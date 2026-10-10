@@ -232,16 +232,19 @@ export interface TableSearchProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  size?: 'sm' | 'md';
 }
 
 export const TableSearch: React.FC<TableSearchProps> = ({
   value,
   onChange,
   placeholder = "Search...",
-  className
+  className,
+  size = 'md',
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isMac, setIsMac] = React.useState(true);
+  const isSm = size === 'sm';
 
   React.useEffect(() => {
     setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
@@ -269,13 +272,24 @@ export const TableSearch: React.FC<TableSearchProps> = ({
   }, []);
 
   return (
-    <div className={cn("group relative w-full max-w-full shrink-0 no-print transition-all duration-300", className || "sm:w-[480px] md:w-[540px]")}>
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors duration-200 pointer-events-none" size={18} />
+    <div className={cn("group relative w-full max-w-full shrink-0 no-print transition-all duration-200", className || "sm:w-[480px] md:w-[540px]")}>
+      <Search
+        className={cn(
+          "absolute top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors duration-200 pointer-events-none",
+          isSm ? "left-2.5" : "left-3.5"
+        )}
+        size={isSm ? 14 : 18}
+      />
       <input
         ref={inputRef}
         type="text"
         placeholder={placeholder}
-        className="w-full pl-10.5 pr-10 py-2.5 bg-background border border-border rounded-xl outline-none hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all duration-200 shadow-xs text-sm h-[42px] font-medium text-foreground placeholder:text-muted-foreground/70"
+        className={cn(
+          "w-full bg-background border border-border outline-none hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all duration-200 font-medium text-foreground placeholder:text-muted-foreground/70",
+          isSm
+            ? "h-8 pl-8 pr-7 py-1 text-xs rounded-lg"
+            : "h-[42px] pl-10.5 pr-10 py-2.5 text-sm rounded-xl shadow-xs"
+        )}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -285,13 +299,22 @@ export const TableSearch: React.FC<TableSearchProps> = ({
             onChange('');
             inputRef.current?.focus();
           }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-lg transition-all cursor-pointer"
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-all cursor-pointer",
+            isSm ? "right-1.5 p-1" : "right-3 p-1.5"
+          )}
         >
-          <X size={14} />
+          <X size={isSm ? 12 : 14} />
         </button>
       ) : (
-        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 pointer-events-none select-none group-focus-within:hidden transition-all duration-200">
-          <kbd className="px-1.5 py-0.5 text-[10px] font-semibold text-gray-400 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded-md">
+        <div className={cn(
+          "absolute top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-0.5 pointer-events-none select-none group-focus-within:hidden transition-all duration-200",
+          isSm ? "right-2" : "right-3.5"
+        )}>
+          <kbd className={cn(
+            "font-semibold text-gray-400 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded",
+            isSm ? "px-1 py-0.2 text-[9px]" : "px-1.5 py-0.5 text-[10px]"
+          )}>
             {isMac ? '⌘K' : 'Ctrl+K'}
           </kbd>
         </div>

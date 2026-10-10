@@ -348,29 +348,29 @@ export default function Storage() {
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden mt-4">
         {/* Toolbar: Store Tabs, Low Stock Alert Toggle, and Search Bar */}
-        <div className="p-3.5 sm:p-4 border-b border-border bg-card flex flex-col lg:flex-row gap-3.5 sm:gap-4 items-stretch lg:items-center justify-between">
+        <div className="px-3.5 py-2 sm:px-4 sm:py-2 border-b border-border bg-card flex flex-col sm:flex-row gap-2.5 sm:gap-3 items-stretch sm:items-center justify-between">
           {/* Left: Store Navigation Segment & Low Stock Filter Pill */}
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Store Segmented Pills */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/60 dark:bg-[#121215] border border-border/80 shadow-xs">
+            <div className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/60 dark:bg-zinc-900 border border-border/70">
               <button
                 type="button"
                 onClick={() => {
                   setActiveStore('MINI');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer select-none ${
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer select-none ${
                   activeStore === 'MINI'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 font-bold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
+                    ? 'bg-amber-600 text-white font-semibold shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                 }`}
               >
-                <RiStore2Line className={`w-4 h-4 shrink-0 ${activeStore === 'MINI' ? 'text-white' : 'text-amber-500'}`} />
+                <RiStore2Line className={`w-3.5 h-3.5 shrink-0 ${activeStore === 'MINI' ? 'text-white' : 'text-amber-500'}`} />
                 <span>{t('storage.miniStore', 'Mini Store')}</span>
-                <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold tracking-tight transition-colors ${
+                <span className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded text-[10px] font-bold transition-colors ${
                   activeStore === 'MINI'
-                    ? 'bg-white/25 text-white'
-                    : 'bg-background/80 text-muted-foreground border border-border/50'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-background/80 text-muted-foreground border border-border/40'
                 }`}>
                   {materials?.length || 0}
                 </span>
@@ -382,18 +382,18 @@ export default function Storage() {
                   setActiveStore('MAIN');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer select-none ${
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer select-none ${
                   activeStore === 'MAIN'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 font-bold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
+                    ? 'bg-amber-600 text-white font-semibold shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                 }`}
               >
-                <RiArchiveLine className={`w-4 h-4 shrink-0 ${activeStore === 'MAIN' ? 'text-white' : 'text-amber-500'}`} />
+                <RiArchiveLine className={`w-3.5 h-3.5 shrink-0 ${activeStore === 'MAIN' ? 'text-white' : 'text-amber-500'}`} />
                 <span>{t('storage.mainStore', 'Main Store')}</span>
-                <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold tracking-tight transition-colors ${
+                <span className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded text-[10px] font-bold transition-colors ${
                   activeStore === 'MAIN'
-                    ? 'bg-white/25 text-white'
-                    : 'bg-background/80 text-muted-foreground border border-border/50'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-background/80 text-muted-foreground border border-border/40'
                 }`}>
                   {materials?.length || 0}
                 </span>
@@ -401,7 +401,7 @@ export default function Storage() {
             </div>
 
             {/* Subtle Divider */}
-            <div className="hidden sm:block h-6 w-px bg-border/80 mx-0.5" />
+            <div className="hidden sm:block h-4 w-px bg-border/60 mx-0.5" />
 
             {/* Show Low Stock Button */}
             <button
@@ -410,20 +410,20 @@ export default function Storage() {
                 setShowLowStockOnly(!showLowStockOnly);
                 setCurrentPage(1);
               }}
-              className={`inline-flex items-center gap-2 h-[42px] px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border cursor-pointer select-none ${
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-medium transition-all duration-150 border cursor-pointer select-none ${
                 showLowStockOnly
-                  ? 'bg-rose-500/15 border-rose-500/60 text-rose-600 dark:text-rose-400 shadow-sm shadow-rose-500/15 ring-2 ring-rose-500/20 font-bold'
-                  : 'bg-card hover:bg-muted/60 border-border text-muted-foreground hover:text-foreground hover:border-amber-500/40 shadow-xs'
+                  ? 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 font-semibold ring-1 ring-rose-500/20'
+                  : 'bg-background hover:bg-muted/50 border-border text-muted-foreground hover:text-foreground'
               }`}
               title={showLowStockOnly ? "Click to view all stock items" : "Filter items with critical inventory"}
             >
-              <RiAlertLine className={`w-4 h-4 shrink-0 ${showLowStockOnly ? 'text-rose-500 animate-pulse' : lowStockCount > 0 ? 'text-amber-500' : 'text-muted-foreground'}`} />
-              <span className="whitespace-nowrap">{t('storage.showLowStock', 'Low Stock Alert')}</span>
-              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold transition-all ${
+              <RiAlertLine className={`w-3.5 h-3.5 shrink-0 ${showLowStockOnly ? 'text-rose-500' : lowStockCount > 0 ? 'text-amber-500' : 'text-muted-foreground'}`} />
+              <span>{t('storage.showLowStock', 'Low Stock')}</span>
+              <span className={`inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded text-[10px] font-bold transition-all ${
                 showLowStockOnly
-                  ? 'bg-rose-500 text-white shadow-xs'
+                  ? 'bg-rose-500 text-white'
                   : lowStockCount > 0
-                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
                   : 'bg-muted text-muted-foreground'
               }`}>
                 {lowStockCount}
@@ -431,15 +431,16 @@ export default function Storage() {
             </button>
           </div>
 
-          {/* Right: Search Toolbar */}
-          <div className="w-full lg:w-[320px] xl:w-[380px] shrink-0">
+          {/* Right: Compact Search Toolbar */}
+          <div className="w-full sm:w-60 md:w-64 shrink-0">
             <TableSearch 
+              size="sm"
               value={search} 
               onChange={(val) => {
                 setSearch(val);
                 setCurrentPage(1);
               }} 
-              placeholder={t('storage.searchPlaceholder', 'Search inventory by name, code...')} 
+              placeholder={t('storage.searchPlaceholder', 'Search inventory...')} 
               className="w-full" 
             />
           </div>
