@@ -7,6 +7,7 @@ import {
   ActionIcon,
   Tooltip,
   Breadcrumbs,
+  Anchor,
   Button,
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
@@ -132,15 +133,27 @@ export function PageHeader({
               );
             }
             return (
-              <button
+              <Anchor
                 key={idx}
-                type="button"
+                size="xs"
+                c="dimmed"
                 onClick={() => navigate(crumb.href!)}
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer whitespace-nowrap bg-transparent border-0 p-0 focus:outline-none"
+                style={{
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  textDecoration: "none",
+                }}
               >
-                {crumb.icon && <crumb.icon size={13} className="shrink-0 inline-block" style={{ display: "inline-block", verticalAlign: "middle" }} />}
-                <span className="whitespace-nowrap">{crumb.label}</span>
-              </button>
+                {crumb.icon && (
+                  <crumb.icon
+                    size={13}
+                    style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}
+                  />
+                )}
+                <span>{crumb.label}</span>
+              </Anchor>
             );
           })}
         </Breadcrumbs>
