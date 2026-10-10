@@ -59,7 +59,9 @@ export function ExecutiveAddButton({
   return (
     <Button
       variant="gradient"
-      gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
+      gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
+
+     //  gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
       radius="md"
       leftSection={icon !== undefined ? icon : <RiAddLine size={18} />}
       disabled={disabled}
@@ -67,7 +69,7 @@ export function ExecutiveAddButton({
       className={className}
       onClick={to ? () => navigate(to) : onClick}
       style={{
-        boxShadow: "0 4px 14px rgba(245, 158, 11, 0.25)",
+        boxShadow: "0 2px 10px rgba(245, 158, 11, 0.25)",
         fontWeight: 600,
         fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         letterSpacing: "-0.01em",

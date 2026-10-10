@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import {
   Table,
@@ -9,7 +9,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableSearch
 } from '../components/DataTable';
 import { PermissionGate } from '../components/PermissionGate';
 import { Phone, CalendarDays, MoreHorizontal } from 'lucide-react';
@@ -19,19 +18,43 @@ import { formatPlateNumber } from '../utils/plate';
 import { formatStatus } from '../lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
 import { PageHeader, ExecutiveAddButton } from '../components/common';
-import { ActionIcon, Tooltip } from '@mantine/core';
-import { RiEyeLine, RiPrinterLine, RiCheckDoubleLine } from 'react-icons/ri';
+import {
+  Box,
+  Group,
+  Stack,
+  Text,
+  ActionIcon,
+  Tooltip,
+  TextInput,
+  Select,
+  Button,
+} from '@mantine/core';
+import {
+  RiEyeLine,
+  RiPrinterLine,
+  RiCheckDoubleLine,
+  RiSearchLine,
+  RiCloseLine,
+  RiListCheck2,
+  RiTimeLine,
+  RiToolsLine,
+  RiCheckboxCircleLine,
+  RiShieldCheckLine,
+  RiCloseCircleLine,
+  RiMoneyDollarCircleLine,
+  RiFileSearchLine,
+} from 'react-icons/ri';
 import { printOrderReceipt } from '../lib/receipt-printer';
 
 export default function Orders() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [paymentFilter, setPaymentFilter] = useState<string>('ALL');
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -51,20 +74,109 @@ export default function Orders() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  const { data: orders, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['orders', statusFilter],
+  const { data: orders = [], isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['orders'],
     queryFn: async () => {
-      const qs = statusFilter !== 'ALL' ? `?status=${statusFilter}` : '';
-      const res = await api.get(`/orders${qs}`);
+      const res = await api.get('/orders');
       return res.data;
     },
   });
 
-  const filteredOrders = orders?.filter((o: any) => 
-    o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-    o.customer.name.toLowerCase().includes(search.toLowerCase()) ||
-    formatPlateNumber(o.vehicle.plateNumber).toLowerCase().includes(search.toLowerCase())
-  );
+  // Calculate live count metrics for each tab
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: orders?.length || 0,
+      OPEN: 0,
+      IN_PROGRESS: 0,
+      COMPLETED: 0,
+      DELIVERED: 0,
+      CANCELLED: 0,
+    };
+    if (Array.isArray(orders)) {
+      orders.forEach((o: any) => {
+        if (counts[o.orderStatus] !== undefined) {
+          counts[o.orderStatus]++;
+        }
+      });
+    }
+    return counts;
+  }, [orders]);
+
+  // Combined client filtering: Status tab + Payment filter + Search keyword
+  const filteredOrders = useMemo(() => {
+    return (orders || []).filter((o: any) => {
+      // 1. Status Filter
+      if (statusFilter !== 'ALL' && o.orderStatus !== statusFilter) {
+        return false;
+      }
+
+      // 2. Payment Filter
+      if (paymentFilter !== 'ALL' && o.paymentStatus !== paymentFilter) {
+        return false;
+      }
+
+      // 3. Search query
+      if (search.trim()) {
+        const query = search.toLowerCase().trim();
+        const orderNum = (o.orderNumber || '').toLowerCase();
+        const custName = (o.customer?.name || '').toLowerCase();
+        const custPhone = (o.customer?.phone || o.customer?.phoneNumber || '').toLowerCase();
+        const plate = formatPlateNumber(o.vehicle?.plateNumber || '').toLowerCase();
+        const model = (o.vehicle?.carModel?.name || '').toLowerCase();
+        const brand = (o.vehicle?.carModel?.brand?.name || '').toLowerCase();
+
+        return (
+          orderNum.includes(query) ||
+          custName.includes(query) ||
+          custPhone.includes(query) ||
+          plate.includes(query) ||
+          model.includes(query) ||
+          brand.includes(query)
+        );
+      }
+
+      return true;
+    });
+  }, [orders, statusFilter, paymentFilter, search]);
+
+  const STATUS_TABS = [
+    {
+      key: 'ALL',
+      label: t('common.all', 'All Orders'),
+      icon: RiListCheck2,
+      activeColor: '#F59E0B',
+    },
+    {
+      key: 'OPEN',
+      label: t('orders.status.open', 'Open'),
+      icon: RiTimeLine,
+      activeColor: '#3B82F6',
+    },
+    {
+      key: 'IN_PROGRESS',
+      label: t('orders.status.inProgress', 'In Progress'),
+      icon: RiToolsLine,
+      activeColor: '#F59E0B',
+    },
+    {
+      key: 'COMPLETED',
+      label: t('orders.status.completed', 'Ready'),
+      icon: RiCheckboxCircleLine,
+      activeColor: '#A855F7',
+    },
+    {
+      key: 'DELIVERED',
+      label: t('orders.status.delivered', 'Delivered'),
+      icon: RiShieldCheckLine,
+      activeColor: '#10B981',
+    },
+    {
+      key: 'CANCELLED',
+      label: t('orders.status.cancelled', 'Cancelled'),
+      icon: RiCloseCircleLine,
+      activeColor: '#EF4444',
+    },
+  ];
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -105,27 +217,159 @@ export default function Orders() {
         }
       />
 
-      <div className="flex gap-2 pb-2 overflow-x-auto">
-        {['ALL', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'DELIVERED', 'CANCELLED'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all ${
-              statusFilter === status 
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-card text-muted-foreground hover:bg-muted border border-border hover:text-foreground'
-            }`}
-          >
-            {formatStatus(status)}
-          </button>
-        ))}
-      </div>
+      {/* 2. Executive Control & Filter Bar (Exporter-Docs style) */}
+      <Box className="premium-card" p="md">
+        <Stack gap="sm">
+          {/* Row 1: Live Search + Payment Select + Reset + Count Stats */}
+          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+            {/* Live Search Input */}
+            <TextInput
+              placeholder={t('orders.searchPlaceholder', 'Search by order #, customer, phone, or plate...')}
+              leftSection={<RiSearchLine size={16} style={{ color: 'var(--text-muted)' }} />}
+              rightSection={
+                search ? (
+                  <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => setSearch('')} title="Clear search">
+                    <RiCloseLine size={14} />
+                  </ActionIcon>
+                ) : null
+              }
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              style={{ flex: '1 1 280px', minWidth: 240 }}
+              radius="md"
+              size="sm"
+            />
 
+            <Group gap="xs" align="center" wrap="wrap">
+              {/* Payment Status Quick Filter */}
+              <Select
+                placeholder={t('orders.filter.allPayments', 'All Payments')}
+                data={[
+                  { value: 'ALL', label: t('orders.payment.all', 'All Payments') },
+                  { value: 'UNPAID', label: t('orders.payment.unpaid', 'Unpaid') },
+                  { value: 'PARTIALLY_PAID', label: t('orders.payment.partiallyPaid', 'Partially Paid') },
+                  { value: 'PAID', label: t('orders.payment.paid', 'Fully Paid') },
+                ]}
+                value={paymentFilter}
+                onChange={(val) => setPaymentFilter(val || 'ALL')}
+                size="sm"
+                radius="md"
+                w={{ base: '100%', sm: 160 }}
+                leftSection={<RiMoneyDollarCircleLine size={15} style={{ color: 'var(--text-muted)' }} />}
+              />
+
+              {/* Reset Filters CTA if any filter is active */}
+              {(statusFilter !== 'ALL' || paymentFilter !== 'ALL' || search) && (
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="xs"
+                  radius="md"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setPaymentFilter('ALL');
+                    setSearch('');
+                  }}
+                  leftSection={<RiCloseLine size={13} />}
+                  style={{
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontWeight: 600,
+                    height: 32,
+                  }}
+                >
+                  {t('common.clear', 'Reset')}
+                </Button>
+              )}
+
+              {/* Counter Pill */}
+              <Text size="xs" fw={600} c="dimmed">
+                Showing <span style={{ color: 'var(--primary-accent, #F59E0B)', fontWeight: 700 }}>{filteredOrders.length}</span> of {orders.length} orders
+              </Text>
+            </Group>
+          </Group>
+
+          {/* Row 2: Executive Status Filter Tabs */}
+          <Box style={{ overflowX: 'auto', paddingBottom: 2 }} className="custom-scrollbar">
+            <Group gap={6} wrap="nowrap">
+              {STATUS_TABS.map((tab) => {
+                const isSelected = statusFilter === tab.key;
+                const count = statusCounts[tab.key] || 0;
+                const Icon = tab.icon;
+
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setStatusFilter(tab.key)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      height: 32,
+                      padding: '0 11px',
+                      borderRadius: 8,
+                      fontSize: '12px',
+                      fontWeight: isSelected ? 700 : 500,
+                      fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      transition: 'all 0.18s ease',
+                      backgroundColor: isSelected
+                        ? 'rgba(245, 158, 11, 0.12)'
+                        : 'var(--surface-hover, rgba(0, 0, 0, 0.03))',
+                      color: isSelected
+                        ? 'var(--text-main, #F59E0B)'
+                        : 'var(--text-muted, #94a3b8)',
+                      border: isSelected
+                        ? '1px solid rgba(245, 158, 11, 0.45)'
+                        : '1px solid var(--surface-border-subtle, rgba(255, 255, 255, 0.07))',
+                      boxShadow: isSelected ? '0 1px 6px rgba(245, 158, 11, 0.12)' : 'none',
+                    }}
+                    className={
+                      isSelected
+                        ? ''
+                        : 'hover:border-border hover:text-foreground hover:bg-muted/50'
+                    }
+                  >
+                    <Icon
+                      size={14}
+                      style={{
+                        color: isSelected ? tab.activeColor : 'var(--text-muted, currentColor)',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>{tab.label}</span>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 18,
+                        height: 18,
+                        padding: '0 5px',
+                        borderRadius: 9999,
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        backgroundColor: isSelected
+                          ? 'rgba(245, 158, 11, 0.22)'
+                          : 'var(--surface-border, rgba(148, 163, 184, 0.15))',
+                        color: isSelected
+                          ? 'var(--primary-accent, #F59E0B)'
+                          : 'var(--text-muted, #94a3b8)',
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </Group>
+          </Box>
+        </Stack>
+      </Box>
+
+      {/* 3. Orders Data Table */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
-          <TableSearch value={search} onChange={setSearch} placeholder={t('orders.searchPlaceholder')} />
-        </div>
-
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -145,7 +389,36 @@ export default function Orders() {
                 </TableRow>
               ) : filteredOrders?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">{t('orders.table.noOrders')}</TableCell>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <RiFileSearchLine size={38} className="text-muted-foreground/50 mb-1" />
+                      <div className="font-semibold text-foreground text-sm">
+                        {t('orders.table.noOrders', 'No work orders found')}
+                      </div>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        {search || statusFilter !== 'ALL' || paymentFilter !== 'ALL'
+                          ? t('orders.table.tryDifferentFilter', 'No orders match your current filter and search keyword.')
+                          : t('orders.table.emptyList', 'No work orders created yet.')}
+                      </p>
+                      {(search || statusFilter !== 'ALL' || paymentFilter !== 'ALL') && (
+                        <Button
+                          variant="light"
+                          color="amber"
+                          size="xs"
+                          radius="md"
+                          mt="xs"
+                          onClick={() => {
+                            setStatusFilter('ALL');
+                            setPaymentFilter('ALL');
+                            setSearch('');
+                          }}
+                          leftSection={<RiCloseLine size={14} />}
+                        >
+                          {t('common.clearFilters', 'Reset all filters')}
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ) : (
                 filteredOrders?.map((order: any) => (
