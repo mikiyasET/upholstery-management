@@ -463,11 +463,11 @@ export default function Cars() {
                     {filteredModels.map(model => (
                       <div key={model.id} className="p-3 border rounded-xl bg-card flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                         {model.imageUrl ? (
-                          <div className="w-full h-28 rounded-lg overflow-hidden bg-white dark:bg-black flex items-center justify-center border border-border/40">
+                          <div className="w-full h-28 rounded-lg overflow-hidden flex items-center justify-center">
                             <img 
                               src={getImageUrl(model.imageUrl)} 
                               alt={model.name} 
-                              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-white dark:bg-black"
+                              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => setPreviewImage(model.imageUrl ? getImageUrl(model.imageUrl)! : null)}
                             />
                           </div>

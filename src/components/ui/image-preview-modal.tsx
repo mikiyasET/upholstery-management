@@ -101,7 +101,7 @@ export function ImagePreviewModal({ isOpen, onClose, imageUrl }: ImagePreviewMod
         <img
           src={imageUrl}
           alt="Preview"
-          className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out pointer-events-none select-none rounded-xl shadow-2xl bg-white dark:bg-black"
+          className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out pointer-events-none select-none"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
           }}
