@@ -13,6 +13,17 @@ import { Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDow
 import { toast } from 'sonner';
 import { Switch } from '../components/ui/switch';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
+import {
+  Box,
+  Group,
+  Button as MantineButton,
+  Badge as MantineBadge,
+} from '@mantine/core';
+import {
+  RiShieldUserLine,
+  RiUserSettingsLine,
+  RiTeamLine,
+} from 'react-icons/ri';
 
 // -------------------------------------------------------
 // Types
@@ -356,10 +367,10 @@ export default function Users() {
     setPermissions((prev) => ({ ...prev, [key]: value }));
   };
 
-  const tabs: { key: TabKey; label: string; icon: any; color: string }[] = [
-    { key: 'admins', label: t('users.tabs.admins', 'Super Admins'), icon: Shield, color: 'text-red-500' },
-    { key: 'managers', label: t('users.tabs.managers', 'Managers'), icon: UserCog, color: 'text-purple-500' },
-    { key: 'employees', label: t('users.tabs.employees', 'Employees'), icon: UserRound, color: 'text-blue-500' },
+  const tabs: { key: TabKey; label: string; icon: any }[] = [
+    { key: 'admins', label: t('users.tabs.admins', 'Super Admins'), icon: RiShieldUserLine },
+    { key: 'managers', label: t('users.tabs.managers', 'Managers'), icon: RiUserSettingsLine },
+    { key: 'employees', label: t('users.tabs.employees', 'Employees'), icon: RiTeamLine },
   ];
 
   const tabCounts = {
@@ -383,31 +394,59 @@ export default function Users() {
         }
       />
 
-      {/* Tab Switcher */}
-      <div className="flex gap-2 p-1.5 bg-muted/50 rounded-xl border border-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => {
-              setActiveTab(tab.key);
-              setCurrentPage(1);
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === tab.key
-                ? 'bg-background text-foreground shadow-sm border border-border'
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-            }`}
-          >
-            <tab.icon size={16} className={activeTab === tab.key ? tab.color : ''} />
-            {tab.label}
-            <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              activeTab === tab.key ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-            }`}>
-              {tabCounts[tab.key]}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* Sub-Navigation Tabs Switcher Bar */}
+      <Group justify="space-between" align="center" wrap="wrap" gap="md">
+        <Box
+          p={4}
+          style={{
+            backgroundColor: "var(--surface-card, rgba(255, 255, 255, 0.04))",
+            border: "1px solid var(--surface-border, rgba(255, 255, 255, 0.08))",
+            borderRadius: 12,
+            display: "inline-flex",
+            gap: 6,
+            boxShadow: "var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.05))",
+            maxWidth: "100%",
+            overflowX: "auto",
+          }}
+          className="custom-scrollbar"
+        >
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <MantineButton
+                key={tab.key}
+                variant={isActive ? 'filled' : 'subtle'}
+                color="amber"
+                size="sm"
+                radius="md"
+                leftSection={<tab.icon size={15} />}
+                rightSection={
+                  <MantineBadge
+                    size="xs"
+                    variant={isActive ? 'white' : 'light'}
+                    color="amber"
+                    style={{ padding: '0 6px', fontWeight: 700 }}
+                  >
+                    {tabCounts[tab.key]}
+                  </MantineBadge>
+                }
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  fontWeight: isActive ? 700 : 500,
+                  height: 36,
+                  fontSize: '13px',
+                  fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+                }}
+              >
+                {tab.label}
+              </MantineButton>
+            );
+          })}
+        </Box>
+      </Group>
 
       {/* User Table */}
       <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
