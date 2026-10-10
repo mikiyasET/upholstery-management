@@ -307,14 +307,10 @@ export default function Cars() {
                       <img
                         src={getImageUrl(brand.logoUrl)}
                         alt={brand.name}
-                        className="h-9 w-9 rounded object-contain bg-white border border-border cursor-pointer hover:opacity-80 transition-opacity p-0.5"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewImage(getImageUrl(brand.logoUrl) || null);
-                        }}
+                        className="h-9 w-9 rounded object-contain bg-white border border-border p-0.5 shrink-0 pointer-events-none select-none"
                       />
                     ) : (
-                      <div className="h-9 w-9 bg-secondary/80 rounded-md flex items-center justify-center text-[10px] font-bold text-secondary-foreground">
+                      <div className="h-9 w-9 bg-secondary/80 rounded-md flex items-center justify-center text-[10px] font-bold text-secondary-foreground shrink-0">
                         {brand.name.substring(0, 2).toUpperCase()}
                       </div>
                     )}
@@ -467,12 +463,14 @@ export default function Cars() {
                     {filteredModels.map(model => (
                       <div key={model.id} className="p-3 border rounded-xl bg-card flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                         {model.imageUrl ? (
-                          <img 
-                            src={getImageUrl(model.imageUrl)} 
-                            alt={model.name} 
-                            className="w-full h-28 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={() => setPreviewImage(model.imageUrl ? getImageUrl(model.imageUrl)! : null)}
-                          />
+                          <div className="w-full h-28 rounded-lg overflow-hidden bg-white dark:bg-black flex items-center justify-center border border-border/40">
+                            <img 
+                              src={getImageUrl(model.imageUrl)} 
+                              alt={model.name} 
+                              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-white dark:bg-black"
+                              onClick={() => setPreviewImage(model.imageUrl ? getImageUrl(model.imageUrl)! : null)}
+                            />
+                          </div>
                         ) : (
                           <div className="w-full h-28 bg-muted/60 rounded-lg flex items-center justify-center text-xs text-muted-foreground">
                             {t('cars.noImage', 'No Image')}
