@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -9,11 +9,13 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO } from 'date-fns';
 import { TrendingUp, Package, Users, BarChart3, Calendar, CalendarRange, Clock } from 'lucide-react';
+import { PageHeader } from '../components/common';
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
 export default function Reports() {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const [datePreset, setDatePreset] = useState<DatePreset>('month');
   const [customStart, setCustomStart] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [customEnd, setCustomEnd] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -95,7 +97,7 @@ export default function Reports() {
   const params = getDateParams();
 
   // Queries
-  const { data: revenue } = useQuery({
+  const { data: revenue, isLoading: revenueLoading } = useQuery({
     queryKey: ['reports', 'revenue', params],
     queryFn: async () => (await api.get('/reports/revenue', { params })).data,
   });
@@ -140,31 +142,28 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            {t('reports.title', 'Reports & Analytics')}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t('reports.subtitle', 'Real-time business insights and performance metrics.')}
-          </p>
-        </div>
-
-        {/* Mobile quick dropdown */}
-        <div className="md:hidden w-full">
-          <Select value={datePreset} onValueChange={v => setDatePreset(v as DatePreset)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={t('reports.timeframe.placeholder', 'Select timeframe')} />
-            </SelectTrigger>
-            <SelectContent>
-              {presets.map(p => (
-                <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <PageHeader
+        title={t('reports.title', 'Reports & Analytics')}
+        subtitle={t('reports.subtitle', 'Real-time business insights, operational revenue, and inventory performance metrics')}
+        onRefresh={() => {
+          queryClient.invalidateQueries({ queryKey: ['reports'] });
+        }}
+        isRefreshing={revenueLoading}
+        secondaryAction={
+          <div className="md:hidden w-44">
+            <Select value={datePreset} onValueChange={v => setDatePreset(v as DatePreset)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('reports.timeframe.placeholder', 'Select timeframe')} />
+              </SelectTrigger>
+              <SelectContent>
+                {presets.map(p => (
+                  <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      />
 
       {/* Preset Pills Filter Bar */}
       <div className="bg-card border border-border p-2 rounded-2xl shadow-sm space-y-3">

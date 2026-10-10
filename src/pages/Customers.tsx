@@ -16,6 +16,9 @@ import { formatPlateNumber } from '../utils/plate';
 import { Car, Phone, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { PageHeader } from '../components/common/PageHeader';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { RiEyeLine } from 'react-icons/ri';
 
 type Customer = {
   id: string;
@@ -45,7 +48,7 @@ export default function Customers() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
 
-  const { data: customers, isLoading: isLoadingCustomers } = useQuery<Customer[]>({
+  const { data: customers, isLoading: isLoadingCustomers, refetch, isFetching } = useQuery<Customer[]>({
     queryKey: ['customers', search],
     queryFn: async () => {
       const res = await api.get(`/customers?search=${search}`);
@@ -55,12 +58,14 @@ export default function Customers() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{t('customers.title')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('customers.subtitle')}</p>
-        </div>
-      </div>
+      <PageHeader
+        title={t('customers.title', 'Customer Directory')}
+        subtitle={t('customers.subtitle', 'Manage vehicle owners, fleet profiles, and order histories.')}
+        badge={customers ? `${customers.length} Clients` : undefined}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+        refreshTooltip="Refresh customers"
+      />
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
@@ -76,16 +81,17 @@ export default function Customers() {
                   <TableHead>{t('customers.registeredVehicles')}</TableHead>
                   <TableHead>{t('customers.totalOrders')}</TableHead>
                   <TableHead>{t('customers.joined')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoadingCustomers ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">{t('customers.loading')}</TableCell>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t('customers.loading')}</TableCell>
                   </TableRow>
                 ) : customers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">{t('customers.noneFound')}</TableCell>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t('customers.noneFound')}</TableCell>
                   </TableRow>
                 ) : (
                   customers?.map((c) => (
@@ -95,24 +101,24 @@ export default function Customers() {
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                     >
                       <TableCell>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{c.name}</div>
+                        <div className="font-semibold text-foreground">{c.name}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          {c.phoneNumber}
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="w-4 h-4 text-amber-500" />
+                          <span>{c.phoneNumber}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           {c.vehicles.length === 0 ? (
-                            <span className="text-gray-400 text-sm">{t('customers.none')}</span>
+                            <span className="text-muted-foreground text-xs italic">{t('customers.none')}</span>
                           ) : (
                             c.vehicles.map((v) => (
                               <div key={v.id} className="flex items-center gap-2 text-sm text-foreground">
                                 <Car className="w-3.5 h-3.5 text-primary" />
-                                <span>{formatPlateNumber(v.plateNumber)}</span>
-                                <span className="text-muted-foreground">({v.carModel.brand.name} {v.carModel.name})</span>
+                                <span className="font-semibold">{formatPlateNumber(v.plateNumber)}</span>
+                                <span className="text-muted-foreground text-xs">({v.carModel.brand.name} {v.carModel.name})</span>
                               </div>
                             ))
                           )}
@@ -122,9 +128,23 @@ export default function Customers() {
                         <div className="font-semibold text-foreground">{c._count.orders}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                          <CalendarDays className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                          <CalendarDays className="w-4 h-4" />
                           {format(new Date(c.createdAt), 'MMM d, yyyy')}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end">
+                          <Tooltip label="View Customer Profile" withArrow>
+                            <ActionIcon
+                              variant="subtle"
+                              color="amber"
+                              size="sm"
+                              onClick={() => navigate(`/customers/${c.id}`)}
+                            >
+                              <RiEyeLine size={16} />
+                            </ActionIcon>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>

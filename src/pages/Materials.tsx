@@ -21,8 +21,10 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
-import { Plus, Edit2, Trash2, ImageOff } from 'lucide-react';
+import { Edit2, Trash2, ImageOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageHeader } from '../components/common/PageHeader';
+import { RiAddLine } from 'react-icons/ri';
 
 type Material = {
   id: string;
@@ -62,7 +64,7 @@ export default function Materials() {
   });
   const [file, setFile] = useState<File | null>(null);
 
-  const { data: materials, isLoading } = useQuery<Material[]>({
+  const { data: materials, isLoading, refetch, isFetching } = useQuery<Material[]>({
     queryKey: ['materials'],
     queryFn: async () => {
       const res = await api.get('/catalog/materials');
@@ -165,16 +167,26 @@ export default function Materials() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t('common.materials', 'Materials')}</h1>
-        <PermissionGate permission="catalog.materials.add">
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('common.create', 'Create')}
-          </Button>
-        </PermissionGate>
-      </div>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <PageHeader
+        title={t('common.materials', 'Materials Catalog')}
+        subtitle={t('materials.subtitle', 'Manage workshop fabrics, leather rolls, vinyls, and hardware inventory items.')}
+        badge={materials ? `${materials.length} Items` : undefined}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+        refreshTooltip="Refresh materials"
+        action={
+          <PermissionGate permission="catalog.materials.add">
+            <Button
+              onClick={() => handleOpenDialog()}
+              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
+            >
+              <RiAddLine className="w-4 h-4" />
+              {t('common.create', 'Create Material')}
+            </Button>
+          </PermissionGate>
+        }
+      />
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">

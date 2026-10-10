@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
+import { PageHeader } from '../components/common/PageHeader';
+import { RiAddLine } from 'react-icons/ri';
 
 type Material = {
   id: string;
@@ -70,7 +72,7 @@ export default function Services() {
   
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const { data: services, isLoading: servicesLoading } = useQuery<Service[]>({
+  const { data: services, isLoading: servicesLoading, refetch, isFetching } = useQuery<Service[]>({
     queryKey: ['services'],
     queryFn: async () => {
       const res = await api.get('/catalog/services');
@@ -207,50 +209,36 @@ export default function Services() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header & Toolbar */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-3xl border border-border shadow-sm">
-        <div className="w-full md:w-max flex flex-col sm:flex-row sm:items-center justify-between md:justify-start gap-4 md:gap-6 shrink-0">
-          <div>
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-black tracking-tight text-foreground">
-                {t('common.services', 'Services')}
-              </h1>
-              <PermissionGate permission="catalog.services.add">
-                <Button 
-                  onClick={() => handleOpenServiceDialog()}
-                  size="sm"
-                  className="rounded-full px-4 h-8 bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold hover:-translate-y-0.5 transition-all hidden sm:flex shrink-0"
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  {t('services.newService', 'New Service')}
-                </Button>
-              </PermissionGate>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-              {t('services.subtitle', 'Manage your service offerings, pricing categories, and required materials.')}
-            </p>
-          </div>
-
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* 1. Executive PageHeader */}
+      <PageHeader
+        title={t('common.services', 'Services Catalog')}
+        subtitle={t('services.subtitle', 'Manage your service offerings, pricing categories, and required materials.')}
+        badge={services ? `${services.length} Services` : undefined}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+        refreshTooltip="Refresh services"
+        action={
           <PermissionGate permission="catalog.services.add">
             <Button 
               onClick={() => handleOpenServiceDialog()}
-              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold hover:-translate-y-0.5 transition-all sm:hidden"
+              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <RiAddLine className="w-4 h-4" />
               {t('services.newService', 'New Service')}
             </Button>
           </PermissionGate>
-        </div>
-        
-        <div className="w-full md:w-auto md:flex-1 md:min-w-[150px] md:max-w-[440px] shrink md:ml-auto relative">
-          <TableSearch 
-            value={search} 
-            onChange={setSearch} 
-            placeholder={t('services.searchPlaceholder', 'Search services...')} 
-            className="!w-full"
-          />
-        </div>
+        }
+      />
+
+      {/* 2. Search Toolbar */}
+      <div className="bg-card p-3 rounded-xl border border-border shadow-sm flex items-center justify-between">
+        <TableSearch 
+          value={search} 
+          onChange={setSearch} 
+          placeholder={t('services.searchPlaceholder', 'Search services by name or keyword...')} 
+          className="w-full sm:w-[480px]"
+        />
       </div>
 
       {servicesLoading ? (

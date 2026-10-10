@@ -5,9 +5,11 @@ import { formatAppDate, getImageUrl, formatCurrency, formatStatus } from '../lib
 import { formatPlateNumber, parsePlateNumber } from '../utils/plate';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Car, Calendar, Wrench, User, Phone, Receipt, Clock } from 'lucide-react';
+import { Car, Calendar, Wrench, User, Phone, Receipt, Clock } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { useTranslation } from 'react-i18next';
+import { Breadcrumbs, Anchor, ActionIcon, Tooltip } from '@mantine/core';
+import { RiRefreshLine, RiAddLine, RiGroupLine, RiArrowLeftLine } from 'react-icons/ri';
 
 const renderPlateBadge = (plateStr: string) => {
   const parsed = parsePlateNumber(plateStr);
@@ -57,7 +59,7 @@ export default function CustomerDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const { data: customer, isLoading } = useQuery({
+  const { data: customer, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
       const res = await api.get(`/customers/${id}`);
@@ -88,37 +90,92 @@ export default function CustomerDetail() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-      {/* Background Gradients */}
-      <div className="absolute top-0 left-0 w-full h-[300px] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent -z-10 pointer-events-none" />
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4">
-        <div className="flex items-center gap-4">
-          <Button onClick={() => navigate(-1)} variant="ghost" size="icon" className="rounded-full hover:bg-background/80 backdrop-blur-sm border shadow-sm">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
+      {/* 1. Breadcrumbs */}
+      <Breadcrumbs separator="›" separatorMargin="xs" className="mb-2">
+        <Anchor
+          size="xs"
+          c="dimmed"
+          onClick={() => navigate('/customers')}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+        >
+          <RiGroupLine size={13} />
+          {t('customers.title', 'Customers')}
+        </Anchor>
+        <span className="text-xs font-semibold text-muted-foreground">
+          {customer.name}
+        </span>
+      </Breadcrumbs>
+
+      {/* 2. Executive Customer Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card border border-border p-4 sm:p-5 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={() => navigate('/customers')}
+            title="Back to Customers"
+          >
+            <RiArrowLeftLine size={20} />
+          </ActionIcon>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-              {t('customers.detail.profile', 'Customer Profile')}
-            </h1>
-            <p className="text-muted-foreground text-sm flex items-center gap-2 mt-1">
-              <Calendar className="w-4 h-4" /> {t('customers.detail.memberSince', 'Member since')} {formatAppDate(customer.createdAt)}
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                {customer.name}
+              </h1>
+              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0">
+                {t('customers.detail.active', 'Active Client')}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground text-xs flex items-center gap-2 mt-1">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{t('customers.detail.memberSince', 'Member since')} {formatAppDate(customer.createdAt)}</span>
+              <span>•</span>
+              <Phone className="w-3.5 h-3.5 text-amber-500" />
+              <span>{customer.phoneNumber}</span>
             </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3 bg-card border rounded-2xl p-1.5 shadow-sm">
-           <div className="flex flex-col px-4 border-r border-border/50">
-             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t('customers.detail.totalValue', 'Total Value')}</span>
-             <span className="text-sm font-bold text-primary">
-               {formatCurrency(customer.orders.reduce((acc: number, o: any) => acc + o.subTotal, 0))}
-             </span>
-           </div>
-           <div className="flex flex-col px-4">
-             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t('customers.detail.status', 'Status')}</span>
-             <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500 border-green-500/20 px-2 py-0">{t('customers.detail.active', 'Active')}</Badge>
-           </div>
+
+        {/* Right Action Toolbar */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end flex-wrap">
+          <div className="flex items-center gap-3 bg-muted/40 border border-border/60 rounded-xl px-3 py-1.5 shadow-sm">
+            <div className="flex flex-col border-r border-border/50 pr-3">
+              <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">{t('customers.detail.totalValue', 'Total Value')}</span>
+              <span className="text-xs font-bold text-primary">
+                {formatCurrency(customer.orders.reduce((acc: number, o: any) => acc + o.subTotal, 0))}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">{t('orders.title', 'Orders')}</span>
+              <span className="text-xs font-bold text-foreground">{customer.orders.length}</span>
+            </div>
+          </div>
+
+          <Tooltip label="Refresh customer profile" withArrow>
+            <ActionIcon
+              variant="subtle"
+              color="amber"
+              size="lg"
+              radius="md"
+              loading={isFetching}
+              onClick={() => refetch()}
+              aria-label="Refresh"
+            >
+              <RiRefreshLine size={18} />
+            </ActionIcon>
+          </Tooltip>
+
+          <Button
+            size="sm"
+            onClick={() => navigate('/orders/new')}
+            className="bg-amber-600 hover:bg-amber-700 text-white gap-2 rounded-xl font-semibold shadow-sm"
+          >
+            <RiAddLine className="w-4 h-4" />
+            <span>{t('dashboard.newOrder', 'New Order')}</span>
+          </Button>
         </div>
       </div>
 

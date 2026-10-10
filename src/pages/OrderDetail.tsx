@@ -7,7 +7,7 @@ import { formatCurrency, formatStatus } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { formatPlateNumber, parsePlateNumber } from '../utils/plate';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, Printer, Car, User, CheckCircle, CreditCard, PenTool, ClipboardList, Plus, Trash2, Timer, CheckCircle2, Banknote, Landmark, Smartphone, Receipt, AlertCircle, Coins, Clock, Phone, ShieldCheck, ArrowUpRight } from 'lucide-react';
+import { Printer, Car, User, CheckCircle, CreditCard, PenTool, ClipboardList, Plus, Trash2, Timer, CheckCircle2, Banknote, Landmark, Smartphone, Receipt, AlertCircle, Coins, Clock, Phone, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
@@ -19,6 +19,17 @@ import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
 import { printOrderReceipt } from '../lib/receipt-printer';
+import { Breadcrumbs, Anchor, ActionIcon, Tooltip } from '@mantine/core';
+import {
+  RiArrowLeftLine,
+  RiRefreshLine,
+  RiCalendarEventLine,
+  RiUser3Line,
+  RiPrinterLine,
+  RiCheckDoubleLine,
+  RiShoppingBag3Line,
+  RiCarLine,
+} from 'react-icons/ri';
 
 const renderPlateBadge = (plateStr?: string) => {
   if (!plateStr) return null;
@@ -209,7 +220,7 @@ export default function OrderDetail() {
     }
   });
 
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['order', id],
     queryFn: async () => {
       const res = await api.get(`/orders/${id}`);
@@ -268,56 +279,141 @@ export default function OrderDetail() {
   const isPartiallyPaid = totalPaid > 0 && balanceDue > 0;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-10">
-      
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="rounded-full w-10 h-10 border-border bg-card text-foreground">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              {t('common.order')} {order.orderNumber}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {format(new Date(order.orderDateTime), 'MMMM d, yyyy h:mm a')}
-            </p>
+    <div className="space-y-6 max-w-6xl mx-auto pb-10 animate-in fade-in duration-300">
+      {/* 1. Breadcrumbs */}
+      <Breadcrumbs separator="›" separatorMargin="xs" className="mb-2">
+        <Anchor
+          size="xs"
+          c="dimmed"
+          onClick={() => navigate('/orders')}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+        >
+          <RiCarLine size={13} />
+          {t('common.orders', 'Work Orders')}
+        </Anchor>
+        <span className="text-xs font-semibold text-muted-foreground">
+          {order.orderNumber}
+        </span>
+      </Breadcrumbs>
+
+      {/* 2. Executive Order Header & Action Toolbar */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-card border border-border p-4 sm:p-5 rounded-2xl shadow-sm">
+        {/* Left: Back Action + Title + Inline Badges + Metadata Row */}
+        <div className="flex items-start gap-3.5 min-w-0">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={() => navigate('/orders')}
+            title="Back to Orders"
+            className="mt-1 shrink-0"
+          >
+            <RiArrowLeftLine size={20} />
+          </ActionIcon>
+
+          <div className="min-w-0">
+            {/* Title & Status Badges */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                {t('common.order', 'Order')} #{order.orderNumber}
+              </h1>
+
+              <Badge variant="outline" className={`px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(order.orderStatus)}`}>
+                {formatStatus(order.orderStatus)}
+              </Badge>
+
+              <Badge variant="outline" className={`px-2.5 py-0.5 text-xs font-semibold ${getPaymentColor(order.paymentStatus)}`}>
+                {formatStatus(order.paymentStatus)}
+              </Badge>
+            </div>
+
+            {/* Subtitle Metadata Summary */}
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <RiUser3Line size={13} className="text-amber-500" />
+                <span>{order.customer?.name || t('receipt.walkInCustomer', 'Walk-in Client')}</span>
+                {order.customer?.phoneNumber && <span className="text-muted-foreground">({order.customer.phoneNumber})</span>}
+              </div>
+
+              <span>•</span>
+
+              <div className="flex items-center gap-1.5">
+                <RiCalendarEventLine size={13} />
+                <span>{format(new Date(order.orderDateTime), 'MMM d, yyyy • h:mm a')}</span>
+              </div>
+
+              {order.vehicle && (
+                <>
+                  <span>•</span>
+                  <div className="flex items-center gap-1.5">
+                    <RiCarLine size={13} />
+                    <span className="font-semibold text-primary">{formatPlateNumber(order.vehicle.plateNumber)}</span>
+                    {order.vehicle.carModel && (
+                      <span className="text-muted-foreground">
+                        {[order.vehicle.carModel?.brand?.name, order.vehicle.carModel?.name].filter(Boolean).join(' ')}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <span>•</span>
+
+              <div className="flex items-center gap-1.5">
+                <RiShoppingBag3Line size={13} />
+                <span>{servicesCount + materialsCount} Service Items</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex gap-3 flex-wrap items-center">
+
+        {/* Right: Action Toolbar strictly right-aligned */}
+        <div className="flex items-center gap-2.5 flex-wrap shrink-0 w-full lg:w-auto justify-end">
+          <Tooltip label="Refresh order" withArrow>
+            <ActionIcon
+              variant="subtle"
+              color="amber"
+              size="lg"
+              radius="md"
+              loading={isFetching}
+              onClick={() => refetch()}
+              aria-label="Refresh order"
+            >
+              <RiRefreshLine size={18} />
+            </ActionIcon>
+          </Tooltip>
+
           <Button 
-            onClick={() => setIsStatusModalOpen(true)} 
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-xl shadow-[0_4px_14px_0_rgba(37,99,235,0.25)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 transition-all font-semibold px-5"
-          >
-            <CheckCircle className="w-4 h-4" /> {t('orders.updateStatus')}
-          </Button>
-          <Button 
-            onClick={() => setIsPaymentModalOpen(true)} 
-            className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground border-none rounded-xl shadow-[0_4px_14px_0_rgba(255,100,50,0.25)] hover:shadow-[0_6px_20px_rgba(255,100,50,0.23)] hover:-translate-y-0.5 transition-all font-semibold px-5"
-          >
-            <CreditCard className="w-4 h-4" /> {t('orders.actions.addPayment')}
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon"
+            variant="outline"
+            size="sm"
             onClick={handlePrint} 
             title="Print Receipt"
-            className="rounded-xl border-border bg-card hover:bg-muted text-foreground transition-all shadow-sm hover:-translate-y-0.5"
+            className="rounded-xl border-border bg-card hover:bg-muted text-foreground gap-2 font-medium"
           >
-            <Printer className="w-4 h-4 text-foreground" />
+            <RiPrinterLine className="w-4 h-4 text-foreground" />
+            <span className="hidden sm:inline">{t('orders.actions.printReceipt', 'Print Receipt')}</span>
+          </Button>
+
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => setIsStatusModalOpen(true)} 
+            className="rounded-xl border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 gap-2 font-medium"
+          >
+            <RiCheckDoubleLine className="w-4 h-4" />
+            <span>{t('orders.updateStatus', 'Update Status')}</span>
+          </Button>
+
+          <Button 
+            size="sm"
+            onClick={() => setIsPaymentModalOpen(true)} 
+            className="gap-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white border-none rounded-xl shadow-md font-semibold px-4"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>{t('orders.actions.addPayment', 'Record Payment')}</span>
           </Button>
         </div>
-      </div>
-
-      {/* Status Badges */}
-      <div className="flex gap-3">
-        <Badge variant="outline" className={`px-3 py-1 text-sm font-semibold ${getStatusColor(order.orderStatus)}`}>
-          {formatStatus(order.orderStatus)}
-        </Badge>
-        <Badge variant="outline" className={`px-3 py-1 text-sm font-semibold ${getPaymentColor(order.paymentStatus)}`}>
-          {formatStatus(order.paymentStatus)}
-        </Badge>
       </div>
 
       {/* Main Grid: 2 Columns on Left, 1 Column on Right (Order Summary & Payments at Top) */}

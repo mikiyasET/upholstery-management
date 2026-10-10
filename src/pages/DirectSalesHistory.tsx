@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
-import { ChevronLeft, Calendar, FileText, Clock } from 'lucide-react';
+import { Calendar, FileText, Clock } from 'lucide-react';
 import { TableSearch } from '../components/DataTable';
 import { formatCurrency, formatStatus, formatPaymentMethod } from '../lib/utils';
 import { format } from 'date-fns';
@@ -11,6 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Printer } from 'lucide-react';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
+import { PageHeader } from '../components/common/PageHeader';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { RiAddLine, RiEyeLine, RiPrinterLine } from 'react-icons/ri';
 
 export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
@@ -27,7 +30,7 @@ export default function DirectSalesHistory() {
     setSelectedSale(sale);
   };
 
-  const { data: sales = [], isLoading } = useQuery({
+  const { data: sales = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['direct-sales'],
     queryFn: async () => {
       const res = await api.get('/direct-sales');
@@ -55,33 +58,37 @@ export default function DirectSalesHistory() {
 
   return (
     <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-300 pb-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8" 
-              onClick={() => navigate('/direct-sales')}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{t('directSales.history', 'Direct Sales History')}</h1>
-          </div>
-          <p className="text-muted-foreground ml-10">{t('directSales.historySubtitle', 'View past walk-in sales and reprint receipts.')}</p>
-        </div>
-        <div className="w-full md:w-auto">
-          <TableSearch 
-            placeholder={t('directSales.searchHistoryPlaceholder', 'Search by receipt # or customer...')} 
-            className="w-full sm:w-[480px] md:w-[540px]"
-            value={searchTerm}
-            onChange={(val) => {
-              setSearchTerm(val);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
+      {/* 1. Executive PageHeader */}
+      <PageHeader
+        title={t('directSales.history', 'Direct Sales History')}
+        subtitle={t('directSales.historySubtitle', 'View past walk-in sales and reprint receipts.')}
+        badge={sales ? `${sales.length} Sales` : undefined}
+        backTo="/direct-sales"
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+        refreshTooltip="Refresh sales history"
+        action={
+          <Button
+            onClick={() => navigate('/direct-sales')}
+            className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
+          >
+            <RiAddLine className="w-4 h-4" />
+            {t('directSales.newSale', 'New POS Sale')}
+          </Button>
+        }
+      />
+
+      {/* 2. Search & Filter Bar */}
+      <div className="bg-card p-3 rounded-xl border border-border shadow-sm flex items-center justify-between">
+        <TableSearch 
+          placeholder={t('directSales.searchHistoryPlaceholder', 'Search by receipt # or customer...')} 
+          className="w-full sm:w-[480px]"
+          value={searchTerm}
+          onChange={(val) => {
+            setSearchTerm(val);
+            setCurrentPage(1);
+          }}
+        />
       </div>
 
       {/* Main Content */}
@@ -96,13 +103,14 @@ export default function DirectSalesHistory() {
                 <th className="px-6 py-4 font-semibold">{t('receipt.totalAmount', 'Total Amount')}</th>
                 <th className="px-6 py-4 font-semibold text-center">{t('orders.detail.materialsParts', 'Items')}</th>
                 <th className="px-6 py-4 font-semibold">{t('common.dateTime', 'Date & Time')}</th>
-                <th className="px-6 py-4 font-semibold text-right">{t('common.status', 'Status')}</th>
+                <th className="px-6 py-4 font-semibold">{t('common.status', 'Status')}</th>
+                <th className="px-6 py-4 font-semibold text-right">{t('common.actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-6 py-16 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
                       <p className="text-sm font-medium">{t('directSales.loadingHistory', 'Loading history...')}</p>
@@ -162,7 +170,7 @@ export default function DirectSalesHistory() {
                         {format(new Date(sale.saleDateTime), 'h:mm a')}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4">
                       {sale.paymentStatus === 'PAID' ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border border-green-200 dark:border-green-500/20">
                           {formatStatus('PAID')}
@@ -176,6 +184,31 @@ export default function DirectSalesHistory() {
                           {formatStatus('UNPAID')}
                         </span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Tooltip label="View Details" withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="amber"
+                            size="sm"
+                            onClick={() => handleRowClick(sale)}
+                          >
+                            <RiEyeLine size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip label="Print Receipt" withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            onClick={() => printDirectSaleReceipt(sale)}
+                          >
+                            <RiPrinterLine size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </div>
                     </td>
                   </tr>
                 ))

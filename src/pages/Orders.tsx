@@ -13,7 +13,7 @@ import {
 } from '../components/DataTable';
 import { PermissionGate } from '../components/PermissionGate';
 import { Button } from '../components/ui/button';
-import { Plus, Phone, CalendarDays, MoreHorizontal } from 'lucide-react';
+import { Phone, CalendarDays, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '../components/ui/badge';
 import { formatPlateNumber } from '../utils/plate';
@@ -25,6 +25,9 @@ import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
 import { printOrderReceipt } from '../lib/receipt-printer';
+import { PageHeader } from '../components/common/PageHeader';
+import { ActionIcon, Tooltip } from '@mantine/core';
+import { RiEyeLine, RiPrinterLine, RiCheckDoubleLine, RiAddLine } from 'react-icons/ri';
 
 export default function Orders() {
   const { t } = useTranslation();
@@ -49,7 +52,7 @@ export default function Orders() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['orders', statusFilter],
     queryFn: async () => {
       const qs = statusFilter !== 'ALL' ? `?status=${statusFilter}` : '';
@@ -86,18 +89,25 @@ export default function Orders() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('common.orders')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t('orders.subtitle')}</p>
-        </div>
-        <PermissionGate permission="orders.create">
-          <Button onClick={() => navigate('/orders/new')} className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold">
-            <Plus className="w-4 h-4" />
-            {t('orders.createNew')}
-          </Button>
-        </PermissionGate>
-      </div>
+      <PageHeader
+        title={t('common.orders', 'Work Orders')}
+        subtitle={t('orders.subtitle', 'Manage automotive customization orders, status workflows, and vehicle jobs.')}
+        badge={orders ? `${orders.length} Orders` : undefined}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+        refreshTooltip="Refresh orders"
+        action={
+          <PermissionGate permission="orders.create">
+            <Button
+              onClick={() => navigate('/orders/new')}
+              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
+            >
+              <RiAddLine className="w-4 h-4" />
+              {t('orders.createNew')}
+            </Button>
+          </PermissionGate>
+        }
+      />
 
       <div className="flex gap-2 pb-2 overflow-x-auto">
         {['ALL', 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'DELIVERED', 'CANCELLED'].map((status) => (
@@ -185,23 +195,78 @@ export default function Orders() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted focus:outline-none text-muted-foreground hover:text-foreground">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>{t('orders.actions.viewDetails')}</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => {
-                            setSelectedOrder(order);
-                            setIsStatusModalOpen(true);
-                          }}>{t('orders.updateStatus')}</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer" onClick={() => {
-                            setSelectedOrder(order);
-                            setIsPaymentModalOpen(true);
-                          }}>{t('orders.actions.addPayment')}</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer text-blue-600 dark:text-blue-400" onClick={() => handlePrintOrder(order.id)}>{t('orders.actions.printReceipt')}</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <Tooltip label={t('orders.actions.viewDetails', 'View Order')} withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="amber"
+                            size="sm"
+                            onClick={() => navigate(`/orders/${order.id}`)}
+                          >
+                            <RiEyeLine size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip label={t('orders.actions.printReceipt', 'Print Invoice')} withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            size="sm"
+                            onClick={() => handlePrintOrder(order.id)}
+                          >
+                            <RiPrinterLine size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip label={t('orders.updateStatus', 'Update Status')} withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setIsStatusModalOpen(true);
+                            }}
+                          >
+                            <RiCheckDoubleLine size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted focus:outline-none text-muted-foreground hover:text-foreground">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/orders/${order.id}`)}>
+                              {t('orders.actions.viewDetails')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setIsStatusModalOpen(true);
+                              }}
+                            >
+                              {t('orders.updateStatus')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setIsPaymentModalOpen(true);
+                              }}
+                            >
+                              {t('orders.actions.addPayment')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer text-amber-600 dark:text-amber-400"
+                              onClick={() => handlePrintOrder(order.id)}
+                            >
+                              {t('orders.actions.printReceipt')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

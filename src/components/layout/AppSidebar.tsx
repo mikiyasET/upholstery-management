@@ -24,6 +24,8 @@ import {
   RiCloseLine,
   RiFileList3Line,
   RiFileList3Fill,
+  RiSettings4Line,
+  RiSettings4Fill,
 } from "react-icons/ri";
 import { useTranslation } from "react-i18next";
 import { usePermission, type PermissionKey } from "../../lib/permissions";
@@ -200,6 +202,13 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           activeIcon: RiBarChartBoxFill,
           path: "/reports",
           permission: "reports.view",
+        },
+        {
+          labelKey: "settings.title",
+          defaultLabel: "Settings & Studio",
+          icon: RiSettings4Line,
+          activeIcon: RiSettings4Fill,
+          path: "/settings",
         },
       ],
     },

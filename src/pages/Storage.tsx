@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PageHeader } from '../components/common';
 
 type MaterialStock = {
   id: string;
@@ -320,12 +321,12 @@ export default function Storage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{t('storage.title', 'Storage & Inventory')}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('storage.subtitle', 'Manage main and mini store stock levels')}</p>
-        </div>
-      </div>
+      <PageHeader
+        title={t('storage.title', 'Storage & Inventory')}
+        subtitle={t('storage.subtitle', 'Manage dual stock levels across Mini Shop Floor and Main Warehouse')}
+        onRefresh={() => queryClient.invalidateQueries({ queryKey: ['storage_materials'] })}
+        isRefreshing={isLoading}
+      />
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden mt-4">
         <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-card">

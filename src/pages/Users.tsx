@@ -12,6 +12,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Plus, Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '../components/ui/switch';
+import { PageHeader } from '../components/common';
 
 // -------------------------------------------------------
 // Types
@@ -361,23 +362,21 @@ export default function Users() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            {t('users.title', 'Users & Employees')}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t('users.subtitle', 'Manage system access, roles, and employee profiles.')}
-          </p>
-        </div>
-        <Button
-          onClick={() => openModal()}
-          className="bg-amber-600 text-white hover:bg-amber-700 shadow-sm font-semibold"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {t('users.addRole', 'Add {{role}}', { role: getRoleDisplayName(activeTab === 'admins' ? 'ADMIN' : activeTab === 'managers' ? 'MANAGER' : 'EMPLOYEE') })}
-        </Button>
-      </div>
+      <PageHeader
+        title={t('users.title', 'Users & Employees')}
+        subtitle={t('users.subtitle', 'Manage system access, roles, and employee profiles')}
+        onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+        isRefreshing={isLoading}
+        primaryAction={
+          <Button
+            onClick={() => openModal()}
+            className="bg-amber-600 text-white hover:bg-amber-700 shadow-sm font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {t('users.addRole', 'Add {{role}}', { role: getRoleDisplayName(activeTab === 'admins' ? 'ADMIN' : activeTab === 'managers' ? 'MANAGER' : 'EMPLOYEE') })}
+          </Button>
+        }
+      />
 
       {/* Tab Switcher */}
       <div className="flex gap-2 p-1.5 bg-muted/50 rounded-xl border border-border">

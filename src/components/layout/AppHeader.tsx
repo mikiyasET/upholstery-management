@@ -20,6 +20,7 @@ import {
   RiCarLine,
   RiShoppingBag3Line,
   RiExchangeDollarLine,
+  RiSettings4Line,
 } from "react-icons/ri";
 import { useMantineColorScheme, useComputedColorScheme } from "@mantine/core";
 import { modals } from "@mantine/modals";
@@ -267,6 +268,12 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
               onClick={toggleLanguage}
             >
               {i18n.language === "am" ? "English" : "አማርኛ (Amharic)"}
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<RiSettings4Line size={16} />}
+              onClick={() => navigate("/settings")}
+            >
+              {t("settings.title", "Settings & Studio")}
             </Menu.Item>
             <Menu.Divider />
             <Menu.Item

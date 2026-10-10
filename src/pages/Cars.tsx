@@ -13,6 +13,7 @@ import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { PermissionGate } from '../components/PermissionGate';
 import { toast } from 'sonner';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { PageHeader } from '../components/common';
 
 type CarBrand = {
   id: string;
@@ -202,25 +203,31 @@ export default function Cars() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">
-          {t('cars.title', 'Car Catalog')}
-        </h1>
-        <PermissionGate permission="catalog.cars.add">
-          <Button 
-            className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold"
-            onClick={() => {
-              setEditingBrandId(null);
-              setBrandName('');
-              setBrandFile(null);
-              setIsBrandDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t('cars.addBrand', 'Add Brand')}
-          </Button>
-        </PermissionGate>
-      </div>
+      <PageHeader
+        title={t('cars.title', 'Car & Vehicle Catalog')}
+        subtitle={t('cars.subtitle', 'Manage vehicle manufacturers, brand logos, and model profiles')}
+        onRefresh={() => {
+          queryClient.invalidateQueries({ queryKey: ['brands'] });
+          if (selectedBrand) queryClient.invalidateQueries({ queryKey: ['models', selectedBrand.id] });
+        }}
+        isRefreshing={brandsLoading || modelsLoading}
+        primaryAction={
+          <PermissionGate permission="catalog.cars.add">
+            <Button 
+              className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold"
+              onClick={() => {
+                setEditingBrandId(null);
+                setBrandName('');
+                setBrandFile(null);
+                setIsBrandDialogOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t('cars.addBrand', 'Add Brand')}
+            </Button>
+          </PermissionGate>
+        }
+      />
 
       <div className="grid md:grid-cols-3 gap-6">
         {/* BRANDS SIDEBAR */}

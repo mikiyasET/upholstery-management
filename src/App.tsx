@@ -20,6 +20,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import LowStockAlerts from "./pages/LowStockAlerts";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 
 import type { ReactNode } from "react";
 import type { PermissionKey } from "./lib/permissions";
@@ -181,6 +182,7 @@ export default function App() {
             </PermissionRoute>
           }
         />
+        <Route path="settings" element={<Settings />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
