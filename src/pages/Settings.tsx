@@ -335,10 +335,17 @@ export default function Settings() {
         action={
           <Button
             variant="gradient"
-            gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-            leftSection={<RiSaveLine size={16} />}
+            gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
+            radius="md"
+            leftSection={<RiSaveLine size={18} />}
             onClick={handleSaveProfile}
-            style={{ boxShadow: "0 2px 10px rgba(245, 158, 11, 0.25)", fontWeight: 600 }}
+            style={{
+              boxShadow: "0 4px 14px rgba(245, 158, 11, 0.25)",
+              fontWeight: 600,
+              fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+              letterSpacing: "-0.01em",
+              height: 36,
+            }}
           >
             {t("common.saveChanges", "Save Changes")}
           </Button>

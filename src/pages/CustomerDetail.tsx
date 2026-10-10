@@ -9,7 +9,8 @@ import { Car, Calendar, Wrench, User, Phone, Receipt, Clock } from 'lucide-react
 import { Badge } from '../components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs, Anchor, ActionIcon, Tooltip } from '@mantine/core';
-import { RiRefreshLine, RiAddLine, RiGroupLine, RiArrowLeftLine } from 'react-icons/ri';
+import { RiRefreshLine, RiGroupLine, RiArrowLeftLine } from 'react-icons/ri';
+import { ExecutiveAddButton } from '../components/common';
 
 const renderPlateBadge = (plateStr: string) => {
   const parsed = parsePlateNumber(plateStr);
@@ -168,14 +169,10 @@ export default function CustomerDetail() {
             </ActionIcon>
           </Tooltip>
 
-          <Button
-            size="sm"
-            onClick={() => navigate('/orders/new')}
-            className="bg-amber-600 hover:bg-amber-700 text-white gap-2 rounded-xl font-semibold shadow-sm"
-          >
-            <RiAddLine className="w-4 h-4" />
-            <span>{t('dashboard.newOrder', 'New Order')}</span>
-          </Button>
+          <ExecutiveAddButton
+            label={t('dashboard.newOrder', 'New Order')}
+            to="/orders/new"
+          />
         </div>
       </div>
 

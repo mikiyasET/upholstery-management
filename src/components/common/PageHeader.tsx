@@ -1,12 +1,83 @@
-import { Box, Group, Title, Text, Badge, ActionIcon, Tooltip, Breadcrumbs, Anchor } from "@mantine/core";
+import {
+  Box,
+  Group,
+  Title,
+  Text,
+  Badge,
+  ActionIcon,
+  Tooltip,
+  Breadcrumbs,
+  Anchor,
+  Button,
+} from "@mantine/core";
 import { useNavigate } from "react-router-dom";
-import { RiArrowLeftLine, RiRefreshLine } from "react-icons/ri";
+import { RiArrowLeftLine, RiRefreshLine, RiAddLine } from "react-icons/ri";
 import { type ReactNode } from "react";
 
 export interface BreadcrumbItem {
   label: string;
   href?: string;
   icon?: any;
+}
+
+export interface AddButtonConfig {
+  label: ReactNode;
+  onClick?: () => void;
+  to?: string;
+  icon?: ReactNode;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
+export interface ExecutiveAddButtonProps {
+  label: ReactNode;
+  onClick?: () => void;
+  to?: string;
+  icon?: ReactNode;
+  disabled?: boolean;
+  loading?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+/**
+ * Executive Add CTA Button matching Exporter-Docs luxury styling:
+ * Warm Amber gradient, RiAddLine (18px), Plus Jakarta Sans font, 36px height.
+ */
+export function ExecutiveAddButton({
+  label,
+  onClick,
+  to,
+  icon,
+  disabled,
+  loading,
+  className,
+  style,
+}: ExecutiveAddButtonProps) {
+  const navigate = useNavigate();
+
+  return (
+    <Button
+      variant="gradient"
+      gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
+      radius="md"
+      leftSection={icon !== undefined ? icon : <RiAddLine size={18} />}
+      disabled={disabled}
+      loading={loading}
+      className={className}
+      onClick={to ? () => navigate(to) : onClick}
+      style={{
+        boxShadow: "0 4px 14px rgba(245, 158, 11, 0.25)",
+        fontWeight: 600,
+        fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        letterSpacing: "-0.01em",
+        height: 36,
+        ...style,
+      }}
+    >
+      {label}
+    </Button>
+  );
 }
 
 export interface PageHeaderProps {
@@ -18,6 +89,7 @@ export interface PageHeaderProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   refreshTooltip?: string;
+  addButton?: AddButtonConfig;
   action?: ReactNode;
   primaryAction?: ReactNode;
   secondaryAction?: ReactNode;
@@ -34,6 +106,7 @@ export function PageHeader({
   onRefresh,
   isRefreshing = false,
   refreshTooltip = "Refresh data",
+  addButton,
   action,
   primaryAction,
   secondaryAction,
@@ -123,8 +196,8 @@ export function PageHeader({
           </Box>
         </Group>
 
-        {/* Right: Action Buttons & Refresh Toolbar */}
-        <Group gap="xs" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
+        {/* Right: Refresh Toolbar & Add CTA Button Side by Side (Exporter-Docs Style) */}
+        <Group gap="sm" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
           {onRefresh && (
             <Tooltip label={refreshTooltip} withArrow>
               <ActionIcon
@@ -135,6 +208,7 @@ export function PageHeader({
                 loading={isRefreshing}
                 onClick={onRefresh}
                 aria-label={refreshTooltip}
+                style={{ height: 36, width: 36 }}
               >
                 <RiRefreshLine size={18} />
               </ActionIcon>
@@ -142,6 +216,18 @@ export function PageHeader({
           )}
 
           {secondaryAction}
+
+          {addButton && (
+            <ExecutiveAddButton
+              label={addButton.label}
+              onClick={addButton.onClick}
+              to={addButton.to}
+              icon={addButton.icon}
+              disabled={addButton.disabled}
+              loading={addButton.loading}
+            />
+          )}
+
           {effectiveAction}
         </Group>
       </Group>

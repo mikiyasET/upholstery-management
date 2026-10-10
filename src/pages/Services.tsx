@@ -15,8 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
-import { PageHeader } from '../components/common/PageHeader';
-import { RiAddLine } from 'react-icons/ri';
+import { PageHeader, ExecutiveAddButton } from '../components/common';
 
 type Material = {
   id: string;
@@ -220,13 +219,10 @@ export default function Services() {
         refreshTooltip="Refresh services"
         action={
           <PermissionGate permission="catalog.services.add">
-            <Button 
+            <ExecutiveAddButton 
+              label={t('services.newService', 'New Service')}
               onClick={() => handleOpenServiceDialog()}
-              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
-            >
-              <RiAddLine className="w-4 h-4" />
-              {t('services.newService', 'New Service')}
-            </Button>
+            />
           </PermissionGate>
         }
       />

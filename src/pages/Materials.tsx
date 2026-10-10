@@ -23,8 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import { Edit2, Trash2, ImageOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { PageHeader } from '../components/common/PageHeader';
-import { RiAddLine } from 'react-icons/ri';
+import { PageHeader, ExecutiveAddButton } from '../components/common';
 
 type Material = {
   id: string;
@@ -177,13 +176,10 @@ export default function Materials() {
         refreshTooltip="Refresh materials"
         action={
           <PermissionGate permission="catalog.materials.add">
-            <Button
+            <ExecutiveAddButton
+              label={t('common.create', 'Create Material')}
               onClick={() => handleOpenDialog()}
-              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
-            >
-              <RiAddLine className="w-4 h-4" />
-              {t('common.create', 'Create Material')}
-            </Button>
+            />
           </PermissionGate>
         }
       />

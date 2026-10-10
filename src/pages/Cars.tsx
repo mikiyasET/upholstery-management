@@ -13,7 +13,7 @@ import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { PermissionGate } from '../components/PermissionGate';
 import { toast } from 'sonner';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { PageHeader } from '../components/common';
+import { PageHeader, ExecutiveAddButton } from '../components/common';
 
 type CarBrand = {
   id: string;
@@ -213,18 +213,15 @@ export default function Cars() {
         isRefreshing={brandsLoading || modelsLoading}
         primaryAction={
           <PermissionGate permission="catalog.cars.add">
-            <Button 
-              className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm font-semibold"
+            <ExecutiveAddButton 
+              label={t('cars.addBrand', 'Add Brand')}
               onClick={() => {
                 setEditingBrandId(null);
                 setBrandName('');
                 setBrandFile(null);
                 setIsBrandDialogOpen(true);
               }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t('cars.addBrand', 'Add Brand')}
-            </Button>
+            />
           </PermissionGate>
         }
       />

@@ -27,7 +27,6 @@ import {
   RiShoppingBag3Line,
   RiCheckDoubleLine,
   RiAlertLine,
-  RiAddLine,
   RiArrowRightLine,
   RiToolsLine,
   RiShieldCheckLine,
@@ -40,6 +39,7 @@ import {
   RiPhoneLine,
 } from "react-icons/ri";
 import { printOrderReceipt } from "../lib/receipt-printer";
+import { ExecutiveAddButton } from "../components/common";
 import dayjs from "dayjs";
 
 export default function Dashboard() {
@@ -179,29 +179,23 @@ export default function Dashboard() {
               <Button
                 variant="default"
                 radius="md"
-                size="sm"
                 leftSection={<RiShoppingBag3Line size={16} />}
                 onClick={() => navigate("/direct-sales")}
+                style={{
+                  height: 36,
+                  fontWeight: 600,
+                  fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                }}
               >
                 {t("dashboard.directSale", "Direct Sale POS")}
               </Button>
             )}
 
             {canCreateOrder && (
-              <Button
-                variant="gradient"
-                gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-                radius="md"
-                size="sm"
-                leftSection={<RiAddLine size={18} />}
-                onClick={() => navigate("/orders/new")}
-                style={{
-                  boxShadow: "0 4px 14px rgba(245, 158, 11, 0.3)",
-                  fontWeight: 600,
-                }}
-              >
-                {t("dashboard.newOrder", "New Work Order")}
-              </Button>
+              <ExecutiveAddButton
+                label={t("dashboard.newOrder", "New Work Order")}
+                to="/orders/new"
+              />
             )}
           </Group>
         </Group>

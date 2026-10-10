@@ -12,7 +12,6 @@ import {
   TableSearch
 } from '../components/DataTable';
 import { PermissionGate } from '../components/PermissionGate';
-import { Button } from '../components/ui/button';
 import { Phone, CalendarDays, MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '../components/ui/badge';
@@ -24,10 +23,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
-import { printOrderReceipt } from '../lib/receipt-printer';
-import { PageHeader } from '../components/common/PageHeader';
+import { PageHeader, ExecutiveAddButton } from '../components/common';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { RiEyeLine, RiPrinterLine, RiCheckDoubleLine, RiAddLine } from 'react-icons/ri';
+import { RiEyeLine, RiPrinterLine, RiCheckDoubleLine } from 'react-icons/ri';
+import { printOrderReceipt } from '../lib/receipt-printer';
 
 export default function Orders() {
   const { t } = useTranslation();
@@ -98,13 +97,10 @@ export default function Orders() {
         refreshTooltip="Refresh orders"
         action={
           <PermissionGate permission="orders.create">
-            <Button
-              onClick={() => navigate('/orders/new')}
-              className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
-            >
-              <RiAddLine className="w-4 h-4" />
-              {t('orders.createNew')}
-            </Button>
+            <ExecutiveAddButton
+              label={t('orders.createNew', 'New Work Order')}
+              to="/orders/new"
+            />
           </PermissionGate>
         }
       />

@@ -9,10 +9,10 @@ import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Checkbox } from '../components/ui/checkbox';
-import { Plus, Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '../components/ui/switch';
-import { PageHeader } from '../components/common';
+import { PageHeader, ExecutiveAddButton } from '../components/common';
 
 // -------------------------------------------------------
 // Types
@@ -368,13 +368,10 @@ export default function Users() {
         onRefresh={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
         isRefreshing={isLoading}
         primaryAction={
-          <Button
+          <ExecutiveAddButton
+            label={t('users.addRole', 'Add {{role}}', { role: getRoleDisplayName(activeTab === 'admins' ? 'ADMIN' : activeTab === 'managers' ? 'MANAGER' : 'EMPLOYEE') })}
             onClick={() => openModal()}
-            className="bg-amber-600 text-white hover:bg-amber-700 shadow-sm font-semibold"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t('users.addRole', 'Add {{role}}', { role: getRoleDisplayName(activeTab === 'admins' ? 'ADMIN' : activeTab === 'managers' ? 'MANAGER' : 'EMPLOYEE') })}
-          </Button>
+          />
         }
       />
 

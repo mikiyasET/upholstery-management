@@ -11,9 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Printer } from 'lucide-react';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
-import { PageHeader } from '../components/common/PageHeader';
+import { PageHeader, ExecutiveAddButton } from '../components/common';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { RiAddLine, RiEyeLine, RiPrinterLine } from 'react-icons/ri';
+import { RiEyeLine, RiPrinterLine } from 'react-icons/ri';
 
 export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
@@ -68,13 +68,10 @@ export default function DirectSalesHistory() {
         isRefreshing={isFetching}
         refreshTooltip="Refresh sales history"
         action={
-          <Button
-            onClick={() => navigate('/direct-sales')}
-            className="bg-amber-600 hover:bg-amber-700 text-white gap-2 shadow-sm font-semibold rounded-lg"
-          >
-            <RiAddLine className="w-4 h-4" />
-            {t('directSales.newSale', 'New POS Sale')}
-          </Button>
+          <ExecutiveAddButton
+            label={t('directSales.newSale', 'New POS Sale')}
+            to="/direct-sales"
+          />
         }
       />
 
