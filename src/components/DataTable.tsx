@@ -269,13 +269,13 @@ export const TableSearch: React.FC<TableSearchProps> = ({
   }, []);
 
   return (
-    <div className={cn("group relative w-full sm:w-[480px] md:w-[540px] max-w-full shrink-0 no-print transition-all duration-300", className)}>
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors duration-200" size={18} />
+    <div className={cn("group relative w-full max-w-full shrink-0 no-print transition-all duration-300", className || "sm:w-[480px] md:w-[540px]")}>
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors duration-200 pointer-events-none" size={18} />
       <input
         ref={inputRef}
         type="text"
         placeholder={placeholder}
-        className="w-full pl-10.5 pr-10 py-2.5 bg-background border border-border rounded-lg outline-none hover:border-border/80 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all duration-200 shadow-sm text-sm h-[42px] font-medium text-foreground placeholder:text-muted-foreground"
+        className="w-full pl-10.5 pr-10 py-2.5 bg-background border border-border rounded-xl outline-none hover:border-amber-500/40 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all duration-200 shadow-xs text-sm h-[42px] font-medium text-foreground placeholder:text-muted-foreground/70"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

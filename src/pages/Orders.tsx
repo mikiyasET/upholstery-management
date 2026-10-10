@@ -26,7 +26,6 @@ import {
   Box,
   Group,
   Stack,
-  Text,
   ActionIcon,
   Tooltip,
   TextInput,

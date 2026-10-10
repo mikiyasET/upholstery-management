@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
@@ -30,11 +30,11 @@ import {
   ClipboardCheck,
   ImageOff,
   History,
-  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { PageHeader, TablePagination } from '../components/common';
+import { RiStore2Line, RiArchiveLine, RiAlertLine } from 'react-icons/ri';
 
 type MaterialStock = {
   id: string;
@@ -237,6 +237,16 @@ export default function Storage() {
     setTransferMaterial(m);
   };
 
+  // Count of items running low in the active store
+  const lowStockCount = useMemo(() => {
+    if (!materials) return 0;
+    return materials.filter((m) => {
+      const stock = getStock(m, activeStore);
+      const threshold = m.lowStockThreshold || 10;
+      return stock <= threshold;
+    }).length;
+  }, [materials, activeStore]);
+
   const filteredMaterials = materials?.filter((m) => {
     const matchesSearch = m.nameEn.toLowerCase().includes(search.toLowerCase()) || m.nameAm.includes(search);
     if (!matchesSearch) return false;
@@ -337,65 +347,101 @@ export default function Storage() {
       />
 
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden mt-4">
-        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-card">
-          {/* Tabs */}
-          <div className="inline-flex h-10 items-center rounded-lg bg-muted p-1 text-muted-foreground w-full md:w-max shrink-0 overflow-x-auto custom-scrollbar">
+        {/* Toolbar: Store Tabs, Low Stock Alert Toggle, and Search Bar */}
+        <div className="p-3.5 sm:p-4 border-b border-border bg-card flex flex-col lg:flex-row gap-3.5 sm:gap-4 items-stretch lg:items-center justify-between">
+          {/* Left: Store Navigation Segment & Low Stock Filter Pill */}
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            {/* Store Segmented Pills */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/60 dark:bg-[#121215] border border-border/80 shadow-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStore('MINI');
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer select-none ${
+                  activeStore === 'MINI'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 font-bold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
+                }`}
+              >
+                <RiStore2Line className={`w-4 h-4 shrink-0 ${activeStore === 'MINI' ? 'text-white' : 'text-amber-500'}`} />
+                <span>{t('storage.miniStore', 'Mini Store')}</span>
+                <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold tracking-tight transition-colors ${
+                  activeStore === 'MINI'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-background/80 text-muted-foreground border border-border/50'
+                }`}>
+                  {materials?.length || 0}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStore('MAIN');
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer select-none ${
+                  activeStore === 'MAIN'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 font-bold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
+                }`}
+              >
+                <RiArchiveLine className={`w-4 h-4 shrink-0 ${activeStore === 'MAIN' ? 'text-white' : 'text-amber-500'}`} />
+                <span>{t('storage.mainStore', 'Main Store')}</span>
+                <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold tracking-tight transition-colors ${
+                  activeStore === 'MAIN'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-background/80 text-muted-foreground border border-border/50'
+                }`}>
+                  {materials?.length || 0}
+                </span>
+              </button>
+            </div>
+
+            {/* Subtle Divider */}
+            <div className="hidden sm:block h-6 w-px bg-border/80 mx-0.5" />
+
+            {/* Show Low Stock Button */}
             <button
-              onClick={() => {
-                setActiveStore('MINI');
-                setCurrentPage(1);
-              }}
-              className={`flex-1 md:flex-none inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 md:px-8 py-1.5 text-sm font-medium transition-all ${
-                activeStore === 'MINI'
-                  ? 'bg-amber-600 text-white shadow-sm font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-              }`}
-            >
-              {t('storage.miniStore', 'Mini Store')}
-            </button>
-            <button
-              onClick={() => {
-                setActiveStore('MAIN');
-                setCurrentPage(1);
-              }}
-              className={`flex-1 md:flex-none inline-flex items-center justify-center whitespace-nowrap rounded-md px-6 md:px-8 py-1.5 text-sm font-medium transition-all ${
-                activeStore === 'MAIN'
-                  ? 'bg-amber-600 text-white shadow-sm font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
-              }`}
-            >
-              {t('storage.mainStore', 'Main Store')}
-            </button>
-          </div>
-          
-          {/* Right Actions */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 w-full md:w-auto md:ml-auto md:flex-1 min-w-0">
-            <button
+              type="button"
               onClick={() => {
                 setShowLowStockOnly(!showLowStockOnly);
                 setCurrentPage(1);
               }}
-              className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 h-10 text-sm font-medium transition-all border shrink-0 w-full sm:w-auto ${
+              className={`inline-flex items-center gap-2 h-[42px] px-3.5 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border cursor-pointer select-none ${
                 showLowStockOnly
-                  ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-[#111] dark:border-gray-800 dark:text-gray-400 dark:hover:bg-[#1a1a1a]'
+                  ? 'bg-rose-500/15 border-rose-500/60 text-rose-600 dark:text-rose-400 shadow-sm shadow-rose-500/15 ring-2 ring-rose-500/20 font-bold'
+                  : 'bg-card hover:bg-muted/60 border-border text-muted-foreground hover:text-foreground hover:border-amber-500/40 shadow-xs'
               }`}
+              title={showLowStockOnly ? "Click to view all stock items" : "Filter items with critical inventory"}
             >
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="truncate">{t('storage.showLowStock', 'Show Low Stock')}</span>
+              <RiAlertLine className={`w-4 h-4 shrink-0 ${showLowStockOnly ? 'text-rose-500 animate-pulse' : lowStockCount > 0 ? 'text-amber-500' : 'text-muted-foreground'}`} />
+              <span className="whitespace-nowrap">{t('storage.showLowStock', 'Low Stock Alert')}</span>
+              <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold transition-all ${
+                showLowStockOnly
+                  ? 'bg-rose-500 text-white shadow-xs'
+                  : lowStockCount > 0
+                  ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {lowStockCount}
+              </span>
             </button>
-            
-            <div className="w-full sm:w-64 md:w-auto md:flex-1 md:min-w-[150px] md:max-w-[320px] shrink relative">
-              <TableSearch 
-                value={search} 
-                onChange={(val) => {
-                  setSearch(val);
-                  setCurrentPage(1);
-                }} 
-                placeholder={t('storage.searchPlaceholder', 'Search inventory...')} 
-                className="w-full" 
-              />
-            </div>
+          </div>
+
+          {/* Right: Search Toolbar */}
+          <div className="w-full lg:w-[320px] xl:w-[380px] shrink-0">
+            <TableSearch 
+              value={search} 
+              onChange={(val) => {
+                setSearch(val);
+                setCurrentPage(1);
+              }} 
+              placeholder={t('storage.searchPlaceholder', 'Search inventory by name, code...')} 
+              className="w-full" 
+            />
           </div>
         </div>
 
