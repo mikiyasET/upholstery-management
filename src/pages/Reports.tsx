@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { format, subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO } from 'date-fns';
-import { TrendingUp, Package, Users, BarChart3, Calendar, CalendarRange, Clock, Check } from 'lucide-react';
+import { TrendingUp, Package, Users, BarChart3, Calendar, CalendarRange, Clock } from 'lucide-react';
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
@@ -302,7 +302,7 @@ export default function Reports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {topServiceCount} <span className="text-lg font-normal text-muted-foreground">{t('reports.kpi.jobsCount', '{{count}} jobs', { count: '' }).replace(/^[0-9\s]+/, '').trim() || 'jobs'}</span>
+              {topServiceCount} <span className="text-lg font-normal text-muted-foreground">{t('reports.kpi.jobsCount', '{{count}} jobs', { count: 0 }).replace(/^[0-9\s]+/, '').trim() || 'jobs'}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{getLocName(topServices?.[0]) || t('common.unknown', 'N/A')}</p>
           </CardContent>

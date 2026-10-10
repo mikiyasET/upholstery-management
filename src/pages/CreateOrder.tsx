@@ -10,7 +10,7 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
-import { Car, Settings2, Users, Plus, Trash2, Loader2, User, Phone } from 'lucide-react';
+import { Car, Settings2, Users, Plus, Trash2, User, Phone } from 'lucide-react';
 
 import EthiopianPlateInput from '../components/EthiopianPlateInput';
 import { parsePlateNumber, formatPlateNumber } from '../utils/plate';
@@ -57,7 +57,7 @@ export default function CreateOrder() {
   const categoriesForSelectedService = selectedService?.categories || [];
 
   // Auto-Search Vehicle by Plate Number
-  const [isSearching, setIsSearching] = useState(false);
+  const [, setIsSearching] = useState(false);
   const [searchStatus, setSearchStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
   const [matchingVehicles, setMatchingVehicles] = useState<any[]>([]);
   const [lastAutoFilledVehicleId, setLastAutoFilledVehicleId] = useState<string | null>(null);

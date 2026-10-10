@@ -1,313 +1,394 @@
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { Package, Activity, AlertCircle, ShoppingCart, ShoppingBag, Wrench, ArrowRight, TrendingUp, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import api from '../lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { formatAppDate, getImageUrl, formatStatus, formatUnit } from '../lib/utils';
-import { parsePlateNumber } from '../utils/plate';
-import { usePermission } from '../lib/permissions';
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../lib/api";
+import { formatStatus } from "../lib/utils";
+import { parsePlateNumber } from "../utils/plate";
+import { usePermission } from "../lib/permissions";
+import { StatCard } from "../components/common/StatCard";
+import {
+  Box,
+  Grid,
+  Paper,
+  Text,
+  Title,
+  Group,
+  Stack,
+  Table,
+  Badge,
+  Button,
+  ThemeIcon,
+} from "@mantine/core";
+import {
+  RiCarLine,
+  RiShoppingBag3Line,
+  RiCheckDoubleLine,
+  RiAlertLine,
+  RiAddLine,
+  RiArrowRightLine,
+  RiToolsLine,
+  RiShieldCheckLine,
+  RiArchiveLine,
+} from "react-icons/ri";
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const canViewOrders = usePermission('orders.view');
-  const canViewMaterials = usePermission('catalog.materials.view');
-  const canViewDirectSales = usePermission('directSales.view');
+  const navigate = useNavigate();
+
+  const canViewOrders = usePermission("orders.view");
+  const canViewMaterials = usePermission("catalog.materials.view");
+  const canViewDirectSales = usePermission("directSales.view");
+  const canCreateOrder = usePermission("orders.create");
+  const canCreateDirectSale = usePermission("directSales.create");
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['active-orders'],
+    queryKey: ["active-orders"],
     queryFn: async () => {
-      const res = await api.get('/orders');
+      const res = await api.get("/orders");
       return res.data;
     },
-    enabled: canViewOrders
+    enabled: canViewOrders,
   });
 
   const { data: materials = [] } = useQuery({
-    queryKey: ['materials'],
+    queryKey: ["materials"],
     queryFn: async () => {
-      const res = await api.get('/catalog/materials');
+      const res = await api.get("/catalog/materials");
       return res.data;
     },
-    enabled: canViewMaterials
+    enabled: canViewMaterials,
   });
 
   const { data: directSales = [] } = useQuery({
-    queryKey: ['direct-sales-today'],
+    queryKey: ["direct-sales-today"],
     queryFn: async () => {
-      const res = await api.get('/direct-sales');
+      const res = await api.get("/direct-sales");
       return res.data;
     },
-    enabled: canViewDirectSales
+    enabled: canViewDirectSales,
   });
 
-  const activeOrders = orders.filter((o: any) => o.status === 'WAITING' || o.status === 'IN_PROGRESS');
-  const deliveredOrders = orders.filter((o: any) => o.status === 'DELIVERED');
-  
-  const lowStockMaterials = materials.filter((m: any) => {
-    const miniStock = m.materialStocks?.find((s: any) => s.store.type === 'MINI');
-    const mainStock = m.materialStocks?.find((s: any) => s.store.type === 'MAIN');
-    const miniQty = miniStock ? Number(miniStock.quantity) : 0;
-    const mainQty = mainStock ? Number(mainStock.quantity) : 0;
-    const threshold = m.lowStockThreshold || 10;
-    return miniQty <= threshold || mainQty <= threshold;
-  });
+  const activeOrders = Array.isArray(orders)
+    ? orders.filter((o: any) => o.status === "WAITING" || o.status === "IN_PROGRESS")
+    : [];
+  const deliveredOrders = Array.isArray(orders)
+    ? orders.filter((o: any) => o.status === "DELIVERED")
+    : [];
+
+  const lowStockMaterials = Array.isArray(materials)
+    ? materials.filter((m: any) => {
+        const miniStock = m.materialStocks?.find((s: any) => s.store?.type === "MINI");
+        const mainStock = m.materialStocks?.find((s: any) => s.store?.type === "MAIN");
+        const miniQty = miniStock ? Number(miniStock.quantity) : 0;
+        const mainQty = mainStock ? Number(mainStock.quantity) : 0;
+        const threshold = m.lowStockThreshold || 10;
+        return miniQty <= threshold || mainQty <= threshold;
+      })
+    : [];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      
-      {/* Header Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 border border-primary/10 shadow-sm">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-primary/20 blur-3xl rounded-full pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
-              {t('common.dashboard')}
-            </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              {t('dashboard.welcome')}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
-            {usePermission('orders.create') && (
-              <Link to="/orders/new">
-                <Button className="bg-primary border border-primary hover:bg-primary/90 hover:border-primary/90 text-primary-foreground shadow-sm transition-all rounded-xl font-medium px-5 h-10">
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  {t('dashboard.newOrder')}
-                </Button>
-              </Link>
-            )}
-            {usePermission('directSales.create') && (
-              <Link to="/direct-sales">
-                <Button variant="outline" className="bg-background hover:bg-primary/5 text-primary border-primary/20 hover:border-primary/40 shadow-sm transition-colors rounded-xl font-medium px-5 h-10">
-                  <ShoppingBag className="w-4 h-4 mr-2" />
-                  {t('dashboard.directSale')}
-                </Button>
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
+    <Stack gap="xl">
+      {/* Top Hero Banner */}
+      <Paper
+        p={{ base: "md", sm: "xl" }}
+        radius="lg"
+        style={{
+          background: "var(--brand-gradient-subtle)",
+          border: "1px solid rgba(245, 158, 11, 0.2)",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <Group justify="space-between" align="center" wrap="wrap" gap="md">
+          <Box>
+            <Title order={2} style={{ letterSpacing: "-0.03em" }}>
+              {t("common.dashboard", "Operations Dashboard")}
+            </Title>
+            <Text size="sm" c="dimmed" mt={4}>
+              {t(
+                "dashboard.welcome",
+                "Real-time overview of active work orders, shop floor stock, and point-of-sale activities."
+              )}
+            </Text>
+          </Box>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard 
-          title={t('dashboard.activeOrders')} 
-          value={canViewOrders ? (activeOrders.length || "-") : "-"} 
-          subtitle={t('dashboard.currentlyInProgress')}
-          icon={<Activity className="w-5 h-5 text-blue-500" />}
-          gradient="from-blue-500/10 to-blue-600/5"
-          borderColor="border-blue-500/20"
-        />
-        <MetricCard 
-          title={t('dashboard.delivered')} 
-          value={canViewOrders ? (deliveredOrders.length || "-") : "-"} 
-          subtitle={t('dashboard.completedTotal')}
-          icon={<Package className="w-5 h-5 text-emerald-500" />}
-          gradient="from-emerald-500/10 to-emerald-600/5"
-          borderColor="border-emerald-500/20"
-        />
-        <MetricCard 
-          title={t('dashboard.lowStock')} 
-          value={canViewMaterials ? (lowStockMaterials.length || "-") : "-"} 
-          subtitle={t('dashboard.itemsInMiniStore')}
-          icon={<AlertCircle className="w-5 h-5 text-rose-500" />}
-          gradient="from-rose-500/10 to-rose-600/5"
-          borderColor="border-rose-500/20"
-          valueColor={canViewMaterials && lowStockMaterials.length > 0 ? "text-rose-600 dark:text-rose-400" : ""}
-        />
-        <MetricCard 
-          title={t('dashboard.directSale')} 
-          value={canViewDirectSales ? (directSales.length || "-") : "-"} 
-          subtitle={t('dashboard.overTheCounter')}
-          icon={<TrendingUp className="w-5 h-5 text-purple-500" />}
-          gradient="from-purple-500/10 to-purple-600/5"
-          borderColor="border-purple-500/20"
-        />
-      </div>
+          <Group gap="xs">
+            {canCreateOrder && (
+              <Button
+                variant="gradient"
+                gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
+                leftSection={<RiAddLine size={16} />}
+                onClick={() => navigate("/orders/new")}
+              >
+                {t("dashboard.newOrder", "New Work Order")}
+              </Button>
+            )}
+            {canCreateDirectSale && (
+              <Button
+                variant="default"
+                leftSection={<RiShoppingBag3Line size={16} />}
+                onClick={() => navigate("/direct-sales")}
+              >
+                {t("dashboard.directSale", "Direct Sale POS")}
+              </Button>
+            )}
+          </Group>
+        </Group>
+      </Paper>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Active Orders List */}
-        <Card className="shadow-lg border-border/50 overflow-hidden rounded-2xl flex flex-col h-full hover:shadow-xl transition-shadow duration-500">
-          <CardHeader className="border-b bg-card pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Wrench className="w-5 h-5 text-primary" />
-                </div>
-                {t('dashboard.currentBayActivity')}
-              </CardTitle>
-              <Link to="/orders">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                  {t('dashboard.viewAll')} <ArrowRight className="w-4 h-4 ml-1" />
+      {/* Metric Stat Cards */}
+      <Grid gap="md">
+        <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+          <StatCard
+            title={t("dashboard.activeOrders", "Active Work Orders")}
+            value={canViewOrders ? activeOrders.length : "-"}
+            subtitle={t("dashboard.currentlyInProgress", "Currently in workshop bay")}
+            icon={<RiCarLine size={22} />}
+            iconColor="amber"
+            badge="Live Bay"
+            badgeColor="amber"
+          />
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+          <StatCard
+            title={t("dashboard.delivered", "Completed Orders")}
+            value={canViewOrders ? deliveredOrders.length : "-"}
+            subtitle={t("dashboard.completedTotal", "Successfully delivered")}
+            icon={<RiCheckDoubleLine size={22} />}
+            iconColor="green"
+            badge="Finished"
+            badgeColor="green"
+          />
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+          <StatCard
+            title={t("dashboard.lowStock", "Low Stock Alerts")}
+            value={canViewMaterials ? lowStockMaterials.length : "-"}
+            subtitle={t("dashboard.itemsInMiniStore", "Materials requiring transfer")}
+            icon={<RiAlertLine size={22} />}
+            iconColor="red"
+            badge={lowStockMaterials.length > 0 ? "Needs Restock" : "Optimal"}
+            badgeColor={lowStockMaterials.length > 0 ? "red" : "green"}
+          />
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+          <StatCard
+            title={t("dashboard.directSale", "Direct Sales (POS)")}
+            value={canViewDirectSales ? directSales.length : "-"}
+            subtitle={t("dashboard.overTheCounter", "Over-the-counter transactions")}
+            icon={<RiShoppingBag3Line size={22} />}
+            iconColor="blue"
+            badge="Counter"
+            badgeColor="blue"
+          />
+        </Grid.Col>
+      </Grid>
+
+      {/* Split Activity Tables */}
+      <Grid gap="lg">
+        {/* Left Column: Active Bay Work Orders */}
+        <Grid.Col span={{ base: 12, lg: 7 }}>
+          <Paper className="premium-card" p="md" radius="lg">
+            <Group justify="space-between" mb="md">
+              <Group gap="xs">
+                <ThemeIcon size={34} radius="md" color="amber" variant="light">
+                  <RiToolsLine size={18} />
+                </ThemeIcon>
+                <Box>
+                  <Text fw={700} size="sm">
+                    {t("dashboard.currentBayActivity", "Workshop Bay Activity")}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    In-progress tailoring and modification jobs
+                  </Text>
+                </Box>
+              </Group>
+
+              {canViewOrders && (
+                <Button
+                  component={Link}
+                  to="/orders"
+                  variant="subtle"
+                  size="xs"
+                  rightSection={<RiArrowRightLine size={14} />}
+                >
+                  {t("dashboard.viewAll", "View all")}
                 </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0 flex-1 bg-card/50">
+              )}
+            </Group>
+
             {!canViewOrders ? (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-muted-foreground p-8">
-                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                  <ShieldCheck className="w-8 h-8 text-destructive/50" />
-                </div>
-                <p className="font-medium text-destructive">{t('alerts.accessRestricted')}</p>
-                <p className="text-sm opacity-70">{t('dashboard.accessRestrictedMessageOrders')}</p>
-              </div>
+              <Box py="xl" style={{ textAlign: "center" }}>
+                <ThemeIcon size={44} radius="xl" color="gray" variant="light" mb="xs">
+                  <RiShieldCheckLine size={24} />
+                </ThemeIcon>
+                <Text size="sm" c="dimmed">
+                  Access restricted for this section.
+                </Text>
+              </Box>
             ) : activeOrders.length === 0 ? (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-muted-foreground p-8">
-                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <ShoppingCart className="w-8 h-8 opacity-20" />
-                </div>
-                <p className="font-medium">{t('dashboard.noActiveOrders')}</p>
-                <p className="text-sm opacity-70">{t('dashboard.shopFloorClear')}</p>
-              </div>
+              <Box py="xl" style={{ textAlign: "center" }}>
+                <Text size="sm" c="dimmed">
+                  {t("dashboard.noActiveOrders", "No active work orders right now.")}
+                </Text>
+              </Box>
             ) : (
-              <div className="divide-y divide-border/50">
-                {activeOrders.slice(0, 6).map((order: any, idx: number) => (
-                  <Link 
-                    to={`/orders/${order.id}`} 
-                    key={order.id}
-                    className="block p-5 hover:bg-muted/30 transition-colors group"
-                    style={{ animationDelay: `${idx * 50}ms` }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-xs font-bold border border-border/50 group-hover:border-primary/30 transition-colors overflow-hidden">
-                          {parsePlateNumber(order.vehicle?.plateNumber)?.serial?.substring(0, 4) || order.vehicle?.plateNumber?.substring(0, 4) || 'N/A'}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {order.customer?.firstName} {order.customer?.lastName}
-                          </span>
-                          <span className="text-sm text-muted-foreground flex items-center gap-2">
-                            {order.vehicle?.brand?.name} {order.vehicle?.model?.name}
-                            <span className="w-1 h-1 rounded-full bg-border"></span>
-                            {formatAppDate(order.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 text-xs font-bold rounded-full border shadow-sm ${
-                        order.status === 'WAITING' ? 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400' : 
-                        'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400'
-                      }`}>
-                        {formatStatus(order.status)}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <Table.ScrollContainer minWidth={450}>
+                <Table verticalSpacing="sm" highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Plate / Vehicle</Table.Th>
+                      <Table.Th>Customer</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                      <Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {activeOrders.slice(0, 5).map((order: any) => {
+                      const plate = parsePlateNumber(order.vehicle?.plateNumber);
+                      return (
+                        <Table.Tr key={order.id}>
+                          <Table.Td>
+                            <Group gap="xs">
+                              <Badge size="sm" variant="default" radius="sm">
+                                {plate?.serial || order.vehicle?.plateNumber || "N/A"}
+                              </Badge>
+                              <Text size="xs" fw={500}>
+                                {order.vehicle?.brand?.name} {order.vehicle?.model?.name}
+                              </Text>
+                            </Group>
+                          </Table.Td>
+                          <Table.Td>
+                            <Text size="xs" fw={600}>
+                              {order.customer?.firstName} {order.customer?.lastName}
+                            </Text>
+                            <Text size="10px" c="dimmed">
+                              {order.customer?.phone}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td>
+                            <Badge
+                              size="xs"
+                              color={order.status === "WAITING" ? "amber" : "blue"}
+                              variant="light"
+                            >
+                              {formatStatus(order.status)}
+                            </Badge>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "right" }}>
+                            <Button
+                              component={Link}
+                              to={`/orders/${order.id}`}
+                              size="compact-xs"
+                              variant="light"
+                              color="amber"
+                            >
+                              View
+                            </Button>
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
             )}
-          </CardContent>
-        </Card>
+          </Paper>
+        </Grid.Col>
 
-        {/* Low Stock Warning */}
-        <Card className="shadow-lg border-border/50 overflow-hidden rounded-2xl flex flex-col h-full hover:shadow-xl transition-shadow duration-500 p-0">
-          <CardHeader className="border-b bg-rose-50/30 dark:bg-rose-950/20 px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-rose-700 dark:text-rose-400 text-lg">
-                <div className="p-2 bg-rose-500/10 rounded-lg">
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-                {t('dashboard.lowStock', 'Low Stock Items')}
-              </CardTitle>
-              <Link to="/storage">
-                <Button variant="ghost" size="sm" className="text-rose-600/70 hover:text-rose-700 hover:bg-rose-500/10 dark:hover:text-rose-300">
-                  {t('dashboard.manage')} <ArrowRight className="w-4 h-4 ml-1" />
+        {/* Right Column: Inventory Low Stock Alerts */}
+        <Grid.Col span={{ base: 12, lg: 5 }}>
+          <Paper className="premium-card" p="md" radius="lg">
+            <Group justify="space-between" mb="md">
+              <Group gap="xs">
+                <ThemeIcon size={34} radius="md" color="red" variant="light">
+                  <RiAlertLine size={18} />
+                </ThemeIcon>
+                <Box>
+                  <Text fw={700} size="sm">
+                    {t("storage.lowStockAlerts", "Low Stock Attention")}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    Materials at or below threshold
+                  </Text>
+                </Box>
+              </Group>
+
+              {canViewMaterials && (
+                <Button
+                  component={Link}
+                  to="/storage/low-stock"
+                  variant="subtle"
+                  size="xs"
+                  color="red"
+                  rightSection={<RiArrowRightLine size={14} />}
+                >
+                  {t("dashboard.viewAll", "View all")}
                 </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0 flex-1 bg-card/50">
-            {!canViewMaterials ? (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-muted-foreground p-8">
-                <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-                  <ShieldCheck className="w-8 h-8 text-destructive/50" />
-                </div>
-                <p className="font-medium text-destructive">{t('alerts.accessRestricted')}</p>
-                <p className="text-sm opacity-70">{t('dashboard.accessRestrictedMessageMaterials')}</p>
-              </div>
-            ) : lowStockMaterials.length === 0 ? (
-              <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-muted-foreground p-8">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                  <Package className="w-8 h-8 text-emerald-500/50" />
-                </div>
-                <p className="font-medium">{t('dashboard.allStockHealthy')}</p>
-                <p className="text-sm opacity-70">{t('dashboard.noMaterialsLow')}</p>
-              </div>
+              )}
+            </Group>
+
+            {lowStockMaterials.length === 0 ? (
+              <Box py="xl" style={{ textAlign: "center" }}>
+                <ThemeIcon size={44} radius="xl" color="green" variant="light" mb="xs">
+                  <RiArchiveLine size={24} />
+                </ThemeIcon>
+                <Text size="sm" c="dimmed">
+                  All materials are adequately stocked across stores.
+                </Text>
+              </Box>
             ) : (
-              <div className="divide-y divide-border/50">
-                {lowStockMaterials.slice(0, 6).map((mat: any, idx: number) => {
-                  const miniStock = mat.materialStocks?.find((s: any) => s.store.type === 'MINI');
-                  const mainStock = mat.materialStocks?.find((s: any) => s.store.type === 'MAIN');
-                  const miniQty = miniStock ? Number(miniStock.quantity) : 0;
-                  const mainQty = mainStock ? Number(mainStock.quantity) : 0;
-                  const threshold = mat.lowStockThreshold || 10;
-                  const isMiniLow = miniQty <= threshold;
-                  const isMainLow = mainQty <= threshold;
-
-                  return (
-                    <Link
-                      key={mat.id}
-                      to="/storage"
-                      className="p-5 flex items-center justify-between hover:bg-rose-50/30 dark:hover:bg-rose-950/10 transition-colors cursor-pointer block"
-                      style={{ animationDelay: `${idx * 50}ms` }}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center overflow-hidden border border-border/50 shrink-0">
-                           {mat.imageUrl ? (
-                             <img src={getImageUrl(mat.imageUrl)} alt="" className="w-full h-full object-cover opacity-80 grayscale-[30%]" />
-                           ) : (
-                             <Package className="w-5 h-5 text-muted-foreground/50" />
-                           )}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-foreground">{mat.nameEn}</span>
-                          <span className="text-xs text-muted-foreground">{mat.nameAm}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            {isMiniLow && (
-                              <span className="text-[10px] bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">
-                                Mini: {miniQty} {formatUnit(mat.unit)}
-                              </span>
-                            )}
-                            {isMainLow && (
-                              <span className="text-[10px] bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-medium">
-                                Main: {mainQty} {formatUnit(mat.unit)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+              <Table.ScrollContainer minWidth={320}>
+                <Table verticalSpacing="xs" highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Material</Table.Th>
+                      <Table.Th style={{ textAlign: "center" }}>Mini Store</Table.Th>
+                      <Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {lowStockMaterials.slice(0, 5).map((mat: any) => {
+                      const mini = mat.materialStocks?.find((s: any) => s.store?.type === "MINI");
+                      const qty = mini ? Number(mini.quantity) : 0;
+                      return (
+                        <Table.Tr key={mat.id}>
+                          <Table.Td>
+                            <Text size="xs" fw={600} truncate maw={180}>
+                              {mat.name}
+                            </Text>
+                            <Text size="10px" c="dimmed">
+                              Min: {mat.lowStockThreshold || 10}
+                            </Text>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "center" }}>
+                            <Badge size="xs" color="red" variant="filled">
+                              {qty}
+                            </Badge>
+                          </Table.Td>
+                          <Table.Td style={{ textAlign: "right" }}>
+                            <Button
+                              component={Link}
+                              to="/storage"
+                              size="compact-xs"
+                              variant="default"
+                            >
+                              Transfer
+                            </Button>
+                          </Table.Td>
+                        </Table.Tr>
+                      );
+                    })}
+                  </Table.Tbody>
+                </Table>
+              </Table.ScrollContainer>
             )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ title, value, subtitle, icon, gradient, borderColor, valueColor }: any) {
-  return (
-    <div className={`relative overflow-hidden rounded-2xl border ${borderColor} bg-card p-6 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group`}>
-      <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full bg-gradient-to-br ${gradient} blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
-      <div className="relative z-10 flex justify-between items-start">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">{title}</p>
-          <p className={`text-4xl font-black tracking-tighter ${valueColor || 'text-foreground'}`}>
-            {value}
-          </p>
-        </div>
-        <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} border border-white/10 shadow-sm`}>
-          {icon}
-        </div>
-      </div>
-      <p className="relative z-10 mt-4 text-xs font-medium text-muted-foreground/80 flex items-center gap-1">
-        {subtitle}
-      </p>
-    </div>
+          </Paper>
+        </Grid.Col>
+      </Grid>
+    </Stack>
   );
 }

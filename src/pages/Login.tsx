@@ -1,121 +1,325 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import api from '../lib/api';
-import { Label } from '../components/ui/label';
-import { Input } from '../components/ui/input';
-import { Button } from '../components/ui/button';
-import { toast } from 'sonner';
-import { CarFront, ShieldCheck } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useState } from "react";
+import {
+  TextInput,
+  PasswordInput,
+  Button,
+  Title,
+  Text,
+  Stack,
+  Box,
+  Alert,
+  Group,
+  Checkbox,
+  ActionIcon,
+  Badge,
+  Tooltip,
+  useMantineColorScheme,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import api from "../lib/api";
+import { useTranslation } from "react-i18next";
+import {
+  RiPhoneLine,
+  RiLockPasswordLine,
+  RiArrowRightLine,
+  RiSunLine,
+  RiMoonLine,
+  RiErrorWarningLine,
+  RiCarLine,
+  RiShieldCheckLine,
+  RiArchiveLine,
+  RiSparklingFill,
+} from "react-icons/ri";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
-  const { t } = useTranslation();
-  
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const user = useAuthStore((s) => s.user);
+  const login = useAuthStore((s) => s.login);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+
     try {
-      const { data } = await api.post('/auth/login', { phone, password });
+      const { data } = await api.post("/auth/login", { phone, password });
       login(data.user, data.accessToken, data.refreshToken);
-      toast.success(t('auth.login.success', 'Logged in successfully'));
-      navigate('/');
+      notifications.show({
+        title: t("auth.login.welcomeBack", "Welcome back!"),
+        message: `${t("auth.login.signedInAs", "Signed in as")} ${data.user.name}`,
+        color: "green",
+      });
+      navigate("/", { replace: true });
     } catch (err: any) {
-      toast.error(err.response?.data?.error?.message || t('auth.login.failed', 'Login failed'));
+      setError(
+        err.response?.data?.error?.message ||
+          t("auth.login.failed", "Invalid credentials. Please verify your phone number and password.")
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-background dark text-foreground selection:bg-primary/30">
-      <div className="flex-1 hidden lg:flex relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent z-10" />
-        <img 
-          src="/login-bg.png" 
-          alt="Premium Car Interior" 
-          className="object-cover w-full h-full opacity-60 mix-blend-luminosity"
+    <Box
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        width: "100%",
+        backgroundColor: "var(--surface-bg)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Left Column: Visual Showcase (Hidden on small screens) */}
+      <Box
+        visibleFrom="md"
+        style={{
+          flex: "1 1 52%",
+          position: "relative",
+          backgroundImage: "url('/login-bg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "48px 56px",
+          color: "#FAFAF9",
+        }}
+      >
+        <Box
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, rgba(18, 18, 21, 0.88) 0%, rgba(39, 39, 42, 0.75) 50%, rgba(18, 18, 21, 0.95) 100%)",
+            backdropFilter: "blur(4px)",
+          }}
         />
-        <div className="absolute bottom-12 left-12 z-20 max-w-lg">
-          <div className="inline-flex items-center justify-center p-3 bg-primary/20 backdrop-blur-md rounded-2xl mb-6 border border-primary/30 shadow-[0_0_30px_rgba(var(--primary),0.3)]">
-            <CarFront className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-5xl font-bold tracking-tight mb-4 leading-tight">
-            {t('auth.login.heroTitleStart', 'Elevate Your')} <span className="text-gradient">{t('auth.login.heroTitleHighlight', 'Automotive')}</span> {t('auth.login.heroTitleEnd', 'Experience')}
-          </h1>
-          <p className="text-lg text-muted-foreground font-light">
-            {t('auth.login.heroSubtitle', 'The premier management system for high-end car decoration, detailing, and inventory tracking.')}
-          </p>
-        </div>
-      </div>
-      
-      <div className="flex-1 flex flex-col justify-center items-center p-8 lg:p-16 relative overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
 
-        <div className="w-full max-w-md space-y-8 glass p-10 rounded-3xl relative z-10">
-          <div className="text-center space-y-2">
-            <div className="mx-auto w-16 h-16 bg-muted/50 rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-white/5">
-              <ShieldCheck className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-3xl font-semibold tracking-tight">{t('auth.login.welcomeBack', 'Welcome Back')}</h2>
-            <p className="text-sm text-muted-foreground">{t('auth.login.signInToContinue', 'Sign in to your account to continue')}</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6 mt-8">
-            <div className="space-y-4">
-              <div className="space-y-2 relative">
-                <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground ml-1">{t('auth.login.phoneNumber', 'Phone Number')}</Label>
-                <Input 
-                  id="phone" 
-                  type="tel" 
-                  placeholder={t('auth.login.phonePlaceholder', '0911234567')} 
-                  className="h-12 bg-background/50 border-white/10 focus:border-primary/50 transition-colors"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2 relative">
-                <div className="flex items-center justify-between ml-1">
-                  <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">{t('auth.login.password', 'Password')}</Label>
-                  <a href="#" className="text-xs text-primary hover:text-primary/80 transition-colors">{t('auth.login.forgotPassword', 'Forgot?')}</a>
-                </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••"
-                  className="h-12 bg-background/50 border-white/10 focus:border-primary/50 transition-colors tracking-widest"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <Button 
-              className="w-full h-12 text-md font-medium shadow-[0_0_20px_rgba(var(--primary),0.2)] hover:shadow-[0_0_25px_rgba(var(--primary),0.4)] transition-all duration-300" 
-              type="submit" 
-              disabled={loading}
+        {/* Top Header in Left Column */}
+        <Group style={{ position: "relative", zIndex: 10 }} justify="space-between">
+          <Group gap="xs">
+            <Box
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 25px rgba(245, 158, 11, 0.4)",
+                background: "var(--brand-gradient)",
+                color: "#FFFFFF",
+              }}
             >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  {t('auth.login.signingIn', 'Signing in...')}
-                </div>
+              <RiCarLine size={26} />
+            </Box>
+            <Box>
+              <Text fw={800} size="md" style={{ letterSpacing: "-0.02em", color: "#FFFFFF" }}>
+                YONATAN
+              </Text>
+              <Text size="10px" fw={700} c="amber.4" style={{ letterSpacing: "0.08em" }}>
+                CAR DECOR & UPHOLSTERY
+              </Text>
+            </Box>
+          </Group>
+
+          <Badge
+            size="md"
+            variant="filled"
+            color="amber.6"
+            leftSection={<RiSparklingFill size={12} />}
+            style={{ fontWeight: 600 }}
+          >
+            v2.0 Enterprise
+          </Badge>
+        </Group>
+
+        {/* Hero Narrative */}
+        <Stack style={{ position: "relative", zIndex: 10, maxWidth: 540 }} gap="lg">
+          <Badge
+            size="sm"
+            variant="light"
+            color="amber.3"
+            w="fit-content"
+            style={{ fontWeight: 700, letterSpacing: "0.04em" }}
+          >
+            PRECISION MANAGEMENT SYSTEM
+          </Badge>
+
+          <Title
+            order={1}
+            style={{
+              fontSize: "2.75rem",
+              lineHeight: 1.15,
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: "#FFFFFF",
+            }}
+          >
+            Elevate Your <Text span c="amber.4">Automotive</Text> Craftsmanship
+          </Title>
+
+          <Text size="md" c="gray.3" style={{ lineHeight: 1.6, fontWeight: 400 }}>
+            The dedicated operating system for vehicle styling, custom upholstery tailoring, dual-store inventory tracking, and swift point-of-sale operations.
+          </Text>
+
+          <Group gap="sm" mt="xs">
+            <Badge size="lg" variant="outline" color="amber.3" leftSection={<RiShieldCheckLine size={14} />}>
+              Dual-Store Inventory
+            </Badge>
+            <Badge size="lg" variant="outline" color="amber.3" leftSection={<RiArchiveLine size={14} />}>
+              Car Condition Diagrams
+            </Badge>
+          </Group>
+        </Stack>
+
+        {/* Bottom Footer Quote */}
+        <Box
+          style={{
+            position: "relative",
+            zIndex: 10,
+            borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+            paddingTop: 20,
+          }}
+        >
+          <Text size="xs" c="gray.4">
+            Designed for workshop managers, technicians, and cashiers • Addis Ababa, Ethiopia
+          </Text>
+        </Box>
+      </Box>
+
+      {/* Right Column: Sign-in Form */}
+      <Box
+        style={{
+          flex: "1 1 48%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "48px 32px",
+          position: "relative",
+        }}
+      >
+        {/* Top-Right Theme Toggle */}
+        <Box style={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+          <Tooltip label={colorScheme === "dark" ? "Light Mode" : "Dark Mode"}>
+            <ActionIcon
+              variant="default"
+              size="lg"
+              radius="md"
+              onClick={() => toggleColorScheme()}
+              aria-label="Toggle color scheme"
+            >
+              {colorScheme === "dark" ? (
+                <RiSunLine size={20} color="var(--primary-accent)" />
               ) : (
-                t('auth.login.signIn', 'Sign In')
+                <RiMoonLine size={20} />
               )}
-            </Button>
-          </form>
-        </div>
-      </div>
-    </div>
+            </ActionIcon>
+          </Tooltip>
+        </Box>
+
+        {/* Centered Form Card */}
+        <Box style={{ width: "100%", maxWidth: 420 }}>
+          <Stack gap="xl">
+            {/* Header Titles */}
+            <Box>
+              <Title order={2} style={{ letterSpacing: "-0.02em" }}>
+                Welcome back
+              </Title>
+              <Text size="sm" c="dimmed" mt={4}>
+                Sign in to your Yonatan Car Decor account
+              </Text>
+            </Box>
+
+            {/* Error Banner */}
+            {error && (
+              <Alert
+                icon={<RiErrorWarningLine size={18} />}
+                color="red"
+                radius="md"
+                variant="light"
+                title="Authentication Failed"
+              >
+                {error}
+              </Alert>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit}>
+              <Stack gap="md">
+                <TextInput
+                  label="Phone Number"
+                  placeholder="0911234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.currentTarget.value)}
+                  leftSection={<RiPhoneLine size={18} color="var(--text-muted)" />}
+                  required
+                  size="md"
+                />
+
+                <PasswordInput
+                  label="Password"
+                  placeholder="Your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.currentTarget.value)}
+                  leftSection={<RiLockPasswordLine size={18} color="var(--text-muted)" />}
+                  required
+                  size="md"
+                />
+
+                <Group justify="space-between" mt={4}>
+                  <Checkbox
+                    label="Remember me"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.currentTarget.checked)}
+                    size="xs"
+                    color="amber"
+                  />
+                  <Text size="xs" c="amber" style={{ cursor: "pointer" }}>
+                    Forgot password?
+                  </Text>
+                </Group>
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  size="md"
+                  loading={loading}
+                  rightSection={<RiArrowRightLine size={18} />}
+                  variant="gradient"
+                  gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
+                  mt="sm"
+                  style={{ fontWeight: 600 }}
+                >
+                  Sign In
+                </Button>
+              </Stack>
+            </form>
+          </Stack>
+        </Box>
+
+        {/* Bottom Copyright */}
+        <Box style={{ width: "100%", textAlign: "center" }}>
+          <Text size="xs" c="dimmed">
+            © {new Date().getFullYear()} Yonatan Car Decor & Upholstery. All rights reserved.
+          </Text>
+        </Box>
+      </Box>
+    </Box>
   );
 }
