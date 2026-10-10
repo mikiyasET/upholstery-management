@@ -33,7 +33,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { PageHeader, TablePagination } from '../components/common';
-import { Box, Group, Stack, TextInput, ActionIcon } from '@mantine/core';
+import { Box, Group, TextInput, ActionIcon, Button as MantineButton, Badge } from '@mantine/core';
 import { RiStore2Line, RiArchiveLine, RiAlertLine, RiSearchLine, RiCloseLine } from 'react-icons/ri';
 
 type MaterialStock = {
@@ -346,259 +346,162 @@ export default function Storage() {
         isRefreshing={isLoading}
       />
 
-      {/* 2. Executive Control & Filter Bar (Exporter-Docs luxury style) */}
-      <Box className="premium-card" p="xs" mt="xs" mb="md">
-        <Stack gap="xs">
-          {/* Row 1: Live Search */}
-          <Group justify="space-between" align="center" wrap="wrap" gap="xs">
-            <TextInput
-              placeholder={t('storage.searchPlaceholder', 'Search inventory by name, code...')}
-              leftSection={<RiSearchLine size={15} style={{ color: 'var(--text-muted)' }} />}
-              rightSection={
-                search ? (
-                  <ActionIcon size="xs" variant="subtle" color="gray" onClick={() => setSearch('')} title="Clear search">
-                    <RiCloseLine size={13} />
-                  </ActionIcon>
-                ) : null
-              }
-              value={search}
-              onChange={(e) => {
-                setSearch(e.currentTarget.value);
+      {/* 2. Sub-Navigation Tabs & Search Toolbar on the Same Row (Exporter-Docs style) */}
+      <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="md">
+        {/* Navigation Pills */}
+        <Box
+          p={4}
+          style={{
+            backgroundColor: "var(--surface-card, rgba(255, 255, 255, 0.04))",
+            border: "1px solid var(--surface-border, rgba(255, 255, 255, 0.08))",
+            borderRadius: 12,
+            display: "inline-flex",
+            gap: 6,
+            boxShadow: "var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.1))",
+            maxWidth: "100%",
+            overflowX: "auto",
+          }}
+          className="custom-scrollbar"
+        >
+          <MantineButton
+            variant={activeStore === 'MINI' ? 'filled' : 'subtle'}
+            color="amber"
+            size="sm"
+            radius="md"
+            leftSection={<RiStore2Line size={16} />}
+            rightSection={
+              <Badge
+                size="xs"
+                variant={activeStore === 'MINI' ? 'white' : 'light'}
+                color="amber"
+                style={{ padding: '0 6px', fontWeight: 700 }}
+              >
+                {materials?.length || 0}
+              </Badge>
+            }
+            onClick={() => {
+              setActiveStore('MINI');
+              setCurrentPage(1);
+            }}
+            style={{
+              fontWeight: activeStore === 'MINI' ? 700 : 500,
+              height: 36,
+              fontSize: '13px',
+              fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+            }}
+          >
+            {t('storage.miniStore', 'Mini Store')}
+          </MantineButton>
+
+          <MantineButton
+            variant={activeStore === 'MAIN' ? 'filled' : 'subtle'}
+            color="amber"
+            size="sm"
+            radius="md"
+            leftSection={<RiArchiveLine size={16} />}
+            rightSection={
+              <Badge
+                size="xs"
+                variant={activeStore === 'MAIN' ? 'white' : 'light'}
+                color="amber"
+                style={{ padding: '0 6px', fontWeight: 700 }}
+              >
+                {materials?.length || 0}
+              </Badge>
+            }
+            onClick={() => {
+              setActiveStore('MAIN');
+              setCurrentPage(1);
+            }}
+            style={{
+              fontWeight: activeStore === 'MAIN' ? 700 : 500,
+              height: 36,
+              fontSize: '13px',
+              fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+            }}
+          >
+            {t('storage.mainStore', 'Main Store')}
+          </MantineButton>
+
+          <MantineButton
+            variant={showLowStockOnly ? 'filled' : 'subtle'}
+            color="red"
+            size="sm"
+            radius="md"
+            leftSection={<RiAlertLine size={16} />}
+            rightSection={
+              <Badge
+                size="xs"
+                variant={showLowStockOnly ? 'white' : 'light'}
+                color="red"
+                style={{ padding: '0 6px', fontWeight: 700 }}
+              >
+                {lowStockCount}
+              </Badge>
+            }
+            onClick={() => {
+              setShowLowStockOnly(!showLowStockOnly);
+              setCurrentPage(1);
+            }}
+            style={{
+              fontWeight: showLowStockOnly ? 700 : 500,
+              height: 36,
+              fontSize: '13px',
+              fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+            }}
+            title={showLowStockOnly ? "Click to view all stock items" : "Filter items with critical inventory"}
+          >
+            {t('storage.showLowStock', 'Low Stock Alert')}
+          </MantineButton>
+        </Box>
+
+        {/* Live Search Input on the Same Row */}
+        <Group gap="xs" align="center" style={{ flex: '1 1 240px', maxWidth: 340, minWidth: 200 }}>
+          <TextInput
+            placeholder={t('storage.searchPlaceholder', 'Search inventory by name, code...')}
+            leftSection={<RiSearchLine size={16} style={{ color: 'var(--text-muted)' }} />}
+            rightSection={
+              search ? (
+                <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => setSearch('')} title="Clear search">
+                  <RiCloseLine size={14} />
+                </ActionIcon>
+              ) : null
+            }
+            value={search}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              setCurrentPage(1);
+            }}
+            radius="md"
+            size="sm"
+            style={{ flex: 1 }}
+            styles={{
+              input: {
+                height: 36,
+                fontSize: '13px',
+              },
+            }}
+          />
+
+          {(search || showLowStockOnly) && (
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="md"
+              radius="md"
+              onClick={() => {
+                setSearch('');
+                setShowLowStockOnly(false);
                 setCurrentPage(1);
               }}
-              style={{ flex: '1 1 240px', minWidth: 200 }}
-              radius="md"
-              size="xs"
-              styles={{
-                input: {
-                  fontSize: '12px',
-                  height: 32,
-                },
-              }}
-            />
-
-            {(search || showLowStockOnly) && (
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="sm"
-                radius="md"
-                onClick={() => {
-                  setSearch('');
-                  setShowLowStockOnly(false);
-                  setCurrentPage(1);
-                }}
-                title={t('common.clear', 'Reset filters')}
-                style={{ height: 32 }}
-              >
-                <RiCloseLine size={15} />
-              </ActionIcon>
-            )}
-          </Group>
-
-          {/* Row 2: Executive Store & Low Stock Filter Pills */}
-          <Box style={{ overflowX: 'auto', paddingBottom: 2 }} className="custom-scrollbar">
-            <Group gap={6} wrap="nowrap">
-              {/* Mini Store Tab */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveStore('MINI');
-                  setCurrentPage(1);
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  height: 30,
-                  padding: '0 10px',
-                  borderRadius: 7,
-                  fontSize: '11px',
-                  fontWeight: activeStore === 'MINI' ? 700 : 500,
-                  fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                  backgroundColor: activeStore === 'MINI'
-                    ? 'rgba(245, 158, 11, 0.12)'
-                    : 'var(--surface-hover, rgba(0, 0, 0, 0.03))',
-                  color: activeStore === 'MINI'
-                    ? 'var(--text-main, #F59E0B)'
-                    : 'var(--text-muted, #94a3b8)',
-                  border: activeStore === 'MINI'
-                    ? '1px solid rgba(245, 158, 11, 0.45)'
-                    : '1px solid var(--surface-border-subtle, rgba(255, 255, 255, 0.07))',
-                  boxShadow: activeStore === 'MINI' ? '0 1px 6px rgba(245, 158, 11, 0.12)' : 'none',
-                }}
-                className={activeStore === 'MINI' ? '' : 'hover:border-border hover:text-foreground hover:bg-muted/50'}
-              >
-                <RiStore2Line
-                  size={13}
-                  style={{
-                    color: activeStore === 'MINI' ? '#F59E0B' : 'var(--text-muted, currentColor)',
-                    flexShrink: 0,
-                  }}
-                />
-                <span>{t('storage.miniStore', 'Mini Store')}</span>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: 16,
-                    height: 16,
-                    padding: '0 4px',
-                    borderRadius: 9999,
-                    fontSize: '9.5px',
-                    fontWeight: 700,
-                    backgroundColor: activeStore === 'MINI'
-                      ? 'rgba(245, 158, 11, 0.22)'
-                      : 'var(--surface-border, rgba(148, 163, 184, 0.15))',
-                    color: activeStore === 'MINI'
-                      ? 'var(--primary-accent, #F59E0B)'
-                      : 'var(--text-muted, #94a3b8)',
-                  }}
-                >
-                  {materials?.length || 0}
-                </span>
-              </button>
-
-              {/* Main Store Tab */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveStore('MAIN');
-                  setCurrentPage(1);
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  height: 30,
-                  padding: '0 10px',
-                  borderRadius: 7,
-                  fontSize: '11px',
-                  fontWeight: activeStore === 'MAIN' ? 700 : 500,
-                  fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                  backgroundColor: activeStore === 'MAIN'
-                    ? 'rgba(245, 158, 11, 0.12)'
-                    : 'var(--surface-hover, rgba(0, 0, 0, 0.03))',
-                  color: activeStore === 'MAIN'
-                    ? 'var(--text-main, #F59E0B)'
-                    : 'var(--text-muted, #94a3b8)',
-                  border: activeStore === 'MAIN'
-                    ? '1px solid rgba(245, 158, 11, 0.45)'
-                    : '1px solid var(--surface-border-subtle, rgba(255, 255, 255, 0.07))',
-                  boxShadow: activeStore === 'MAIN' ? '0 1px 6px rgba(245, 158, 11, 0.12)' : 'none',
-                }}
-                className={activeStore === 'MAIN' ? '' : 'hover:border-border hover:text-foreground hover:bg-muted/50'}
-              >
-                <RiArchiveLine
-                  size={13}
-                  style={{
-                    color: activeStore === 'MAIN' ? '#F59E0B' : 'var(--text-muted, currentColor)',
-                    flexShrink: 0,
-                  }}
-                />
-                <span>{t('storage.mainStore', 'Main Store')}</span>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: 16,
-                    height: 16,
-                    padding: '0 4px',
-                    borderRadius: 9999,
-                    fontSize: '9.5px',
-                    fontWeight: 700,
-                    backgroundColor: activeStore === 'MAIN'
-                      ? 'rgba(245, 158, 11, 0.22)'
-                      : 'var(--surface-border, rgba(148, 163, 184, 0.15))',
-                    color: activeStore === 'MAIN'
-                      ? 'var(--primary-accent, #F59E0B)'
-                      : 'var(--text-muted, #94a3b8)',
-                  }}
-                >
-                  {materials?.length || 0}
-                </span>
-              </button>
-
-              {/* Low Stock Alert Pill */}
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLowStockOnly(!showLowStockOnly);
-                  setCurrentPage(1);
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  height: 30,
-                  padding: '0 10px',
-                  borderRadius: 7,
-                  fontSize: '11px',
-                  fontWeight: showLowStockOnly ? 700 : 500,
-                  fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  transition: 'all 0.18s ease',
-                  backgroundColor: showLowStockOnly
-                    ? 'rgba(239, 68, 68, 0.12)'
-                    : 'var(--surface-hover, rgba(0, 0, 0, 0.03))',
-                  color: showLowStockOnly
-                    ? '#EF4444'
-                    : 'var(--text-muted, #94a3b8)',
-                  border: showLowStockOnly
-                    ? '1px solid rgba(239, 68, 68, 0.45)'
-                    : '1px solid var(--surface-border-subtle, rgba(255, 255, 255, 0.07))',
-                  boxShadow: showLowStockOnly ? '0 1px 6px rgba(239, 68, 68, 0.12)' : 'none',
-                }}
-                className={showLowStockOnly ? '' : 'hover:border-border hover:text-foreground hover:bg-muted/50'}
-                title={showLowStockOnly ? "Click to view all stock items" : "Filter items with critical inventory"}
-              >
-                <RiAlertLine
-                  size={13}
-                  style={{
-                    color: showLowStockOnly ? '#EF4444' : lowStockCount > 0 ? '#F59E0B' : 'var(--text-muted, currentColor)',
-                    flexShrink: 0,
-                  }}
-                />
-                <span>{t('storage.showLowStock', 'Low Stock Alert')}</span>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: 16,
-                    height: 16,
-                    padding: '0 4px',
-                    borderRadius: 9999,
-                    fontSize: '9.5px',
-                    fontWeight: 700,
-                    backgroundColor: showLowStockOnly
-                      ? 'rgba(239, 68, 68, 0.22)'
-                      : lowStockCount > 0
-                      ? 'rgba(239, 68, 68, 0.12)'
-                      : 'var(--surface-border, rgba(148, 163, 184, 0.15))',
-                    color: showLowStockOnly
-                      ? '#EF4444'
-                      : lowStockCount > 0
-                      ? '#EF4444'
-                      : 'var(--text-muted, #94a3b8)',
-                  }}
-                >
-                  {lowStockCount}
-                </span>
-              </button>
-            </Group>
-          </Box>
-        </Stack>
-      </Box>
+              title={t('common.clear', 'Reset filters')}
+              style={{ height: 36 }}
+            >
+              <RiCloseLine size={16} />
+            </ActionIcon>
+          )}
+        </Group>
+      </Group>
 
       {/* 3. Storage Data Table Card */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
@@ -606,20 +509,20 @@ export default function Storage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[60px] py-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('storage.table.image', 'Image')}</TableHead>
-                <TableHead className="py-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('common.material', 'Material')}</TableHead>
-                <TableHead className="py-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('orders.detail.quantity', 'Quantity')}</TableHead>
-                <TableHead className="text-right py-2 px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{t('common.actions', 'Actions')}</TableHead>
+                <TableHead className="w-[70px] py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('storage.table.image', 'Image')}</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.material', 'Material')}</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('orders.detail.quantity', 'Quantity')}</TableHead>
+                <TableHead className="text-right py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-xs">{t('storage.loading', 'Loading inventory...')}</TableCell>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">{t('storage.loading', 'Loading inventory...')}</TableCell>
                 </TableRow>
               ) : filteredMaterials?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-xs">{t('storage.noMaterials', 'No materials found.')}</TableCell>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">{t('storage.noMaterials', 'No materials found.')}</TableCell>
                 </TableRow>
               ) : (
                 paginatedMaterials.map((m) => {
@@ -628,53 +531,53 @@ export default function Storage() {
 
                   return (
                     <TableRow key={m.id}>
-                      <TableCell className="py-2 px-3">
+                      <TableCell className="py-3 px-4">
                         {m.imageUrl ? (
                           <div 
-                            className="w-8 h-8 shrink-0 bg-secondary/50 rounded flex items-center justify-center overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
+                            className="w-9 h-9 shrink-0 bg-secondary/50 rounded-md flex items-center justify-center overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => setPreviewImage(getImageUrl(m.imageUrl) || null)}
                           >
                             <img src={getImageUrl(m.imageUrl)} alt={getLocName(m)} className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
-                            <ImageOff className="h-3.5 w-3.5 text-muted-foreground" />
+                          <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center">
+                            <ImageOff className="h-4 w-4 text-muted-foreground" />
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="py-2 px-3">
-                        <div className="text-xs font-semibold text-foreground leading-snug">{getLocName(m)}</div>
-                        <div className="text-[11px] text-muted-foreground leading-snug">
+                      <TableCell className="py-3 px-4">
+                        <div className="text-[13px] font-semibold text-foreground leading-snug">{getLocName(m)}</div>
+                        <div className="text-xs text-muted-foreground leading-snug mt-0.5">
                           {i18n?.language === 'am' ? m.nameEn : m.nameAm} • {formatUnit(m.unit)}
                         </div>
                       </TableCell>
-                      <TableCell className="py-2 px-3">
-                        <div className="text-xs font-bold text-foreground leading-snug">{stock} {formatUnit(m.unit)}</div>
+                      <TableCell className="py-3 px-4">
+                        <div className="text-[13px] font-bold text-foreground leading-snug">{stock} {formatUnit(m.unit)}</div>
                         {activeStore === 'MAIN' ? (
-                          m.isBulkTracked && <div className="text-[10px] text-amber-500 font-semibold leading-tight">{t('storage.bulkTracked', 'Bulk Tracked')}</div>
+                          m.isBulkTracked && <div className="text-[11px] text-amber-500 font-semibold leading-tight mt-0.5">{t('storage.bulkTracked', 'Bulk Tracked')}</div>
                         ) : (
-                          !m.isBulkTracked && <div className="text-[10px] text-blue-500 font-medium leading-tight">{t('storage.directDelivery', 'Direct Delivery')}</div>
+                          !m.isBulkTracked && <div className="text-[11px] text-blue-500 font-medium leading-tight mt-0.5">{t('storage.directDelivery', 'Direct Delivery')}</div>
                         )}
                       </TableCell>
-                      <TableCell className="text-right py-2 px-3">
+                      <TableCell className="text-right py-3 px-4">
                         <PermissionGate permission="storage.edit">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               title={t('directSales.viewHistory', 'View History')}
                               onClick={() => setHistoryMaterial(m)}
                             >
-                              <History className="w-3.5 h-3.5" />
+                              <History className="w-4 h-4" />
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="h-7 px-2 text-xs gap-1"
+                              className="h-8 px-2.5 text-xs gap-1.5"
                               onClick={() => setRestockMaterial(m)}
                             >
-                              <PackagePlus className="w-3 h-3" />
+                              <PackagePlus className="w-3.5 h-3.5" />
                               <span>{t('storage.restock', 'Restock')}</span>
                             </Button>
                             <span 
@@ -684,25 +587,25 @@ export default function Storage() {
                               <Button 
                                 variant="default" 
                                 size="sm" 
-                                className="h-7 px-2 text-xs gap-1 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs disabled:pointer-events-none"
+                                className="h-8 px-2.5 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs disabled:pointer-events-none"
                                 onClick={() => handleOpenTransfer(m)}
                                 disabled={mainStock <= 0 && getStock(m, 'MINI') <= 0}
                               >
-                                <ArrowRightLeft className="w-3 h-3" />
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
                                 <span>{t('storage.transfer', 'Transfer')}</span>
                               </Button>
                             </span>
                             <DropdownMenu>
-                              <DropdownMenuTrigger className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-muted focus:outline-none text-muted-foreground hover:text-foreground">
-                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted focus:outline-none text-muted-foreground hover:text-foreground">
+                                <MoreHorizontal className="h-4 w-4" />
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44 text-xs">
+                              <DropdownMenuContent align="end" className="w-48 text-xs">
                                 <DropdownMenuItem onClick={() => setAdjustMaterial(m)} className="gap-2 text-xs cursor-pointer">
-                                  <Settings2 className="h-3.5 w-3.5" />
+                                  <Settings2 className="h-4 w-4" />
                                   <span>{t('storage.adjustStock', 'Adjust Stock')}</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setCountMaterial(m)} className="gap-2 text-xs cursor-pointer">
-                                  <ClipboardCheck className="h-3.5 w-3.5" />
+                                  <ClipboardCheck className="h-4 w-4" />
                                   <span>{t('storage.physicalCount', 'Physical Count')}</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
