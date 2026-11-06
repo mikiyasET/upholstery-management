@@ -12,17 +12,20 @@ import App from "./App.tsx";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/dates/styles.css";
-import "@mantine/charts/styles.css";
 import "./theme/globalStyles.css";
 import "./index.css";
 import "./i18n";
+import { preloadPlateAssets } from "./utils/plateAssets";
+
+// Preload plate assets (CARGO2.ttf and holographic-foil.jpg) when app boots
+preloadPlateAssets();
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000,
+      staleTime: 0,
     },
   },
 });

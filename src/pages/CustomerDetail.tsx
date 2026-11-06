@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { formatAppDate, getImageUrl, formatCurrency, formatStatus } from '../lib/utils';
-import { formatPlateNumber, parsePlateNumber } from '../utils/plate';
+import { formatPlateNumber } from '../utils/plate';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -18,27 +18,27 @@ import {
   CopyButton,
 } from '@mantine/core';
 import {
-  RiArrowLeftLine,
-  RiRefreshLine,
-  RiGroupLine,
-  RiCarLine,
-  RiFileTextLine,
-  RiUser3Line,
-  RiPhoneLine,
-  RiCalendarLine,
-  RiFileCopyLine,
-  RiCheckLine,
-  RiEyeLine,
-  RiSearchLine,
-  RiCloseLine,
-  RiShieldCheckLine,
-  RiWallet3Line,
-  RiBarChartLine,
-  RiAddLine,
-  RiTimeLine,
-  RiStickyNoteLine,
-} from 'react-icons/ri';
-import { ExecutiveAddButton, TablePagination } from '../components/common';
+  ArrowLeft,
+  RotateCw,
+  Users,
+  Car,
+  FileText,
+  User,
+  Phone,
+  Calendar,
+  Copy,
+  Check,
+  Eye,
+  Search,
+  X,
+  ShieldCheck,
+  Wallet,
+  BarChart2,
+  Plus,
+  Clock,
+  StickyNote,
+} from 'lucide-react';
+import { ExecutiveAddButton, TablePagination, PlateBadge } from '../components/common';
 import {
   Table,
   TableBody,
@@ -49,47 +49,7 @@ import {
 } from '../components/DataTable';
 
 const renderPlateBadge = (plateStr: string, compact = false) => {
-  const parsed = parsePlateNumber(plateStr);
-  if (parsed) {
-    let bg = '#FFFFFF';
-    let fg = '#111827';
-    if (parsed.category === '1') fg = '#B91C1C';
-    else if (parsed.category === '2') fg = '#1E50BC';
-    else if (parsed.category === '3') fg = '#15803D';
-    else if (parsed.category === '5') fg = '#EA580C';
-    else if (['un', 'au', 'temp'].includes(parsed.category)) fg = '#009BDA';
-    else if (parsed.category === 'police') { bg = '#FFB300'; fg = '#111827'; }
-
-    return (
-      <div 
-        className={compact 
-          ? "inline-flex items-stretch shadow-xs rounded overflow-hidden border border-black/10 text-[10px]" 
-          : "inline-flex items-stretch shadow-md rounded overflow-hidden border border-black/15 transition-transform group-hover:scale-102"}
-        style={{ color: fg, backgroundColor: bg }}
-      >
-        <div className="flex flex-col items-center justify-center px-1.5 py-0.5 text-[7px] leading-[1.1] font-black text-white" style={{ backgroundColor: fg }}>
-          <span>{parsed.amharic}</span>
-          <span>{parsed.english}</span>
-        </div>
-        
-        <div className="flex items-center justify-center px-1.5 border-r" style={{ borderColor: `${fg}30` }}>
-           <span className="text-[11px] font-black">{parsed.category.toUpperCase()}</span>
-        </div>
-        
-        <div className="flex items-center justify-center px-2 py-0.5">
-           <span className="text-xs font-mono font-black tracking-wider">{parsed.serial}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="inline-flex items-center px-2 py-0.5 bg-muted/60 border border-border rounded shadow-xs">
-      <span className="font-mono text-xs font-black tracking-wider text-foreground">
-        {formatPlateNumber(plateStr)}
-      </span>
-    </div>
-  );
+  return <PlateBadge plate={plateStr} size={compact ? 'xs' : 'sm'} />;
 };
 
 export default function CustomerDetail() {
@@ -187,7 +147,7 @@ export default function CustomerDetail() {
       <div className="flex h-[calc(100vh-140px)] items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center max-w-sm bg-card border border-border p-8 rounded-2xl shadow-sm">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-            <RiGroupLine size={28} />
+            <Users size={28} />
           </div>
           <div>
             <h2 className="text-lg font-bold tracking-tight text-foreground">{t('customers.detail.notFound', 'Customer Not Found')}</h2>
@@ -219,7 +179,7 @@ export default function CustomerDetail() {
             alignItems: 'center',
           }}
         >
-          <RiGroupLine size={13} style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: '5px' }} />
+          <Users size={13} style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', marginRight: '5px' }} />
           <span>{t('customers.title', 'Customers & Vehicles')}</span>
         </Text>
         <Text size="xs" fw={600} c="dimmed" style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -243,7 +203,7 @@ export default function CustomerDetail() {
               onClick={() => navigate('/customers')}
               title={t('common.goBack', 'Back')}
             >
-              <RiArrowLeftLine size={18} />
+              <ArrowLeft size={18} />
             </ActionIcon>
 
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-xs">
@@ -268,7 +228,7 @@ export default function CustomerDetail() {
                   href={`tel:${customer.phoneNumber}`}
                   className="inline-flex items-center gap-1.5 font-medium hover:text-primary transition-colors"
                 >
-                  <RiPhoneLine size={13} className="text-amber-500" />
+                  <Phone size={13} className="text-amber-500" />
                   <span>{customer.phoneNumber}</span>
                 </a>
 
@@ -276,7 +236,7 @@ export default function CustomerDetail() {
                   {({ copied, copy }) => (
                     <Tooltip label={copied ? t('common.copied', 'Copied') : t('customers.detail.copyPhone', 'Copy Phone')} withArrow>
                       <ActionIcon color={copied ? 'teal' : 'gray'} variant="subtle" size="xs" onClick={copy}>
-                        {copied ? <RiCheckLine size={12} /> : <RiFileCopyLine size={12} />}
+                        {copied ? <Check size={12} /> : <Copy size={12} />}
                       </ActionIcon>
                     </Tooltip>
                   )}
@@ -285,7 +245,7 @@ export default function CustomerDetail() {
                 <span className="opacity-40">•</span>
 
                 <span className="inline-flex items-center gap-1.5">
-                  <RiCalendarLine size={13} />
+                  <Calendar size={13} />
                   <span>{t('customers.detail.memberSince', 'Client since')} {formatAppDate(customer.createdAt)}</span>
                 </span>
               </div>
@@ -304,7 +264,7 @@ export default function CustomerDetail() {
                 onClick={() => refetch()}
                 aria-label="Refresh"
               >
-                <RiRefreshLine size={17} />
+                <RotateCw size={17} />
               </ActionIcon>
             </Tooltip>
 
@@ -333,7 +293,7 @@ export default function CustomerDetail() {
               </p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
-              <RiWallet3Line size={17} />
+              <Wallet size={17} />
             </div>
           </div>
         </div>
@@ -353,7 +313,7 @@ export default function CustomerDetail() {
               </p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shrink-0">
-              <RiFileTextLine size={17} />
+              <FileText size={17} />
             </div>
           </div>
         </div>
@@ -373,7 +333,7 @@ export default function CustomerDetail() {
               </p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
-              <RiCarLine size={17} />
+              <Car size={17} />
             </div>
           </div>
         </div>
@@ -393,7 +353,7 @@ export default function CustomerDetail() {
               </p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shrink-0">
-              <RiBarChartLine size={17} />
+              <BarChart2 size={17} />
             </div>
           </div>
         </div>
@@ -420,7 +380,7 @@ export default function CustomerDetail() {
             color="amber"
             size="sm"
             radius="md"
-            leftSection={<RiCarLine size={16} />}
+            leftSection={<Car size={16} />}
             rightSection={
               <MantineBadge
                 size="xs"
@@ -447,7 +407,7 @@ export default function CustomerDetail() {
             color="amber"
             size="sm"
             radius="md"
-            leftSection={<RiFileTextLine size={16} />}
+            leftSection={<FileText size={16} />}
             rightSection={
               <MantineBadge
                 size="xs"
@@ -474,7 +434,7 @@ export default function CustomerDetail() {
             color="amber"
             size="sm"
             radius="md"
-            leftSection={<RiUser3Line size={16} />}
+            leftSection={<User size={16} />}
             onClick={() => setActiveTab('profile')}
             style={{
               fontWeight: activeTab === 'profile' ? 700 : 500,
@@ -495,7 +455,7 @@ export default function CustomerDetail() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <RiCarLine className="text-amber-500" size={17} />
+                <Car className="text-amber-500" size={17} />
                 <span>{t('customers.detail.registeredVehicles', 'Registered Vehicle Fleet')}</span>
                 <span className="text-xs font-semibold text-muted-foreground">({vehiclesCount})</span>
               </h2>
@@ -508,7 +468,7 @@ export default function CustomerDetail() {
               color="amber"
               size="xs"
               radius="md"
-              leftSection={<RiAddLine size={14} />}
+              leftSection={<Plus size={14} />}
               onClick={() => navigate('/orders/new')}
             >
               {t('customers.detail.addVehicle', 'Register Vehicle')}
@@ -518,7 +478,7 @@ export default function CustomerDetail() {
           {customer.vehicles.length === 0 ? (
             <div className="bg-card border border-border rounded-2xl p-12 text-center flex flex-col items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground/60 mb-3">
-                <RiCarLine size={26} />
+                <Car size={26} />
               </div>
               <h3 className="text-sm font-bold text-foreground">
                 {t('customers.detail.noVehicles', 'No vehicles registered yet')}
@@ -532,7 +492,7 @@ export default function CustomerDetail() {
                 size="xs"
                 radius="md"
                 mt="md"
-                leftSection={<RiAddLine size={14} />}
+                leftSection={<Plus size={14} />}
                 onClick={() => navigate('/orders/new')}
               >
                 {t('dashboard.newOrder', 'Create First Order')}
@@ -564,7 +524,7 @@ export default function CustomerDetail() {
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted/70 to-card">
-                          <RiCarLine size={36} className="text-muted-foreground/30 mb-1" />
+                          <Car size={36} className="text-muted-foreground/30 mb-1" />
                           <span className="text-[11px] text-muted-foreground/60 font-medium">
                             {t('common.noImage', 'No Vehicle Image')}
                           </span>
@@ -619,7 +579,7 @@ export default function CustomerDetail() {
                           size="xs"
                           radius="md"
                           fullWidth
-                          leftSection={<RiAddLine size={13} />}
+                          leftSection={<Plus size={13} />}
                           onClick={() => navigate('/orders/new')}
                           style={{
                             fontSize: '12px',
@@ -665,11 +625,11 @@ export default function CustomerDetail() {
           <div className="bg-card border border-border rounded-xl p-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <TextInput
               placeholder={t('orders.searchPlaceholder', 'Search by Order # or Vehicle Plate...')}
-              leftSection={<RiSearchLine size={15} style={{ color: 'var(--text-muted)' }} />}
+              leftSection={<Search size={15} style={{ color: 'var(--text-muted)' }} />}
               rightSection={
                 orderSearch ? (
                   <ActionIcon variant="subtle" size="xs" color="gray" onClick={() => setOrderSearch('')}>
-                    <RiCloseLine size={13} />
+                    <X size={13} />
                   </ActionIcon>
                 ) : null
               }
@@ -717,7 +677,7 @@ export default function CustomerDetail() {
                     setOrderStatusFilter('ALL');
                     setOrderPage(1);
                   }}
-                  leftSection={<RiCloseLine size={13} />}
+                  leftSection={<X size={13} />}
                   style={{ fontSize: '11px', height: 30 }}
                 >
                   {t('common.clear', 'Reset')}
@@ -731,7 +691,7 @@ export default function CustomerDetail() {
             {filteredOrders.length === 0 ? (
               <div className="p-12 text-center flex flex-col items-center justify-center">
                 <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground/60 mb-3">
-                  <RiFileTextLine size={26} />
+                  <FileText size={26} />
                 </div>
                 <h3 className="text-sm font-bold text-foreground">
                   {t('customers.detail.noOrders', 'No work orders found')}
@@ -762,7 +722,7 @@ export default function CustomerDetail() {
                     size="xs"
                     radius="md"
                     mt="md"
-                    leftSection={<RiAddLine size={14} />}
+                    leftSection={<Plus size={14} />}
                     onClick={() => navigate('/orders/new')}
                   >
                     {t('dashboard.newOrder', 'Create First Order')}
@@ -793,7 +753,7 @@ export default function CustomerDetail() {
                         {/* Order # */}
                         <TableCell>
                           <div className="font-bold text-primary hover:underline flex items-center gap-1.5 text-xs">
-                            <RiFileTextLine size={14} className="text-amber-500" />
+                            <FileText size={14} className="text-amber-500" />
                             <span>#{o.id.substring(o.id.length - 6).toUpperCase()}</span>
                           </div>
                         </TableCell>
@@ -801,7 +761,7 @@ export default function CustomerDetail() {
                         {/* Date */}
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <RiTimeLine size={13} />
+                            <Clock size={13} />
                             <span>{formatAppDate(o.createdAt, true)}</span>
                           </div>
                         </TableCell>
@@ -862,7 +822,7 @@ export default function CustomerDetail() {
                             color="amber"
                             size="xs"
                             radius="md"
-                            rightSection={<RiEyeLine size={13} />}
+                            rightSection={<Eye size={13} />}
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/orders/${o.id}`);
@@ -909,7 +869,7 @@ export default function CustomerDetail() {
           <div className="bg-card border border-border p-5 rounded-xl shadow-xs space-y-4">
             <div className="flex items-center gap-2 border-b border-border/60 pb-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                <RiUser3Line size={16} />
+                <User size={16} />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">
@@ -940,14 +900,14 @@ export default function CustomerDetail() {
                     href={`tel:${customer.phoneNumber}`}
                     className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
                   >
-                    <RiPhoneLine size={12} />
+                    <Phone size={12} />
                     {customer.phoneNumber}
                   </a>
                   <CopyButton value={customer.phoneNumber}>
                     {({ copied, copy }) => (
                       <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow>
                         <ActionIcon size="xs" variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                          {copied ? <RiCheckLine size={12} /> : <RiFileCopyLine size={12} />}
+                          {copied ? <Check size={12} /> : <Copy size={12} />}
                         </ActionIcon>
                       </Tooltip>
                     )}
@@ -967,7 +927,7 @@ export default function CustomerDetail() {
                     {({ copied, copy }) => (
                       <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow>
                         <ActionIcon size="xs" variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                          {copied ? <RiCheckLine size={12} /> : <RiFileCopyLine size={12} />}
+                          {copied ? <Check size={12} /> : <Copy size={12} />}
                         </ActionIcon>
                       </Tooltip>
                     )}
@@ -990,7 +950,7 @@ export default function CustomerDetail() {
           <div className="bg-card border border-border p-5 rounded-xl shadow-xs space-y-4">
             <div className="flex items-center gap-2 border-b border-border/60 pb-3">
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                <RiShieldCheckLine size={16} />
+                <ShieldCheck size={16} />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">
@@ -1034,7 +994,7 @@ export default function CustomerDetail() {
           <div className="bg-card border border-border p-5 rounded-xl shadow-xs space-y-4">
             <div className="flex items-center gap-2 border-b border-border/60 pb-3">
               <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                <RiStickyNoteLine size={16} />
+                <StickyNote size={16} />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">

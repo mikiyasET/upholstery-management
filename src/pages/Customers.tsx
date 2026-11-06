@@ -13,12 +13,11 @@ import {
   TableSearch
 } from '../components/DataTable';
 import { formatPlateNumber } from '../utils/plate';
-import { Car, Phone, CalendarDays } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatAppDate } from '../lib/utils';
+import { Car, Phone, CalendarDays, Eye } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader, TablePagination } from '../components/common';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { RiEyeLine } from 'react-icons/ri';
 
 type Customer = {
   id: string;
@@ -144,7 +143,7 @@ export default function Customers() {
                       <TableCell>
                         <div className="flex items-center gap-2 text-muted-foreground text-sm">
                           <CalendarDays className="w-4 h-4" />
-                          {format(new Date(c.createdAt), 'MMM d, yyyy')}
+                          {formatAppDate(c.createdAt)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -156,7 +155,7 @@ export default function Customers() {
                               size="sm"
                               onClick={() => navigate(`/customers/${c.id}`)}
                             >
-                              <RiEyeLine size={16} />
+                              <Eye size={16} />
                             </ActionIcon>
                           </Tooltip>
                         </div>

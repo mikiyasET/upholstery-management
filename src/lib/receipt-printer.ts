@@ -1,5 +1,4 @@
-import { formatCurrency, formatStatus, formatPaymentMethod } from './utils';
-import { format } from 'date-fns';
+import { formatCurrency, formatStatus, formatPaymentMethod, formatBrandSizeLabel, formatAppDate } from './utils';
 import { formatPlateNumber } from '../utils/plate';
 import JsBarcode from 'jsbarcode';
 import i18n from '../i18n';
@@ -182,11 +181,15 @@ export const printDirectSaleReceipt = (saleData: any) => {
   const customerName = saleData.customerName || (saleData.customer?.name) || i18n.t('receipt.walkInCustomer', 'Walk-in Client');
   const customerPhone = saleData.customerPhone || (saleData.customer?.phoneNumber || saleData.customer?.phone) || '';
   const cashierName = saleData.cashier?.name || '';
-  const formattedDate = saleData.saleDateTime ? format(new Date(saleData.saleDateTime), 'MMMM dd, yyyy • h:mm a') : 'N/A';
+  const formattedDate = saleData.saleDateTime ? formatAppDate(saleData.saleDateTime, true) : 'N/A';
 
   const rowsHtml = (saleData.lines || []).map((line: any, idx: number) => {
     const itemName = isAm && line.material?.nameAm ? line.material.nameAm : (line.material?.nameEn || i18n.t('receipt.material', 'Item'));
     const categoryName = isAm && line.material?.category?.nameAm ? line.material.category.nameAm : line.material?.category?.nameEn;
+    const brandLabel = formatBrandSizeLabel({ name: line.brandName, size: line.sizeName, color: line.colorName, type: line.typeName });
+    const brandBadge = brandLabel
+      ? `<span style="font-size: 10px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 1px 5px; border-radius: 3px; margin-left: 6px;">${brandLabel}</span>`
+      : '';
     const unitPrice = Number(line.priceAtSaleTime || 0);
     const qty = Number(line.quantity || 1);
     const lineTotal = unitPrice * qty;
@@ -195,7 +198,7 @@ export const printDirectSaleReceipt = (saleData: any) => {
       <tr>
         <td style="color: #6b7280; font-weight: 600; text-align: center; width: 32px;">${idx + 1}</td>
         <td>
-          <div style="font-weight: 600; color: #111827;">${itemName}</div>
+          <div style="font-weight: 600; color: #111827;">${itemName}${brandBadge}</div>
           ${categoryName ? `<div style="font-size: 11px; color: #6b7280;">${categoryName}</div>` : ''}
         </td>
         <td style="text-align: center; width: 75px;">
@@ -213,7 +216,7 @@ export const printDirectSaleReceipt = (saleData: any) => {
   const paymentsListHtml = (saleData.payments || []).map((p: any) => {
     const methodFormatted = formatPaymentMethod(p.method);
     const methodDetails = p.methodDetails ? ` (${p.methodDetails})` : '';
-    const dateFormatted = p.paidAt ? format(new Date(p.paidAt), 'MMM d, yyyy • h:mm a') : '';
+    const dateFormatted = p.paidAt ? formatAppDate(p.paidAt, true) : '';
     return `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px;">
         <div>
@@ -407,9 +410,12 @@ export const printOrderReceipt = (orderData: any) => {
       ? (sl.serviceCategory?.service?.nameAm || sl.serviceCategory?.nameAm || sl.serviceCategory?.service?.nameEn || sl.serviceCategory?.nameEn || i18n.t('receipt.service', 'Service'))
       : (sl.serviceCategory?.service?.nameEn || sl.serviceCategory?.nameEn || i18n.t('receipt.service', 'Service'));
     const categoryTier = isAm && sl.serviceCategory?.nameAm ? sl.serviceCategory.nameAm : sl.serviceCategory?.nameEn;
+    const stdPrice = Number(sl.serviceCategory?.price || 0);
     const unitPrice = Number(sl.priceAtOrderTime || 0);
-    const discount = Number(sl.discount || 0);
-    const lineTotal = unitPrice - discount;
+    const explicitDiscount = Number(sl.discount || 0);
+    const catalogSavings = stdPrice > unitPrice ? (stdPrice - unitPrice) : 0;
+    const discount = explicitDiscount > 0 ? explicitDiscount : catalogSavings;
+    const lineTotal = unitPrice - explicitDiscount;
 
     return `
       <tr>
@@ -424,10 +430,13 @@ export const printOrderReceipt = (orderData: any) => {
           </span>
         </td>
         <td style="text-align: center; font-weight: 600; width: 50px;">1</td>
-        <td style="text-align: right; font-family: ui-monospace, monospace; width: 100px;">${formatCurrency(unitPrice)}</td>
+        <td style="text-align: right; font-family: ui-monospace, monospace; width: 100px;">
+          <div>${formatCurrency(unitPrice)}</div>
+          ${stdPrice > unitPrice ? `<div style="font-size: 10px; color: #9ca3af; text-decoration: line-through;">${formatCurrency(stdPrice)}</div>` : ''}
+        </td>
         <td style="text-align: right; font-weight: 700; font-family: ui-monospace, monospace; width: 110px;">
           ${formatCurrency(lineTotal)}
-          ${discount > 0 ? `<div style="font-size: 10px; color: #dc2626; font-weight: normal;">(-${formatCurrency(discount)})</div>` : ''}
+          ${discount > 0 ? `<div style="font-size: 10px; color: #059669; font-weight: normal;">(-${formatCurrency(discount)})</div>` : ''}
         </td>
       </tr>
     `;
@@ -436,16 +445,28 @@ export const printOrderReceipt = (orderData: any) => {
   const baseOffset = servicesRows.length;
   const materialRows = (orderData.standaloneLines || []).map((ml: any, idx: number) => {
     const itemName = isAm && ml.material?.nameAm ? ml.material.nameAm : (ml.material?.nameEn || i18n.t('receipt.material', 'Material'));
+    const brandLabel = formatBrandSizeLabel({ name: ml.brandName, size: ml.sizeName, color: ml.colorName, type: ml.typeName });
+    const brandBadge = brandLabel
+      ? `<span style="font-size: 10px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 1px 5px; border-radius: 3px; margin-left: 6px;">${brandLabel}</span>`
+      : '';
+    const stdUnitPrice = Number(
+      ml.material?.brands?.find((b: any) => b.id === ml.materialBrandId)?.price ??
+      ml.material?.currentPrice ??
+      ml.priceAtOrderTime ??
+      0
+    );
     const unitPrice = Number(ml.priceAtOrderTime || 0);
     const qty = Number(ml.quantity || 1);
-    const discount = Number(ml.discount || 0);
-    const lineTotal = (unitPrice * qty) - discount;
+    const explicitDiscount = Number(ml.discount || 0);
+    const catalogSavings = stdUnitPrice > unitPrice ? ((stdUnitPrice - unitPrice) * qty) : 0;
+    const discount = explicitDiscount > 0 ? explicitDiscount : catalogSavings;
+    const lineTotal = (unitPrice * qty) - explicitDiscount;
 
     return `
       <tr>
         <td style="color: #6b7280; font-weight: 600; text-align: center; width: 32px;">${baseOffset + idx + 1}</td>
         <td>
-          <div style="font-weight: 600; color: #111827;">${itemName}</div>
+          <div style="font-weight: 600; color: #111827;">${itemName}${brandBadge}</div>
           <div style="font-size: 11px; color: #6b7280;">${i18n.t('receipt.standaloneMaterial', 'Standalone Material / Part')}</div>
         </td>
         <td style="text-align: center; width: 75px;">
@@ -454,10 +475,13 @@ export const printOrderReceipt = (orderData: any) => {
           </span>
         </td>
         <td style="text-align: center; font-weight: 600; width: 50px;">${qty}</td>
-        <td style="text-align: right; font-family: ui-monospace, monospace; width: 100px;">${formatCurrency(unitPrice)}</td>
+        <td style="text-align: right; font-family: ui-monospace, monospace; width: 100px;">
+          <div>${formatCurrency(unitPrice)}</div>
+          ${stdUnitPrice > unitPrice ? `<div style="font-size: 10px; color: #9ca3af; text-decoration: line-through;">${formatCurrency(stdUnitPrice)}</div>` : ''}
+        </td>
         <td style="text-align: right; font-weight: 700; font-family: ui-monospace, monospace; width: 110px;">
           ${formatCurrency(lineTotal)}
-          ${discount > 0 ? `<div style="font-size: 10px; color: #dc2626; font-weight: normal;">(-${formatCurrency(discount)})</div>` : ''}
+          ${discount > 0 ? `<div style="font-size: 10px; color: #059669; font-weight: normal;">(-${formatCurrency(discount)})</div>` : ''}
         </td>
       </tr>
     `;
@@ -487,12 +511,32 @@ export const printOrderReceipt = (orderData: any) => {
     `;
   });
 
-  const allRowsHtml = [...servicesRows, ...materialRows, ...additionalRows].join('');
+  const serviceFee = Number(orderData.serviceFee || 0);
+  const serviceFeeRow = serviceFee > 0 ? `
+    <tr>
+      <td style="color: #6b7280; font-weight: 600; text-align: center; width: 32px;">${additionalOffset + (orderData.additionalCharges?.length || 0) + 1}</td>
+      <td>
+        <div style="font-weight: 600; color: #111827;">${i18n.t('orders.detail.serviceFee', 'Service Fee')}</div>
+        <div style="font-size: 11px; color: #6b7280;">${i18n.t('receipt.serviceFeeDesc', 'Order Service / Labor Fee')}</div>
+      </td>
+      <td style="text-align: center; width: 75px;">
+        <span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1;">
+          ${i18n.t('receipt.fee', 'Fee')}
+        </span>
+      </td>
+      <td style="text-align: center; font-weight: 600; width: 50px;">1</td>
+      <td style="text-align: right; font-family: ui-monospace, monospace; width: 100px;">${formatCurrency(serviceFee)}</td>
+      <td style="text-align: right; font-weight: 700; font-family: ui-monospace, monospace; width: 110px;">${formatCurrency(serviceFee)}</td>
+    </tr>
+  ` : '';
 
-  const subtotal = orderData.totalPrice || (
+  const allRowsHtml = [...servicesRows, ...materialRows, ...additionalRows, serviceFeeRow].filter(Boolean).join('');
+
+  const subtotal = orderData.totalPrice !== undefined ? Number(orderData.totalPrice) : (
     (orderData.serviceLines || []).reduce((s: number, l: any) => s + Number(l.priceAtOrderTime || 0), 0) +
     (orderData.standaloneLines || []).reduce((s: number, l: any) => s + (Number(l.priceAtOrderTime || 0) * Number(l.quantity || 1)), 0) +
-    (orderData.additionalCharges || []).reduce((s: number, l: any) => s + Number(l.price || l.amount || 0), 0)
+    (orderData.additionalCharges || []).reduce((s: number, l: any) => s + Number(l.price || l.amount || 0), 0) +
+    serviceFee
   );
 
   const discountAmount = Number(orderData.totalDiscount || orderData.discountAmount || 0);
@@ -506,12 +550,12 @@ export const printOrderReceipt = (orderData: any) => {
   const customerPhone = orderData.customer?.phoneNumber || orderData.customer?.phone || '';
   const vehiclePlate = orderData.vehicle ? formatPlateNumber(orderData.vehicle.plateNumber) : '';
   const vehicleModel = orderData.vehicle?.carModel ? `${[orderData.vehicle.carModel?.brand?.name, orderData.vehicle.carModel?.name].filter(Boolean).join(' ')}` : '';
-  const formattedDate = orderData.orderDateTime ? format(new Date(orderData.orderDateTime), 'MMMM dd, yyyy • h:mm a') : 'N/A';
+  const formattedDate = orderData.orderDateTime ? formatAppDate(orderData.orderDateTime, true) : 'N/A';
 
   const paymentsListHtml = (orderData.payments || []).map((p: any) => {
     const methodFormatted = formatPaymentMethod(p.method);
     const methodDetails = p.methodDetails ? ` (${p.methodDetails})` : '';
-    const dateFormatted = p.paidAt ? format(new Date(p.paidAt), 'MMM d, yyyy • h:mm a') : '';
+    const dateFormatted = p.paidAt ? formatAppDate(p.paidAt, true) : '';
     const recordedByName = p.recordedBy?.name ? ` • ${i18n.t('receipt.recordedBy', 'Recorded by {{name}}', { name: p.recordedBy.name })}` : '';
     return `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px;">
@@ -564,6 +608,13 @@ export const printOrderReceipt = (orderData: any) => {
               <div style="font-size: 16px; font-weight: 800; font-family: ui-monospace, monospace; color: #111827;">
                 #${orderData.orderNumber}
               </div>
+              ${orderData.fsrNumber ? `
+                <div style="display: inline-block; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 4px; margin-top: 3px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #1e40af; font-family: ui-monospace, monospace;">
+                    FSR #: ${orderData.fsrNumber}
+                  </span>
+                </div>
+              ` : ''}
               <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">
                 ${formattedDate}
               </div>
@@ -687,6 +738,7 @@ export const printOrderReceipt = (orderData: any) => {
               ${barcodeSvg}
             </div>
             <div style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: #374151; letter-spacing: 0.1em;">${orderData.orderNumber}</div>
+            ${orderData.fsrNumber ? `<div style="font-family: ui-monospace, monospace; font-size: 11px; font-weight: 600; color: #4b5563; margin-top: 2px;">FSR AUDIT REF: ${orderData.fsrNumber}</div>` : ''}
             <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
               ${i18n.t('receipt.footer', 'Official Work Order Invoice • Yonatan Car Decoration & Upholstery')}
             </div>

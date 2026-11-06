@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 import { Group, Pagination, Select, Text, Box } from "@mantine/core";
 import {
-  RiFileList3Line,
-  RiStackLine,
-  RiListCheck2,
-  RiArrowLeftSLine,
-  RiArrowRightSLine,
-  RiArrowLeftDoubleLine,
-  RiArrowRightDoubleLine,
-  RiMoreLine,
-  RiInboxLine,
-} from "react-icons/ri";
+  FileText,
+  Layers,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreHorizontal,
+  Inbox,
+} from "lucide-react";
 
 export interface TablePaginationProps {
   page: number;
@@ -98,7 +98,7 @@ export function TablePagination({
           {total === 0 ? (
             <Group gap={8} align="center">
               <Box className="table-pagination-icon-bubble">
-                <RiInboxLine size={14} />
+                <Inbox size={14} />
               </Box>
               <Text size="xs" c="dimmed">
                 No {itemLabel} to display
@@ -107,7 +107,7 @@ export function TablePagination({
           ) : (
             <>
               <Box className="table-pagination-icon-bubble">
-                <RiFileList3Line size={14} />
+                <FileText size={14} />
               </Box>
 
               <Group gap={4} align="center" wrap="nowrap">
@@ -132,7 +132,7 @@ export function TablePagination({
 
               <Box visibleFrom="sm">
                 <Group gap={5} align="center" wrap="nowrap">
-                  <RiStackLine size={13} style={{ color: "var(--text-muted)" }} />
+                  <Layers size={13} style={{ color: "var(--text-muted)" }} />
                   <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
                     Page{" "}
                     <Text span fw={700} style={{ color: "var(--text-main)" }}>
@@ -151,7 +151,7 @@ export function TablePagination({
 
         {onPageSizeChange && (
           <Group gap={6} align="center" className="table-pagination-per-page-group">
-            <RiListCheck2 size={15} style={{ color: "var(--text-muted)" }} />
+            <CheckSquare size={15} style={{ color: "var(--text-muted)" }} />
             <Text size="xs" fw={500} c="dimmed" visibleFrom="xs" style={{ whiteSpace: "nowrap" }}>
               Rows:
             </Text>
@@ -188,7 +188,7 @@ export function TablePagination({
           <Group gap={4} align="center" wrap="nowrap" justify="center">
             <Box visibleFrom="sm">
               <Pagination.First
-                icon={() => <RiArrowLeftDoubleLine size={15} />}
+                icon={() => <ChevronsLeft size={15} />}
                 aria-label="First page"
                 className="table-page-btn table-page-edge-btn"
                 disabled={disabled || page <= 1 || total === 0}
@@ -196,7 +196,7 @@ export function TablePagination({
               />
             </Box>
             <Pagination.Previous
-              icon={() => <RiArrowLeftSLine size={15} />}
+              icon={() => <ChevronLeft size={15} />}
               aria-label="Previous page"
               className="table-page-btn"
               disabled={disabled || page <= 1 || total === 0}
@@ -208,7 +208,7 @@ export function TablePagination({
                 return (
                   <Pagination.Dots
                     key={`dots-${idx}`}
-                    icon={() => <RiMoreLine size={14} />}
+                    icon={() => <MoreHorizontal size={14} />}
                     className="table-page-dots"
                   />
                 );
@@ -228,7 +228,7 @@ export function TablePagination({
             })}
 
             <Pagination.Next
-              icon={() => <RiArrowRightSLine size={15} />}
+              icon={() => <ChevronRight size={15} />}
               aria-label="Next page"
               className="table-page-btn"
               disabled={disabled || page >= calculatedTotalPages || total === 0}
@@ -236,7 +236,7 @@ export function TablePagination({
             />
             <Box visibleFrom="sm">
               <Pagination.Last
-                icon={() => <RiArrowRightDoubleLine size={15} />}
+                icon={() => <ChevronsRight size={15} />}
                 aria-label="Last page"
                 className="table-page-btn table-page-edge-btn"
                 disabled={disabled || page >= calculatedTotalPages || total === 0}

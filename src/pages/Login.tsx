@@ -8,7 +8,6 @@ import {
   Stack,
   Box,
   Alert,
-  Group,
   Checkbox,
   ActionIcon,
   Badge,
@@ -22,17 +21,14 @@ import { useAuthStore } from "../store/authStore";
 import api from "../lib/api";
 import { useTranslation } from "react-i18next";
 import {
-  RiPhoneLine,
-  RiLockPasswordLine,
-  RiArrowRightLine,
-  RiSunLine,
-  RiMoonLine,
-  RiErrorWarningLine,
-  RiCarLine,
-  RiShieldCheckLine,
-  RiArchiveLine,
-  RiSparklingFill,
-} from "react-icons/ri";
+  Phone,
+  Lock,
+  ArrowRight,
+  Sun,
+  Moon,
+  AlertCircle,
+} from "lucide-react";
+import { BrandLogo } from "../components/common";
 
 export default function Login() {
   const user = useAuthStore((s) => s.user);
@@ -125,43 +121,9 @@ export default function Login() {
         />
 
         {/* Top Header in Left Column */}
-        <Group style={{ position: "relative", zIndex: 10 }} justify="space-between">
-          <Group gap="xs">
-            <Box
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 0 25px rgba(245, 158, 11, 0.4)",
-                background: "var(--brand-gradient)",
-                color: "#FFFFFF",
-              }}
-            >
-              <RiCarLine size={26} />
-            </Box>
-            <Box>
-              <Text fw={800} size="md" style={{ letterSpacing: "-0.02em", color: "#FFFFFF" }}>
-                YONATAN
-              </Text>
-              <Text size="10px" fw={700} c="amber.4" style={{ letterSpacing: "0.08em" }}>
-                CAR DECOR & UPHOLSTERY
-              </Text>
-            </Box>
-          </Group>
-
-          <Badge
-            size="md"
-            variant="filled"
-            color="amber.6"
-            leftSection={<RiSparklingFill size={12} />}
-            style={{ fontWeight: 600 }}
-          >
-            v2.0 Enterprise
-          </Badge>
-        </Group>
+        <Box style={{ position: "relative", zIndex: 10 }}>
+          <BrandLogo size="lg" />
+        </Box>
 
         {/* Hero Narrative */}
         <Stack style={{ position: "relative", zIndex: 10, maxWidth: 540 }} gap="lg">
@@ -191,15 +153,6 @@ export default function Login() {
           <Text size="md" c="gray.3" style={{ lineHeight: 1.6, fontWeight: 400 }}>
             The dedicated operating system for vehicle styling, custom upholstery tailoring, dual-store inventory tracking, and swift point-of-sale operations.
           </Text>
-
-          <Group gap="sm" mt="xs">
-            <Badge size="lg" variant="outline" color="amber.3" leftSection={<RiShieldCheckLine size={14} />}>
-              Dual-Store Inventory
-            </Badge>
-            <Badge size="lg" variant="outline" color="amber.3" leftSection={<RiArchiveLine size={14} />}>
-              Car Condition Diagrams
-            </Badge>
-          </Group>
         </Stack>
 
         {/* Bottom Footer Quote */}
@@ -240,9 +193,9 @@ export default function Login() {
               aria-label="Toggle color scheme"
             >
               {isDark ? (
-                <RiSunLine size={20} color="var(--primary-accent)" />
+                <Sun size={20} color="var(--primary-accent)" />
               ) : (
-                <RiMoonLine size={20} />
+                <Moon size={20} />
               )}
             </ActionIcon>
           </Tooltip>
@@ -264,7 +217,7 @@ export default function Login() {
             {/* Error Banner */}
             {error && (
               <Alert
-                icon={<RiErrorWarningLine size={18} />}
+                icon={<AlertCircle size={18} />}
                 color="red"
                 radius="md"
                 variant="light"
@@ -282,7 +235,7 @@ export default function Login() {
                   placeholder="0911234567"
                   value={phone}
                   onChange={(e) => setPhone(e.currentTarget.value)}
-                  leftSection={<RiPhoneLine size={18} color="var(--text-muted)" />}
+                  leftSection={<Phone size={18} color="var(--text-muted)" />}
                   required
                   size="md"
                 />
@@ -292,12 +245,12 @@ export default function Login() {
                   placeholder="Your password"
                   value={password}
                   onChange={(e) => setPassword(e.currentTarget.value)}
-                  leftSection={<RiLockPasswordLine size={18} color="var(--text-muted)" />}
+                  leftSection={<Lock size={18} color="var(--text-muted)" />}
                   required
                   size="md"
                 />
 
-                <Group justify="space-between" mt={4}>
+                <Box mt={4}>
                   <Checkbox
                     label="Remember me"
                     checked={rememberMe}
@@ -305,17 +258,14 @@ export default function Login() {
                     size="xs"
                     color="amber"
                   />
-                  <Text size="xs" c="amber" style={{ cursor: "pointer" }}>
-                    Forgot password?
-                  </Text>
-                </Group>
+                </Box>
 
                 <Button
                   type="submit"
                   fullWidth
                   size="md"
                   loading={loading}
-                  rightSection={<RiArrowRightLine size={18} />}
+                  rightSection={<ArrowRight size={18} />}
                   variant="gradient"
                   gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
                   mt="sm"

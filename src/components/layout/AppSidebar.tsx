@@ -1,36 +1,28 @@
 import { ScrollArea, Stack, Text, Box, UnstyledButton, Group, Badge, ActionIcon } from "@mantine/core";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  RiDashboard3Line,
-  RiDashboard3Fill,
-  RiShoppingBag3Line,
-  RiShoppingBag3Fill,
-  RiCarLine,
-  RiCarFill,
-  RiArchiveLine,
-  RiArchiveFill,
-  RiToolsLine,
-  RiToolsFill,
-  RiGroupLine,
-  RiGroupFill,
-  RiBarChartBoxLine,
-  RiBarChartBoxFill,
-  RiUserSettingsLine,
-  RiUserSettingsFill,
-  RiExchangeDollarLine,
-  RiExchangeDollarFill,
-  RiAlertLine,
-  RiAlertFill,
-  RiCloseLine,
-  RiFileList3Line,
-  RiFileList3Fill,
-  RiSettings4Line,
-  RiSettings4Fill,
-} from "react-icons/ri";
+  LayoutDashboard,
+  ShoppingBag,
+  Car,
+  Archive,
+  Wrench,
+  Users,
+  BarChart3,
+  UserCog,
+  Package,
+  AlertTriangle,
+  Boxes,
+  X,
+  FileText,
+  Settings,
+  History,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { usePermission, type PermissionKey } from "../../lib/permissions";
+import { checkPermission, type PermissionKey } from "../../lib/permissions";
+import { useAuthStore } from "../../store/authStore";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../lib/api";
+import { BrandLogo } from "../common";
 
 interface NavItemDef {
   labelKey: string;
@@ -57,9 +49,22 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
 
-  const canViewStorage = usePermission("storage.view");
-  const canViewMaterials = usePermission("catalog.materials.view");
+  const canViewStorage = checkPermission(user?.permissions, user?.role || "", "storage.view");
+  const canViewMaterials = checkPermission(user?.permissions, user?.role || "", "catalog.materials.view");
+  const canViewAssets = checkPermission(user?.permissions, user?.role || "", "assets.view");
+
+  // Query trash summary for Assets badge alert
+  const { data: trashSummary } = useQuery<{ trashCount: number; earliestPurgeAt: string | null }>({
+    queryKey: ["assets-trash-summary"],
+    queryFn: async () => {
+      const res = await api.get("/assets/trash-summary");
+      return res.data;
+    },
+    enabled: canViewAssets,
+    staleTime: 60 * 1000,
+  });
 
   // Query low stock materials count for badge
   const { data: materials = [] } = useQuery({
@@ -91,8 +96,8 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {
           labelKey: "common.dashboard",
           defaultLabel: "Dashboard",
-          icon: RiDashboard3Line,
-          activeIcon: RiDashboard3Fill,
+          icon: LayoutDashboard,
+          activeIcon: LayoutDashboard,
           path: "/",
         },
       ],
@@ -104,24 +109,24 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {
           labelKey: "orders.title",
           defaultLabel: "Work Orders",
-          icon: RiCarLine,
-          activeIcon: RiCarFill,
+          icon: Car,
+          activeIcon: Car,
           path: "/orders",
           permission: "orders.view",
         },
         {
           labelKey: "directSales.title",
           defaultLabel: "Direct Sales (POS)",
-          icon: RiShoppingBag3Line,
-          activeIcon: RiShoppingBag3Fill,
+          icon: ShoppingBag,
+          activeIcon: ShoppingBag,
           path: "/direct-sales",
           permission: "directSales.view",
         },
         {
           labelKey: "directSales.history",
           defaultLabel: "Sales History",
-          icon: RiFileList3Line,
-          activeIcon: RiFileList3Fill,
+          icon: FileText,
+          activeIcon: FileText,
           path: "/direct-sales/history",
           permission: "directSales.history",
         },
@@ -134,16 +139,24 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {
           labelKey: "storage.title",
           defaultLabel: "Dual Storage",
-          icon: RiArchiveLine,
-          activeIcon: RiArchiveFill,
+          icon: Archive,
+          activeIcon: Archive,
           path: "/storage",
+          permission: "storage.view",
+        },
+        {
+          labelKey: "storage.stockHistory",
+          defaultLabel: "Stock History",
+          icon: History,
+          activeIcon: History,
+          path: "/storage/history",
           permission: "storage.view",
         },
         {
           labelKey: "storage.lowStockAlerts",
           defaultLabel: "Low Stock Alerts",
-          icon: RiAlertLine,
-          activeIcon: RiAlertFill,
+          icon: AlertTriangle,
+          activeIcon: AlertTriangle,
           path: "/storage/low-stock",
           permission: "storage.view",
           badge: lowStockCount > 0 ? lowStockCount : undefined,
@@ -152,26 +165,36 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {
           labelKey: "materials.title",
           defaultLabel: "Materials Catalog",
-          icon: RiExchangeDollarLine,
-          activeIcon: RiExchangeDollarFill,
+          icon: Package,
+          activeIcon: Package,
           path: "/materials",
           permission: "catalog.materials.view",
         },
         {
           labelKey: "services.title",
           defaultLabel: "Services Catalog",
-          icon: RiToolsLine,
-          activeIcon: RiToolsFill,
+          icon: Wrench,
+          activeIcon: Wrench,
           path: "/services",
           permission: "catalog.services.view",
         },
         {
           labelKey: "cars.title",
           defaultLabel: "Vehicle Models",
-          icon: RiCarLine,
-          activeIcon: RiCarFill,
+          icon: Car,
+          activeIcon: Car,
           path: "/cars",
           permission: "catalog.cars.view",
+        },
+        {
+          labelKey: "assets.title",
+          defaultLabel: "Company Assets",
+          icon: Boxes,
+          activeIcon: Boxes,
+          path: "/assets",
+          permission: "assets.view",
+          badge: trashSummary?.trashCount ? `${trashSummary.trashCount} in trash` : undefined,
+          badgeColor: "amber",
         },
       ],
     },
@@ -182,32 +205,32 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {
           labelKey: "customers.title",
           defaultLabel: "Customers Directory",
-          icon: RiGroupLine,
-          activeIcon: RiGroupFill,
+          icon: Users,
+          activeIcon: Users,
           path: "/customers",
           permission: "customers.view",
         },
         {
           labelKey: "users.title",
           defaultLabel: "Staff & Users",
-          icon: RiUserSettingsLine,
-          activeIcon: RiUserSettingsFill,
+          icon: UserCog,
+          activeIcon: UserCog,
           path: "/users",
           permission: "users.view",
         },
         {
           labelKey: "reports.title",
           defaultLabel: "Reports & Analytics",
-          icon: RiBarChartBoxLine,
-          activeIcon: RiBarChartBoxFill,
+          icon: BarChart3,
+          activeIcon: BarChart3,
           path: "/reports",
           permission: "reports.view",
         },
         {
           labelKey: "settings.title",
-          defaultLabel: "Settings & Studio",
-          icon: RiSettings4Line,
-          activeIcon: RiSettings4Fill,
+          defaultLabel: "Settings",
+          icon: Settings,
+          activeIcon: Settings,
           path: "/settings",
         },
       ],
@@ -245,39 +268,13 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           justifyContent: "space-between",
         }}
       >
-        <UnstyledButton
+        <BrandLogo
+          size="md"
           onClick={() => {
             navigate("/");
             onNavigate?.();
           }}
-          style={{ textDecoration: "none" }}
-        >
-          <Group gap="xs" wrap="nowrap">
-            <Box
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "var(--brand-gradient)",
-                color: "#FFFFFF",
-                flexShrink: 0,
-              }}
-            >
-              <RiCarLine size={20} />
-            </Box>
-            <Box>
-              <Text fw={800} size="sm" style={{ letterSpacing: "-0.02em" }}>
-                YONATAN
-              </Text>
-              <Text size="9px" fw={700} c="amber.5" style={{ textTransform: "uppercase" }}>
-                POS & UPHOLSTERY
-              </Text>
-            </Box>
-          </Group>
-        </UnstyledButton>
+        />
 
         <ActionIcon
           variant="subtle"
@@ -285,7 +282,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           onClick={onNavigate}
           aria-label="Close sidebar"
         >
-          <RiCloseLine size={20} />
+          <X size={20} />
         </ActionIcon>
       </Box>
 
@@ -296,7 +293,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             // Filter items by user permission
             const visibleItems = section.items.filter((item) => {
               if (!item.permission) return true;
-              return usePermission(item.permission);
+              return checkPermission(user?.permissions, user?.role || "", item.permission);
             });
 
             if (visibleItems.length === 0) return null;

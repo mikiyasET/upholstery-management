@@ -17,6 +17,24 @@ type MaterialStock = {
   };
 };
 
+type MaterialBrandStock = {
+  id: string;
+  storeId: string;
+  quantity: string | number;
+  store: {
+    id: string;
+    name: string;
+    type: 'MAIN' | 'MINI';
+  };
+};
+
+type MaterialBrand = {
+  id: string;
+  name: string;
+  price: string | number;
+  brandStocks?: MaterialBrandStock[];
+};
+
 type Material = {
   id: string;
   nameEn: string;
@@ -26,12 +44,19 @@ type Material = {
   lowStockThreshold: number;
   imageUrl?: string;
   materialStocks: MaterialStock[];
+  brands?: MaterialBrand[];
 };
 
 export default function LowStockAlerts() {
   const { t, i18n } = useTranslation();
   
-  const getLocName = (m: Material) => (i18n?.language === 'am' && m.nameAm ? m.nameAm : m.nameEn);
+  const getLocName = (m: any) =>
+    i18n?.language === 'am' && m?.nameAm ? m.nameAm : (m?.nameEn || m?.name || '');
+
+  const getBrandStock = (brand: MaterialBrand, storeType: 'MAIN' | 'MINI') => {
+    const stock = brand.brandStocks?.find((s) => s.store?.type === storeType);
+    return stock ? Number(stock.quantity) : 0;
+  };
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ['storage_materials'],
@@ -42,11 +67,18 @@ export default function LowStockAlerts() {
   });
 
   const lowStockItems = materials.filter((m) => {
+    const threshold = m.lowStockThreshold || 10;
+    if (m.brands && m.brands.length > 0) {
+      return m.brands.some((b) => {
+        const mini = getBrandStock(b, 'MINI');
+        const main = getBrandStock(b, 'MAIN');
+        return mini <= threshold || main <= threshold;
+      });
+    }
     const miniStock = m.materialStocks?.find((s) => s.store.type === 'MINI');
     const mainStock = m.materialStocks?.find((s) => s.store.type === 'MAIN');
     const miniQty = miniStock ? Number(miniStock.quantity) : 0;
     const mainQty = mainStock ? Number(mainStock.quantity) : 0;
-    const threshold = m.lowStockThreshold || 10;
     return miniQty <= threshold || mainQty <= threshold;
   });
 
@@ -97,8 +129,11 @@ export default function LowStockAlerts() {
             const mainQty = mainStock ? Number(mainStock.quantity) : 0;
             const threshold = m.lowStockThreshold || 10;
             
-            const isMainLow = mainQty <= threshold;
-            const isMiniLow = miniQty <= threshold;
+            const hasBrands = !!(m.brands && m.brands.length > 0);
+            const isBrandMainLow = hasBrands ? m.brands!.some((b) => getBrandStock(b, 'MAIN') <= threshold) : false;
+            const isBrandMiniLow = hasBrands ? m.brands!.some((b) => getBrandStock(b, 'MINI') <= threshold) : false;
+            const isMainLow = mainQty <= threshold || isBrandMainLow;
+            const isMiniLow = miniQty <= threshold || isBrandMiniLow;
 
             return (
               <div 
@@ -172,6 +207,36 @@ export default function LowStockAlerts() {
                       )}
                     </div>
                   </div>
+
+                  {/* Brand Breakdown if brands exist */}
+                  {hasBrands && (
+                    <div className="space-y-1.5 pt-2 border-t border-border/50">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        {t('storage.brandStock', 'Brand Stock')}:
+                      </span>
+                      <div className="space-y-1 max-h-36 overflow-y-auto">
+                        {m.brands!.map((b) => {
+                          const bMini = getBrandStock(b, 'MINI');
+                          const bMain = getBrandStock(b, 'MAIN');
+                          const isBMiniLow = bMini <= threshold;
+                          const isBMainLow = bMain <= threshold;
+                          return (
+                            <div key={b.id} className="flex items-center justify-between p-1.5 rounded-lg bg-muted/40 text-xs">
+                              <span className="font-semibold text-foreground truncate max-w-[120px]">{b.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isBMiniLow ? 'bg-red-500/15 text-red-600 dark:text-red-400 font-bold border border-red-500/30' : 'text-muted-foreground'}`}>
+                                  Mini: {bMini}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isBMainLow ? 'bg-red-500/15 text-red-600 dark:text-red-400 font-bold border border-red-500/30' : 'text-muted-foreground'}`}>
+                                  Main: {bMain}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-auto pt-4">
                     <Link to="/storage" className="w-full block">

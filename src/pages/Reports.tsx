@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, formatAppDate, formatShortDate } from '../lib/utils';
+import { AppDatePicker } from '../components/common/AppDatePicker';
+import { toEthiopian, ethMonths } from 'amharic-datepicker-utils';
 import {
   format,
   subDays,
@@ -13,6 +15,8 @@ import {
   startOfYear,
   endOfYear,
   parseISO,
+  eachDayOfInterval,
+  eachMonthOfInterval,
 } from 'date-fns';
 import {
   Box,
@@ -22,27 +26,33 @@ import {
   Text,
   Badge,
   Tabs,
-  TextInput,
   SegmentedControl,
   SimpleGrid,
+  Skeleton,
 } from '@mantine/core';
 import {
-  RiCalendarEventLine,
-  RiCalendarLine,
-  RiCalendar2Line,
-  RiCalendarScheduleLine,
-  RiTimeLine,
-  RiHistoryLine,
-  RiBarChartBoxLine,
-  RiArchiveLine,
-  RiExchangeDollarLine,
-  RiToolsLine,
-  RiUser3Line,
-  RiStore2Line,
-} from 'react-icons/ri';
+  CalendarDays,
+  Calendar,
+  CalendarRange,
+  CalendarClock,
+  Clock,
+  History,
+  BarChart3,
+  Archive,
+  DollarSign,
+  Wrench,
+  User,
+  Store,
+  TrendingUp,
+  PieChart,
+} from 'lucide-react';
 import { PageHeader } from '../components/common';
+import { StackedBarChart } from '../components/dashboard/StackedBarChart';
+import { DonutPieChart } from '../components/dashboard/DonutPieChart';
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all' | 'custom';
+
+const SERVICE_DONUT_COLORS = ['#a855f7', '#6366f1', '#ec4899', '#06b6d4', '#10b981'];
 
 export default function Reports() {
   const { t, i18n } = useTranslation();
@@ -54,23 +64,23 @@ export default function Reports() {
   const [customEnd, setCustomEnd] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [isSingleDayMode, setIsSingleDayMode] = useState<boolean>(false);
 
-  const getLocName = (item: any) => {
+  const getLocName = useCallback((item: any) => {
     if (!item) return '';
     if (i18n.language === 'am' && item.nameAm) return item.nameAm;
     return item.nameEn || item.name || '';
-  };
+  }, [i18n.language]);
 
-  const getLocMaterialName = (item: any) => {
+  const getLocMaterialName = useCallback((item: any) => {
     if (!item) return '';
     if (i18n.language === 'am' && item.materialNameAm) return item.materialNameAm;
     return item.materialNameEn || item.materialName || '';
-  };
+  }, [i18n.language]);
 
   const getLocalizedStoreName = (storeName: string) => {
     const norm = (storeName || '').toUpperCase();
     if (norm.includes('MAIN')) return t('reports.store.mainStore', 'MAIN STORE');
     if (norm.includes('MINI')) return t('reports.store.miniStore', 'MINI STORE');
-    return `${storeName} STORE`;
+    return `${storeName} ${t('common.store', 'STORE')}`;
   };
 
   const getDateParams = () => {
@@ -121,7 +131,9 @@ export default function Reports() {
         return {};
       case 'all':
       default:
-        return {};
+        return {
+          group: 'month',
+        };
     }
   };
 
@@ -156,31 +168,288 @@ export default function Reports() {
   const isAnyLoading = revenueLoading || servicesLoading || materialsLoading || valuationLoading || staffLoading;
 
   // Calculate totals
-  const totalRevenue = revenue?.reduce((sum: number, item: any) => sum + item.orderRevenue + item.directSaleRevenue, 0) || 0;
+  const totalOrderRevenue = useMemo(() => {
+    return revenue?.reduce((sum: number, item: any) => sum + (Number(item.orderRevenue) || 0), 0) || 0;
+  }, [revenue]);
+
+  const totalDirectSaleRevenue = useMemo(() => {
+    return revenue?.reduce((sum: number, item: any) => sum + (Number(item.directSaleRevenue) || 0), 0) || 0;
+  }, [revenue]);
+
+  const totalRevenue = totalOrderRevenue + totalDirectSaleRevenue;
   const totalValuation = stockValuation?.summary?.reduce((sum: number, item: any) => sum + item.totalValue, 0) || 0;
   const topServiceCount = topServices?.[0]?.count || 0;
-  const maxRevenue = revenue?.reduce((max: number, item: any) => Math.max(max, item.orderRevenue + item.directSaleRevenue), 0) || 1;
+
+  // Transform and fill timeline data for StackedBarChart
+  const chartData = useMemo(() => {
+    if (!Array.isArray(revenue)) return [];
+
+    const rawMap = new Map<string, any>();
+    for (const item of revenue) {
+      if (item && item.date) {
+        rawMap.set(item.date, item);
+      }
+    }
+
+    const today = new Date();
+
+    if (datePreset === 'week') {
+      const interval = eachDayOfInterval({
+        start: startOfDay(subDays(today, 6)),
+        end: endOfDay(today),
+      });
+      return interval.map((d) => {
+        const key = format(d, 'yyyy-MM-dd');
+        const found = rawMap.get(key) || { orderRevenue: 0, directSaleRevenue: 0 };
+        return {
+          date: key,
+          orderRevenue: Number(found.orderRevenue || 0),
+          directSaleRevenue: Number(found.directSaleRevenue || 0),
+          displayDate: formatShortDate(d, false, i18n.language),
+          fullDate: formatAppDate(d, false, i18n.language),
+        };
+      });
+    }
+
+    if (datePreset === 'month') {
+      const interval = eachDayOfInterval({
+        start: startOfDay(startOfMonth(today)),
+        end: endOfDay(today),
+      });
+      return interval.map((d) => {
+        const key = format(d, 'yyyy-MM-dd');
+        const found = rawMap.get(key) || { orderRevenue: 0, directSaleRevenue: 0 };
+        return {
+          date: key,
+          orderRevenue: Number(found.orderRevenue || 0),
+          directSaleRevenue: Number(found.directSaleRevenue || 0),
+          displayDate: formatShortDate(d, false, i18n.language),
+          fullDate: formatAppDate(d, false, i18n.language),
+        };
+      });
+    }
+
+    if (datePreset === 'year') {
+      const interval = eachMonthOfInterval({
+        start: startOfYear(today),
+        end: today,
+      });
+      return interval.map((d) => {
+        const key = format(d, 'yyyy-MM');
+        const found = rawMap.get(key) || { orderRevenue: 0, directSaleRevenue: 0 };
+        let monthLabel = format(d, 'MMM');
+        if (i18n.language === 'am') {
+          const eth = toEthiopian(d.getFullYear(), d.getMonth() + 1, d.getDate());
+          monthLabel = ethMonths[eth.month - 1] || monthLabel;
+        }
+        return {
+          date: key,
+          orderRevenue: Number(found.orderRevenue || 0),
+          directSaleRevenue: Number(found.directSaleRevenue || 0),
+          displayDate: monthLabel,
+          fullDate: formatAppDate(d, false, i18n.language),
+        };
+      });
+    }
+
+    if (datePreset === 'custom' && customStart && customEnd) {
+      try {
+        const s = parseISO(customStart);
+        const e = parseISO(customEnd);
+        const diffDays = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 45) {
+          const interval = eachDayOfInterval({ start: s, end: e });
+          return interval.map((d) => {
+            const key = format(d, 'yyyy-MM-dd');
+            const found = rawMap.get(key) || { orderRevenue: 0, directSaleRevenue: 0 };
+            return {
+              date: key,
+              orderRevenue: Number(found.orderRevenue || 0),
+              directSaleRevenue: Number(found.directSaleRevenue || 0),
+              displayDate: formatShortDate(d, false, i18n.language),
+              fullDate: formatAppDate(d, false, i18n.language),
+            };
+          });
+        }
+      } catch {
+        // Fallback to raw map
+      }
+    }
+
+    if (revenue.length === 0) {
+      if (datePreset === 'today') {
+        return [
+          {
+            date: format(today, 'yyyy-MM-dd'),
+            orderRevenue: 0,
+            directSaleRevenue: 0,
+            displayDate: t('reports.timeframe.today', 'Today'),
+            fullDate: formatAppDate(today, false, i18n.language),
+          },
+        ];
+      }
+      if (datePreset === 'yesterday') {
+        const y = subDays(today, 1);
+        return [
+          {
+            date: format(y, 'yyyy-MM-dd'),
+            orderRevenue: 0,
+            directSaleRevenue: 0,
+            displayDate: t('reports.timeframe.yesterday', 'Yesterday'),
+            fullDate: formatAppDate(y, false, i18n.language),
+          },
+        ];
+      }
+      return [];
+    }
+
+    return revenue.map((item: any) => {
+      let displayDate = item.date;
+      let fullDate = item.date;
+      try {
+        if (item.date.length === 7) {
+          const parsed = parseISO(`${item.date}-01`);
+          displayDate = formatShortDate(parsed, false, i18n.language);
+          fullDate = formatAppDate(parsed, false, i18n.language);
+        } else if (item.date.length === 10) {
+          const parsed = parseISO(item.date);
+          displayDate = formatShortDate(parsed, false, i18n.language);
+          fullDate = formatAppDate(parsed, false, i18n.language);
+        }
+      } catch {}
+
+      return {
+        ...item,
+        orderRevenue: Number(item.orderRevenue || 0),
+        directSaleRevenue: Number(item.directSaleRevenue || 0),
+        displayDate,
+        fullDate,
+      };
+    });
+  }, [revenue, datePreset, customStart, customEnd, i18n.language]);
+
+  const hasRevenueActivity = chartData.some(
+    (item: any) => item.orderRevenue > 0 || item.directSaleRevenue > 0
+  );
+
+  // Distribution of revenue streams for Donut Chart
+  const revenueStreamData = useMemo(() => {
+    return [
+      {
+        name: t('reports.chart.orders', 'Work Orders'),
+        value: totalOrderRevenue,
+        color: '#f59e0b',
+      },
+      {
+        name: t('reports.chart.pos', 'Direct POS Sales'),
+        value: totalDirectSaleRevenue,
+        color: '#3b82f6',
+      },
+    ];
+  }, [totalOrderRevenue, totalDirectSaleRevenue, t]);
+
+  // Top services distribution for Donut Chart
+  const serviceDonutData = useMemo(() => {
+    if (!Array.isArray(topServices) || topServices.length === 0) return [];
+    const top4 = topServices.slice(0, 4);
+    const top4Sum = top4.reduce((acc: number, s: any) => acc + (Number(s.revenue) || 0), 0);
+    const allSum = topServices.reduce((acc: number, s: any) => acc + (Number(s.revenue) || 0), 0);
+    const otherSum = Math.max(0, allSum - top4Sum);
+
+    const slices = top4.map((s: any, idx: number) => ({
+      name: getLocName(s),
+      value: Number(s.revenue) || 0,
+      color: SERVICE_DONUT_COLORS[idx % SERVICE_DONUT_COLORS.length],
+    }));
+
+    if (otherSum > 0 && topServices.length > 4) {
+      slices.push({
+        name: t('common.other', 'Other Services'),
+        value: otherSum,
+        color: '#64748b',
+      });
+    }
+
+    return slices;
+  }, [topServices, getLocName, t]);
+
+  const totalServiceRevenue = useMemo(() => {
+    return topServices?.reduce((sum: number, s: any) => sum + (Number(s.revenue) || 0), 0) || 0;
+  }, [topServices]);
+
+  // Performance highlights (Daily average, peak day, dominant stream)
+  const performanceStats = useMemo(() => {
+    if (!chartData || chartData.length === 0) {
+      return {
+        peakDay: null as any,
+        avgDailyRevenue: 0,
+        activeDaysCount: 0,
+        dominantStream: '—',
+        topStreamPercent: 0,
+      };
+    }
+
+    let maxDay: any = null;
+    let maxVal = -1;
+    let activeDays = 0;
+
+    for (const item of chartData) {
+      const dayTotal = (Number(item.orderRevenue) || 0) + (Number(item.directSaleRevenue) || 0);
+      if (dayTotal > 0) activeDays++;
+      if (dayTotal > maxVal) {
+        maxVal = dayTotal;
+        maxDay = item;
+      }
+    }
+
+    const divisor = chartData.length > 0 ? chartData.length : 1;
+    const avgDailyRevenue = totalRevenue / divisor;
+
+    const dominantStream =
+      totalOrderRevenue >= totalDirectSaleRevenue
+        ? t('reports.chart.orders', 'Work Orders')
+        : t('reports.chart.pos', 'Direct Sales');
+
+    const topStreamPercent =
+      totalRevenue > 0
+        ? Math.round((Math.max(totalOrderRevenue, totalDirectSaleRevenue) / totalRevenue) * 100)
+        : 0;
+
+    return {
+      peakDay: maxDay && maxVal > 0 ? { ...maxDay, total: maxVal } : null,
+      avgDailyRevenue,
+      activeDaysCount: activeDays,
+      dominantStream,
+      topStreamPercent,
+    };
+  }, [chartData, totalRevenue, totalOrderRevenue, totalDirectSaleRevenue, t]);
 
   // Human-readable formatted period display
   const getPeriodDisplay = () => {
     const today = new Date();
-    if (datePreset === 'today') return format(today, 'EEEE, MMM d, yyyy');
-    if (datePreset === 'yesterday') return format(subDays(today, 1), 'EEEE, MMM d, yyyy');
-    if (datePreset === 'week') return `${format(subDays(today, 6), 'MMM d')} – ${format(today, 'MMM d, yyyy')}`;
-    if (datePreset === 'month') return format(today, 'MMMM yyyy');
-    if (datePreset === 'year') return format(today, 'yyyy');
+    if (datePreset === 'today') return formatAppDate(today, false, i18n.language);
+    if (datePreset === 'yesterday') return formatAppDate(subDays(today, 1), false, i18n.language);
+    if (datePreset === 'week') return `${formatShortDate(subDays(today, 6), false, i18n.language)} – ${formatAppDate(today, false, i18n.language)}`;
+    if (datePreset === 'month') return formatAppDate(today, false, i18n.language);
+    if (datePreset === 'year') {
+      if (i18n.language === 'am') {
+        const eth = toEthiopian(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        return `${eth.year} ዓ.ም`;
+      }
+      return format(today, 'yyyy');
+    }
     if (datePreset === 'all') return t('reports.timeframe.all', 'All Historical Records');
     if (datePreset === 'custom') {
       if (isSingleDayMode && customStart) {
         try {
-          return format(parseISO(customStart), 'MMM d, yyyy');
+          return formatAppDate(parseISO(customStart), false, i18n.language);
         } catch {
           return customStart;
         }
       }
       if (customStart && customEnd) {
         try {
-          return `${format(parseISO(customStart), 'MMM d, yyyy')} – ${format(parseISO(customEnd), 'MMM d, yyyy')}`;
+          return `${formatAppDate(parseISO(customStart), false, i18n.language)} – ${formatAppDate(parseISO(customEnd), false, i18n.language)}`;
         } catch {
           return `${customStart} – ${customEnd}`;
         }
@@ -219,49 +488,49 @@ export default function Reports() {
             <Tabs.List style={{ gap: 4, flexWrap: 'wrap' }}>
               <Tabs.Tab
                 value="today"
-                leftSection={<RiTimeLine size={13} />}
+                leftSection={<Clock size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.today', 'Today')}
               </Tabs.Tab>
               <Tabs.Tab
                 value="yesterday"
-                leftSection={<RiHistoryLine size={13} />}
+                leftSection={<History size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.yesterday', 'Yesterday')}
               </Tabs.Tab>
               <Tabs.Tab
                 value="week"
-                leftSection={<RiCalendarLine size={13} />}
+                leftSection={<Calendar size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.week', 'Last 7 Days')}
               </Tabs.Tab>
               <Tabs.Tab
                 value="month"
-                leftSection={<RiCalendar2Line size={13} />}
+                leftSection={<CalendarRange size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.month', 'This Month')}
               </Tabs.Tab>
               <Tabs.Tab
                 value="year"
-                leftSection={<RiBarChartBoxLine size={13} />}
+                leftSection={<BarChart3 size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.year', 'This Year')}
               </Tabs.Tab>
               <Tabs.Tab
                 value="all"
-                leftSection={<RiArchiveLine size={13} />}
+                leftSection={<Archive size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.all', 'All Time')}
               </Tabs.Tab>
               <Tabs.Tab
                 value="custom"
-                leftSection={<RiCalendarScheduleLine size={13} />}
+                leftSection={<CalendarClock size={13} />}
                 style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
               >
                 {t('reports.timeframe.custom', 'Custom Range')}
@@ -274,7 +543,7 @@ export default function Reports() {
             radius="md"
             variant="light"
             color="amber"
-            leftSection={<RiCalendarEventLine size={13} />}
+            leftSection={<CalendarDays size={13} />}
             style={{ fontWeight: 600, textTransform: 'none', fontSize: '0.78rem', height: 26 }}
           >
             {getPeriodDisplay()}
@@ -303,8 +572,8 @@ export default function Reports() {
                     if (isSingle) setCustomEnd(customStart);
                   }}
                   data={[
-                    { value: 'range', label: 'Date Range' },
-                    { value: 'single', label: 'Single Day' },
+                    { value: 'range', label: t('reports.timeframe.dateRange', 'Date Range') },
+                    { value: 'single', label: t('reports.timeframe.singleDay', 'Single Day') },
                   ]}
                 />
 
@@ -313,48 +582,54 @@ export default function Reports() {
                     <Text size="xs" fw={600} c="dimmed">
                       {t('reports.timeframe.selectSingleDay', 'Date')}:
                     </Text>
-                    <TextInput
-                      type="date"
-                      size="xs"
-                      radius="md"
-                      value={customStart}
-                      onChange={(e) => {
-                        setCustomStart(e.target.value);
-                        setCustomEnd(e.target.value);
-                      }}
-                      style={{ width: 145 }}
-                    />
+                    <div style={{ width: 165 }}>
+                      <AppDatePicker
+                        value={customStart ? parseISO(customStart) : null}
+                        onChange={(_d, str) => {
+                          if (str) {
+                            setCustomStart(str);
+                            setCustomEnd(str);
+                          }
+                        }}
+                        clearable={false}
+                        size="small"
+                      />
+                    </div>
                   </Group>
                 ) : (
                   <Group gap={6} align="center" wrap="wrap">
                     <Text size="xs" fw={600} c="dimmed">
                       {t('reports.timeframe.from', 'From')}:
                     </Text>
-                    <TextInput
-                      type="date"
-                      size="xs"
-                      radius="md"
-                      value={customStart}
-                      onChange={(e) => setCustomStart(e.target.value)}
-                      style={{ width: 140 }}
-                    />
+                    <div style={{ width: 165 }}>
+                      <AppDatePicker
+                        value={customStart ? parseISO(customStart) : null}
+                        onChange={(_d, str) => {
+                          if (str) setCustomStart(str);
+                        }}
+                        clearable={false}
+                        size="small"
+                      />
+                    </div>
                     <Text size="xs" fw={600} c="dimmed">
                       {t('reports.timeframe.to', 'To')}:
                     </Text>
-                    <TextInput
-                      type="date"
-                      size="xs"
-                      radius="md"
-                      value={customEnd}
-                      onChange={(e) => setCustomEnd(e.target.value)}
-                      style={{ width: 140 }}
-                    />
+                    <div style={{ width: 165 }}>
+                      <AppDatePicker
+                        value={customEnd ? parseISO(customEnd) : null}
+                        onChange={(_d, str) => {
+                          if (str) setCustomEnd(str);
+                        }}
+                        clearable={false}
+                        size="small"
+                      />
+                    </div>
                   </Group>
                 )}
               </Group>
 
               <Text size="11px" c="dimmed">
-                Range applied automatically to all charts
+                {t('reports.timeframe.rangeAutoApplied', 'Range applied automatically to all charts')}
               </Text>
             </Group>
           </Box>
@@ -371,17 +646,24 @@ export default function Reports() {
                 {t('reports.kpi.totalRevenue', 'Total Revenue')}
               </Text>
               <Text fw={700} size="1.45rem" lh={1.1} mt={4} style={{ letterSpacing: '-0.02em', color: 'var(--primary-accent)' }}>
-                {formatCurrency(totalRevenue)}
+                {formatCurrency(totalRevenue, i18n.language as any)}
               </Text>
             </Box>
             <Box
               className="stat-icon-wrapper"
               style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
                 background: 'rgba(245, 158, 11, 0.12)',
                 color: 'var(--primary-accent)',
               }}
             >
-              <RiExchangeDollarLine size={20} />
+              <DollarSign size={20} />
             </Box>
           </Group>
           <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
@@ -392,7 +674,7 @@ export default function Reports() {
               </Text>
             </Group>
             <Text size="11px" c="dimmed">
-              Orders & POS
+              {t('reports.kpi.ordersAndPos', 'Orders & POS')}
             </Text>
           </Group>
         </Box>
@@ -405,25 +687,32 @@ export default function Reports() {
                 {t('reports.kpi.stockValuation', 'Stock Valuation')}
               </Text>
               <Text fw={700} size="1.45rem" lh={1.1} mt={4} style={{ letterSpacing: '-0.02em' }}>
-                {formatCurrency(totalValuation)}
+                {formatCurrency(totalValuation, i18n.language as any)}
               </Text>
             </Box>
             <Box
               className="stat-icon-wrapper"
               style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
                 background: 'rgba(59, 130, 246, 0.12)',
                 color: '#3b82f6',
               }}
             >
-              <RiArchiveLine size={20} />
+              <Archive size={20} />
             </Box>
           </Group>
           <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
             <Text size="11px" fw={600} style={{ color: '#3b82f6' }}>
-              Dual Storage Hubs
+              {t('reports.kpi.dualStorageHubs', 'Dual Storage Hubs')}
             </Text>
             <Text size="11px" c="dimmed">
-              Current inventory
+              {t('reports.kpi.currentInventory', 'Current inventory')}
             </Text>
           </Group>
         </Box>
@@ -438,26 +727,33 @@ export default function Reports() {
               <Text fw={700} size="1.45rem" lh={1.1} mt={4} style={{ letterSpacing: '-0.02em' }}>
                 {topServiceCount}{' '}
                 <Text component="span" size="sm" fw={500} c="dimmed">
-                  jobs
+                  {t('reports.kpi.jobs', 'jobs')}
                 </Text>
               </Text>
             </Box>
             <Box
               className="stat-icon-wrapper"
               style={{
-                background: 'rgba(168, 85, 247, 0.12)',
-                color: '#a855f7',
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                background: "rgba(168, 85, 247, 0.12)",
+                color: "#a855f7",
               }}
             >
-              <RiToolsLine size={20} />
+              <Wrench size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
-            <Text size="11px" fw={600} style={{ color: '#a855f7' }} truncate>
-              {getLocName(topServices?.[0]) || 'No records'}
+          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+            <Text size="11px" fw={600} style={{ color: "#a855f7" }} truncate>
+              {getLocName(topServices?.[0]) || t("reports.kpi.noRecords", "No records")}
             </Text>
             <Text size="11px" c="dimmed" style={{ flexShrink: 0 }}>
-              Leading service
+              {t("reports.kpi.leadingService", "Leading service")}
             </Text>
           </Group>
         </Box>
@@ -472,26 +768,33 @@ export default function Reports() {
               <Text fw={700} size="1.45rem" lh={1.1} mt={4} style={{ letterSpacing: '-0.02em' }}>
                 {staffWorkload?.length || 0}{' '}
                 <Text component="span" size="sm" fw={500} c="dimmed">
-                  members
+                  {t('reports.kpi.members', 'members')}
                 </Text>
               </Text>
             </Box>
             <Box
               className="stat-icon-wrapper"
               style={{
-                background: 'rgba(16, 185, 129, 0.12)',
-                color: '#10b981',
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                background: "rgba(16, 185, 129, 0.12)",
+                color: "#10b981",
               }}
             >
-              <RiUser3Line size={20} />
+              <User size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
-            <Text size="11px" fw={600} style={{ color: '#10b981' }}>
-              Workshop operations
+          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+            <Text size="11px" fw={600} style={{ color: "#10b981" }}>
+              {t("reports.kpi.workshopOperations", "Workshop operations")}
             </Text>
             <Text size="11px" c="dimmed">
-              Involved in orders
+              {t("reports.kpi.involvedInOrders", "Involved in orders")}
             </Text>
           </Group>
         </Box>
@@ -499,313 +802,667 @@ export default function Reports() {
 
       {/* 4. Section Switcher Tabs (Unified Analytics Hub) */}
       <Tabs value={activeSection} onChange={setActiveSection} variant="pills" radius="md">
-        <Tabs.List style={{ gap: 4, flexWrap: 'wrap' }} mb="md">
-          <Tabs.Tab value="all" leftSection={<RiBarChartBoxLine size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
-            All Reports & Charts
+        <Tabs.List style={{ gap: 4, flexWrap: "wrap" }} mb="md">
+          <Tabs.Tab value="all" leftSection={<BarChart3 size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
+            {t("reports.sections.all", "All Reports & Charts")}
           </Tabs.Tab>
-          <Tabs.Tab value="revenue" leftSection={<RiExchangeDollarLine size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
-            Revenue Trend
+          <Tabs.Tab value="revenue" leftSection={<DollarSign size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
+            {t("reports.sections.revenue", "Revenue Trend")}
           </Tabs.Tab>
-          <Tabs.Tab value="services" leftSection={<RiToolsLine size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
-            Top Services & Items
+          <Tabs.Tab value="services" leftSection={<Wrench size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
+            {t("reports.sections.services", "Top Services & Items")}
           </Tabs.Tab>
-          <Tabs.Tab value="staff" leftSection={<RiUser3Line size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
-            Staff Workload
+          <Tabs.Tab value="staff" leftSection={<User size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
+            {t("reports.sections.staff", "Staff Workload")}
           </Tabs.Tab>
-          <Tabs.Tab value="inventory" leftSection={<RiStore2Line size={15} />} style={{ height: 30, padding: '0 10px', fontSize: '12px' }}>
-            Store Valuations
+          <Tabs.Tab value="inventory" leftSection={<Store size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
+            {t("reports.sections.inventory", "Store Valuations")}
           </Tabs.Tab>
         </Tabs.List>
 
-        {/* SECTION: REVENUE & TOP SERVICES */}
-        {(activeSection === 'all' || activeSection === 'revenue' || activeSection === 'services') && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 mb-6">
-            {/* Revenue Trend Chart */}
-            {(activeSection === 'all' || activeSection === 'revenue') && (
+        {/* SECTION 1: REVENUE TREND & FINANCIAL BREAKDOWN (Full-width) */}
+        {(activeSection === 'all' || activeSection === 'revenue') && (
+          <Box className="premium-card p-6 mb-6">
+            <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
+              <Box>
+                <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
+                  {t('reports.charts.revenueTrend', 'Revenue Trend & Breakdown')}
+                </Title>
+                <Text size="xs" c="dimmed" mt={2}>
+                  {t('reports.charts.revenueTrendSubtitle', 'Combined work orders and counter point-of-sale collections over time')}
+                </Text>
+              </Box>
+              <Group gap="xs" wrap="wrap">
+                <Badge variant="light" color="amber" size="sm" radius="md">
+                  {t('reports.chart.orders', 'Orders')}: {formatCurrency(totalOrderRevenue, i18n.language as any)}
+                </Badge>
+                <Badge variant="light" color="blue" size="sm" radius="md">
+                  {t('reports.chart.pos', 'POS')}: {formatCurrency(totalDirectSaleRevenue, i18n.language as any)}
+                </Badge>
+                <Badge variant="filled" color="amber" size="sm" radius="md" style={{ fontWeight: 700 }}>
+                  {t('reports.chart.total', 'Total')}: {formatCurrency(totalRevenue, i18n.language as any)}
+                </Badge>
+              </Group>
+            </Group>
+
+            {/* Stacked Bar Chart */}
+            {revenueLoading ? (
+              <Skeleton height={270} radius="md" />
+            ) : !hasRevenueActivity && chartData.length === 0 ? (
               <Box
-                className={`premium-card p-6 ${activeSection === 'revenue' ? 'lg:col-span-7' : 'lg:col-span-4'}`}
+                py="xl"
+                style={{
+                  minHeight: 250,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  border: '1px dashed var(--surface-border)',
+                  borderRadius: 12,
+                }}
               >
-                <Group justify="space-between" align="flex-start" mb="md">
-                  <Box>
-                    <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
-                      {t('reports.charts.revenueTrend', 'Revenue Trend')}
-                    </Title>
-                    <Text size="xs" c="dimmed" mt={2}>
-                      Combined work orders and counter point-of-sale collections
-                    </Text>
-                  </Box>
-                  <Badge variant="light" color="amber" size="sm" radius="md">
-                    Total: {formatCurrency(totalRevenue)}
-                  </Badge>
-                </Group>
+                <Box
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 10,
+                  }}
+                >
+                  <BarChart3 size={24} style={{ opacity: 0.4 }} />
+                </Box>
+                <Text size="sm" fw={600}>
+                  {t('reports.charts.noRevenue', 'No revenue recorded for this period.')}
+                </Text>
+                <Text size="xs" c="dimmed" mt={4} style={{ maxWidth: 360 }}>
+                  {t('reports.charts.noRevenueSub', 'Transactions from completed work orders and direct sales will appear here once recorded.')}
+                </Text>
+              </Box>
+            ) : (
+              <Box style={{ position: 'relative', width: '100%' }}>
+                <StackedBarChart
+                  h={265}
+                  data={chartData}
+                  dataKey="displayDate"
+                  valueFormatter={(value) => formatCurrency(value, i18n.language as any)}
+                  tickFormatter={(val) => (val === 0 ? '0' : val >= 1000 ? `${Math.round(val / 1000)}k` : `${val}`)}
+                  series={[
+                    { name: 'orderRevenue', label: t('reports.chart.orders', 'Work Orders'), color: 'amber.6' },
+                    { name: 'directSaleRevenue', label: t('reports.chart.pos', 'Direct Sales'), color: 'blue.6' },
+                  ]}
+                />
+              </Box>
+            )}
 
-                {!revenue || revenue.length === 0 ? (
-                  <div className="h-[280px] w-full flex flex-col items-center justify-center text-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mb-1">
-                      <RiBarChartBoxLine size={24} className="text-muted-foreground/40" />
-                    </div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('reports.charts.noRevenue', 'No revenue recorded for this period.')}
-                    </p>
-                  </div>
+            {/* Subtle Divider */}
+            <Box
+              my="lg"
+              style={{
+                borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.08))',
+              }}
+            />
+
+            {/* Lower Analytics Section: 2 Donut Charts + Performance Highlights Card */}
+            <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="lg">
+              {/* Card 1: Revenue Stream Distribution */}
+              <Box
+                p="md"
+                className="rounded-xl flex flex-col justify-between"
+                style={{
+                  backgroundColor: 'var(--mantine-color-dark-7, rgba(255, 255, 255, 0.02))',
+                  border: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))',
+                }}
+              >
+                <div>
+                  <Group justify="space-between" align="center" mb="sm">
+                    <Group gap={6} align="center">
+                      <PieChart size={15} style={{ color: 'var(--primary-accent)' }} />
+                      <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: '0.04em' }}>
+                        {t('reports.charts.streamShare', 'Revenue Stream Share')}
+                      </Text>
+                    </Group>
+                    <Badge size="xs" variant="outline" color="amber">
+                      {totalRevenue > 0 ? t('common.active', 'Active') : t('reports.charts.noData', 'No Data')}
+                    </Badge>
+                  </Group>
+                  <Text size="11px" c="dimmed" mb="md">
+                    {t('reports.charts.streamShareDesc', 'Proportion of work order revenue vs over-the-counter retail sales')}
+                  </Text>
+                </div>
+
+                <DonutPieChart
+                  data={revenueStreamData}
+                  size={155}
+                  innerRadiusRatio={0.65}
+                  valueFormatter={(v) => formatCurrency(v, i18n.language as any)}
+                  centerLabel={t('reports.chart.total', 'Total')}
+                  centerValue={formatCurrency(totalRevenue, i18n.language as any)}
+                />
+              </Box>
+
+              {/* Card 2: Top Services Revenue Share */}
+              <Box
+                p="md"
+                className="rounded-xl flex flex-col justify-between"
+                style={{
+                  backgroundColor: 'var(--mantine-color-dark-7, rgba(255, 255, 255, 0.02))',
+                  border: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))',
+                }}
+              >
+                <div>
+                  <Group justify="space-between" align="center" mb="sm">
+                    <Group gap={6} align="center">
+                      <Wrench size={15} style={{ color: '#a855f7' }} />
+                      <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: '0.04em' }}>
+                        {t('reports.charts.serviceShare', 'Services Revenue Share')}
+                      </Text>
+                    </Group>
+                    <Badge size="xs" variant="outline" color="purple">
+                      {topServices?.length || 0} {t('common.services', 'Services')}
+                    </Badge>
+                  </Group>
+                  <Text size="11px" c="dimmed" mb="md">
+                    {t('reports.charts.serviceShareDesc', 'Top service categories contributing to workshop earnings')}
+                  </Text>
+                </div>
+
+                {servicesLoading ? (
+                  <Skeleton height={155} radius="md" />
                 ) : (
-                  <div className="h-[280px] w-full flex items-end gap-2 pt-6">
-                    {revenue.map((item: any) => {
-                      const total = item.orderRevenue + item.directSaleRevenue;
-                      const heightPct = Math.max((total / maxRevenue) * 100, 3);
-
-                      return (
-                        <div key={item.date} className="flex-1 flex flex-col justify-end group relative h-full">
-                          {/* Hover Tooltip */}
-                          <div className="opacity-0 group-hover:opacity-100 absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-800 text-white text-[11px] py-1 px-2.5 rounded-lg whitespace-nowrap transition-opacity z-20 pointer-events-none shadow-lg border border-gray-700">
-                            <span className="font-semibold">{item.date}:</span> {formatCurrency(total)}
-                          </div>
-                          <div
-                            className="w-full rounded-t-md transition-all duration-300 group-hover:brightness-110"
-                            style={{
-                              height: `${heightPct}%`,
-                              background: 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)',
-                              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)',
-                            }}
-                          />
-                          {revenue.length <= 15 && (
-                            <div className="text-[10px] text-muted-foreground text-center mt-2 truncate w-full transform -rotate-45 origin-top-left">
-                              {item.date.split('-').slice(1).join('/')}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <DonutPieChart
+                    data={serviceDonutData}
+                    size={155}
+                    innerRadiusRatio={0.65}
+                    valueFormatter={(v) => formatCurrency(v, i18n.language as any)}
+                    centerLabel={t('reports.charts.services', 'Services')}
+                    centerValue={formatCurrency(totalServiceRevenue, i18n.language as any)}
+                  />
                 )}
               </Box>
-            )}
 
-            {/* Top Performers */}
-            {(activeSection === 'all' || activeSection === 'services') && (
+              {/* Card 3: Financial Performance Highlights */}
               <Box
-                className={`premium-card p-6 ${activeSection === 'services' ? 'lg:col-span-7' : 'lg:col-span-3'}`}
+                p="md"
+                className="rounded-xl flex flex-col justify-between"
+                style={{
+                  backgroundColor: 'var(--mantine-color-dark-7, rgba(255, 255, 255, 0.02))',
+                  border: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))',
+                }}
               >
-                <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }} mb="xs">
-                  {t('reports.top.title', 'Top Services & Items')}
-                </Title>
-                <Text size="xs" c="dimmed" mb="lg">
-                  Highest volume services and retail products sold
-                </Text>
+                <div>
+                  <Group justify="space-between" align="center" mb="sm">
+                    <Group gap={6} align="center">
+                      <TrendingUp size={15} style={{ color: '#10b981' }} />
+                      <Text size="xs" fw={700} tt="uppercase" style={{ letterSpacing: '0.04em' }}>
+                        {t('reports.charts.highlights', 'Performance Highlights')}
+                      </Text>
+                    </Group>
+                    <Badge size="xs" variant="light" color="teal">
+                      {t('reports.charts.summary', 'Executive')}
+                    </Badge>
+                  </Group>
+                  <Text size="11px" c="dimmed" mb="md">
+                    {t('reports.charts.highlightsDesc', 'Key momentum and throughput indicators for this period')}
+                  </Text>
 
-                <Stack gap="lg">
-                  {/* Top Services */}
-                  <Box>
-                    <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
-                      {t('common.services', 'Tailoring & Decor Services')}
-                    </Text>
-                    <Stack gap="xs">
-                      {topServices?.slice(0, 4).map((s: any) => (
-                        <Group key={s.name} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/30">
-                          <Box style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-                            <Text size="xs" fw={600} truncate>
-                              {getLocName(s)}
-                            </Text>
-                            <Text size="11px" c="dimmed">
-                              {t('reports.top.jobsCount', '{{count}} jobs', { count: s.count })}
-                            </Text>
-                          </Box>
-                          <Text size="xs" fw={700} style={{ color: 'var(--primary-accent)' }}>
-                            {formatCurrency(s.revenue)}
-                          </Text>
-                        </Group>
-                      ))}
-                      {topServices?.length === 0 && (
+                  <Stack gap="xs">
+                    {/* Daily Average Run-Rate */}
+                    <Box p="xs" className="rounded-lg bg-muted/30">
+                      <Group justify="space-between" align="center">
                         <Text size="xs" c="dimmed">
-                          {t('reports.top.noServiceData', 'No service activity recorded.')}
+                          {t('reports.charts.dailyAverage', 'Avg Daily Revenue')}:
                         </Text>
-                      )}
-                    </Stack>
-                  </Box>
+                        <Text size="xs" fw={700} style={{ color: 'var(--primary-accent)' }}>
+                          {formatCurrency(performanceStats.avgDailyRevenue, i18n.language as any)}
+                        </Text>
+                      </Group>
+                      <Text size="10px" c="dimmed" mt={2}>
+                        {t('reports.charts.acrossIntervals', 'Across {{count}} monitored intervals', { count: chartData.length })}
+                      </Text>
+                    </Box>
 
-                  {/* Top Materials */}
-                  <Box>
-                    <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
-                      {t('reports.top.materialsItems', 'Materials & Retail Items')}
-                    </Text>
-                    <Stack gap="xs">
-                      {topMaterials?.slice(0, 4).map((m: any) => (
-                        <Group key={m.name} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/30">
-                          <Box style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-                            <Text size="xs" fw={600} truncate>
-                              {getLocName(m)}
-                            </Text>
-                            <Text size="11px" c="dimmed">
-                              {t('reports.top.unitsSold', '{{count}} units sold', { count: m.count })}
-                            </Text>
-                          </Box>
-                          <Text size="xs" fw={700} style={{ color: '#3b82f6' }}>
-                            {formatCurrency(m.revenue)}
-                          </Text>
-                        </Group>
-                      ))}
-                      {topMaterials?.length === 0 && (
+                    {/* Peak Day */}
+                    <Box p="xs" className="rounded-lg bg-muted/30">
+                      <Group justify="space-between" align="center">
                         <Text size="xs" c="dimmed">
-                          {t('reports.top.noMaterialData', 'No material consumption recorded.')}
+                          {t('reports.charts.peakDay', 'Peak Day')}:
                         </Text>
-                      )}
-                    </Stack>
-                  </Box>
-                </Stack>
+                        <Text size="xs" fw={700} style={{ color: '#10b981' }}>
+                          {performanceStats.peakDay
+                            ? formatCurrency(performanceStats.peakDay.total, i18n.language as any)
+                            : '—'}
+                        </Text>
+                      </Group>
+                      <Text size="10px" c="dimmed" mt={2} truncate>
+                        {performanceStats.peakDay?.fullDate || performanceStats.peakDay?.displayDate || t('reports.charts.noPeakRecord', 'No peak record')}
+                      </Text>
+                    </Box>
+
+                    {/* Dominant Stream */}
+                    <Box p="xs" className="rounded-lg bg-muted/30">
+                      <Group justify="space-between" align="center">
+                        <Text size="xs" c="dimmed">
+                          {t('reports.charts.leadStream', 'Lead Stream')}:
+                        </Text>
+                        <Badge size="xs" variant="filled" color={totalOrderRevenue >= totalDirectSaleRevenue ? 'amber' : 'blue'}>
+                          {performanceStats.dominantStream} ({performanceStats.topStreamPercent}%)
+                        </Badge>
+                      </Group>
+                      <Text size="10px" c="dimmed" mt={2}>
+                        {t('reports.charts.primaryRevenueGenerator', 'Primary revenue generator for this period')}
+                      </Text>
+                    </Box>
+                  </Stack>
+                </div>
+
+                <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+                  <Text size="10px" c="dimmed">
+                    {t('reports.charts.activeDaysCount', 'Active Days: {{active}} / {{total}}', { active: performanceStats.activeDaysCount, total: chartData.length })}
+                  </Text>
+                  <Text size="10px" fw={600} style={{ color: 'var(--primary-accent)' }}>
+                    {t('reports.charts.liveSystemAudit', 'Live System Audit')}
+                  </Text>
+                </Group>
               </Box>
-            )}
+            </SimpleGrid>
+
+            {/* Footer Strip */}
+            <Group justify="space-between" align="center" mt="md" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+              <Group gap={6} align="center">
+                <span className="pulse-dot" style={{ backgroundColor: '#f59e0b', width: 6, height: 6 }} />
+                <Text size="11px" fw={600} style={{ color: 'var(--primary-accent)' }}>
+                  {t('reports.chart.liveFinancials', 'Financial Revenue Breakdown')}
+                </Text>
+              </Group>
+              <Text size="11px" c="dimmed">
+                {t('reports.charts.intervalsPlotted', '{{count}} {{unit}} plotted', { count: chartData.length, unit: datePreset === 'year' || datePreset === 'all' ? t('reports.charts.months', 'months') : t('reports.charts.intervals', 'intervals') })}
+              </Text>
+            </Group>
+          </Box>
+        )}
+
+        {/* SECTION 2: TOP SERVICES & STAFF WORKLOAD */}
+        {activeSection === 'all' && (
+          <div className="grid gap-6 md:grid-cols-2 mb-6">
+            {/* Top Performers */}
+            <Box className="premium-card p-6">
+              <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }} mb="xs">
+                {t('reports.top.title', 'Top Services & Items')}
+              </Title>
+              <Text size="xs" c="dimmed" mb="lg">
+                {t('reports.top.subtitle', 'Highest volume services and retail products sold')}
+              </Text>
+
+              <Stack gap="lg">
+                {/* Top Services */}
+                <Box>
+                  <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
+                    {t('common.services', 'Tailoring & Decor Services')}
+                  </Text>
+                  <Stack gap="xs">
+                    {topServices?.slice(0, 4).map((s: any) => (
+                      <Group key={s.name} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/30">
+                        <Box style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                          <Text size="xs" fw={600} truncate>
+                            {getLocName(s)}
+                          </Text>
+                          <Text size="11px" c="dimmed">
+                            {t('reports.top.jobsCount', '{{count}} jobs', { count: s.count })}
+                          </Text>
+                        </Box>
+                        <Text size="xs" fw={700} style={{ color: 'var(--primary-accent)' }}>
+                          {formatCurrency(s.revenue, i18n.language as any)}
+                        </Text>
+                      </Group>
+                    ))}
+                    {topServices?.length === 0 && (
+                      <Text size="xs" c="dimmed">
+                        {t('reports.top.noServiceData', 'No service activity recorded.')}
+                      </Text>
+                    )}
+                  </Stack>
+                </Box>
+
+                {/* Top Materials */}
+                <Box>
+                  <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
+                    {t('reports.top.materialsItems', 'Materials & Retail Items')}
+                  </Text>
+                  <Stack gap="xs">
+                    {topMaterials?.slice(0, 4).map((m: any) => (
+                      <Group key={m.name} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/30">
+                        <Box style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                          <Text size="xs" fw={600} truncate>
+                            {getLocName(m)}
+                          </Text>
+                          <Text size="11px" c="dimmed">
+                            {t('reports.top.unitsSold', '{{count}} units sold', { count: m.count })}
+                          </Text>
+                        </Box>
+                        <Text size="xs" fw={700} style={{ color: '#3b82f6' }}>
+                          {formatCurrency(m.revenue, i18n.language as any)}
+                        </Text>
+                      </Group>
+                    ))}
+                    {topMaterials?.length === 0 && (
+                      <Text size="xs" c="dimmed">
+                        {t('reports.top.noMaterialData', 'No material consumption recorded.')}
+                      </Text>
+                    )}
+                  </Stack>
+                </Box>
+              </Stack>
+            </Box>
+
+            {/* Staff Workload */}
+            <Box className="premium-card p-6">
+              <Group justify="space-between" align="flex-start" mb="md">
+                <Box>
+                  <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
+                    {t('reports.staff.workload', 'Staff Workload')}
+                  </Title>
+                  <Text size="xs" c="dimmed" mt={2}>
+                    {t('reports.staff.subtitle', 'Task allocation and role performance during this timeframe')}
+                  </Text>
+                </Box>
+                <Badge variant="light" color="green" size="sm" radius="md">
+                  {t('reports.staff.membersCount', '{{count}} Staff Members', { count: staffWorkload?.length || 0 })}
+                </Badge>
+              </Group>
+
+              <Stack gap="md">
+                {staffWorkload?.map((staff: any) => (
+                  <Box key={staff.name} p="xs" className="rounded-lg bg-muted/30">
+                    <Group justify="space-between" align="center" mb={6}>
+                      <Text size="xs" fw={700}>
+                        {staff.name}
+                      </Text>
+                      <Badge size="xs" variant="outline" color="amber">
+                        {t('reports.staff.tasksCount', '{{count}} tasks', { count: staff.total })}
+                      </Badge>
+                    </Group>
+                    <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted/60 mb-2">
+                      {Object.entries(staff.roles).map(([role, count]: any, i) => {
+                        const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
+                        const width = `${(count / staff.total) * 100}%`;
+                        return (
+                          <div
+                            key={role}
+                            title={`${role}: ${count}`}
+                            style={{ width, backgroundColor: colors[i % colors.length] }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <Group gap="xs" wrap="wrap">
+                      {Object.entries(staff.roles).map(([role, count]: any, i) => {
+                        const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
+                        return (
+                          <Group key={role} gap={4} align="center">
+                            <span
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                backgroundColor: colors[i % colors.length],
+                              }}
+                            />
+                            <Text size="10px" c="dimmed">
+                              {role} ({count})
+                            </Text>
+                          </Group>
+                        );
+                      })}
+                    </Group>
+                  </Box>
+                ))}
+                {staffWorkload?.length === 0 && (
+                  <Text size="xs" c="dimmed">
+                    {t('reports.staff.noAssignments', 'No staff assignments in this period.')}
+                  </Text>
+                )}
+              </Stack>
+            </Box>
           </div>
         )}
 
-        {/* SECTION: STAFF WORKLOAD & STORE VALUATIONS */}
-        {(activeSection === 'all' || activeSection === 'staff' || activeSection === 'inventory') && (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Staff Workload */}
-            {(activeSection === 'all' || activeSection === 'staff') && (
-              <Box className="premium-card p-6">
-                <Group justify="space-between" align="flex-start" mb="md">
-                  <Box>
-                    <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
-                      {t('reports.staff.workload', 'Staff Workload')}
-                    </Title>
-                    <Text size="xs" c="dimmed" mt={2}>
-                      Task allocation and role performance during this timeframe
-                    </Text>
-                  </Box>
-                  <Badge variant="light" color="green" size="sm" radius="md">
-                    {staffWorkload?.length || 0} Staff Members
-                  </Badge>
-                </Group>
+        {/* Tab-specific Views */}
+        {activeSection === 'services' && (
+          <Box className="premium-card p-6 mb-6">
+            <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }} mb="xs">
+              {t('reports.top.title', 'Top Services & Items')}
+            </Title>
+            <Text size="xs" c="dimmed" mb="lg">
+              {t('reports.top.subtitle', 'Highest volume services and retail products sold')}
+            </Text>
 
-                <Stack gap="md">
-                  {staffWorkload?.map((staff: any) => (
-                    <Box key={staff.name} p="xs" className="rounded-lg bg-muted/30">
-                      <Group justify="space-between" align="center" mb={6}>
-                        <Text size="xs" fw={700}>
-                          {staff.name}
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+              {/* Top Services */}
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
+                  {t('common.services', 'Tailoring & Decor Services')}
+                </Text>
+                <Stack gap="xs">
+                  {topServices?.slice(0, 6).map((s: any) => (
+                    <Group key={s.name} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/30">
+                      <Box style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                        <Text size="xs" fw={600} truncate>
+                          {getLocName(s)}
                         </Text>
-                        <Badge size="xs" variant="outline" color="amber">
-                          {t('reports.staff.tasksCount', '{{count}} tasks', { count: staff.total })}
-                        </Badge>
-                      </Group>
-                      <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted/60 mb-2">
-                        {Object.entries(staff.roles).map(([role, count]: any, i) => {
-                          const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
-                          const width = `${(count / staff.total) * 100}%`;
-                          return (
-                            <div
-                              key={role}
-                              title={`${role}: ${count}`}
-                              style={{ width, backgroundColor: colors[i % colors.length] }}
-                            />
-                          );
-                        })}
-                      </div>
-                      <Group gap="xs" wrap="wrap">
-                        {Object.entries(staff.roles).map(([role, count]: any, i) => {
-                          const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
-                          return (
-                            <Group key={role} gap={4} align="center">
-                              <span
-                                style={{
-                                  width: 6,
-                                  height: 6,
-                                  borderRadius: '50%',
-                                  backgroundColor: colors[i % colors.length],
-                                }}
-                              />
-                              <Text size="10px" c="dimmed">
-                                {role} ({count})
-                              </Text>
-                            </Group>
-                          );
-                        })}
-                      </Group>
-                    </Box>
+                        <Text size="11px" c="dimmed">
+                          {t('reports.top.jobsCount', '{{count}} jobs', { count: s.count })}
+                        </Text>
+                      </Box>
+                      <Text size="xs" fw={700} style={{ color: 'var(--primary-accent)' }}>
+                        {formatCurrency(s.revenue, i18n.language as any)}
+                      </Text>
+                    </Group>
                   ))}
-                  {staffWorkload?.length === 0 && (
+                  {topServices?.length === 0 && (
                     <Text size="xs" c="dimmed">
-                      {t('reports.staff.noAssignments', 'No staff assignments in this period.')}
+                      {t('reports.top.noServiceData', 'No service activity recorded.')}
                     </Text>
                   )}
                 </Stack>
               </Box>
-            )}
 
-            {/* Store Valuations */}
-            {(activeSection === 'all' || activeSection === 'inventory') && (
-              <Box className="premium-card p-6">
-                <Group justify="space-between" align="flex-start" mb="md">
-                  <Box>
-                    <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
-                      {t('reports.store.storeValuations', 'Dual Store Valuations')}
-                    </Title>
-                    <Text size="xs" c="dimmed" mt={2}>
-                      Real-time inventory asset values across Mini Shop and Main Warehouse
-                    </Text>
-                  </Box>
-                  <Badge variant="light" color="blue" size="sm" radius="md">
-                    Total: {formatCurrency(totalValuation)}
-                  </Badge>
-                </Group>
-
-                <Stack gap="md">
-                  {stockValuation?.summary?.map((store: any) => (
-                    <Group
-                      key={store.storeName}
-                      justify="space-between"
-                      align="center"
-                      p="sm"
-                      className="rounded-xl border border-border bg-card"
-                    >
-                      <Group gap="sm" align="center">
-                        <Box
-                          className="stat-icon-wrapper"
-                          style={{
-                            background: 'rgba(245, 158, 11, 0.12)',
-                            color: 'var(--primary-accent)',
-                            width: 36,
-                            height: 36,
-                          }}
-                        >
-                          <RiStore2Line size={18} />
-                        </Box>
-                        <Box>
-                          <Text size="xs" fw={700}>
-                            {getLocalizedStoreName(store.storeName)}
-                          </Text>
-                          <Text size="11px" c="dimmed">
-                            {t('reports.store.currentAssets', 'Current Assets')}
-                          </Text>
-                        </Box>
-                      </Group>
-                      <Text size="sm" fw={800} style={{ color: 'var(--primary-accent)' }}>
-                        {formatCurrency(store.totalValue)}
+              {/* Top Materials */}
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
+                  {t('reports.top.materialsItems', 'Materials & Retail Items')}
+                </Text>
+                <Stack gap="xs">
+                  {topMaterials?.slice(0, 6).map((m: any) => (
+                    <Group key={m.name} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/30">
+                      <Box style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                        <Text size="xs" fw={600} truncate>
+                          {getLocName(m)}
+                        </Text>
+                        <Text size="11px" c="dimmed">
+                          {t('reports.top.unitsSold', '{{count}} units sold', { count: m.count })}
+                        </Text>
+                      </Box>
+                      <Text size="xs" fw={700} style={{ color: '#3b82f6' }}>
+                        {formatCurrency(m.revenue, i18n.language as any)}
                       </Text>
                     </Group>
                   ))}
-
-                  <Box pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
-                    <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
-                      {t('reports.store.topValueAssets', 'Top Value Materials')}
+                  {topMaterials?.length === 0 && (
+                    <Text size="xs" c="dimmed">
+                      {t('reports.top.noMaterialData', 'No material consumption recorded.')}
                     </Text>
-                    <Stack gap={6}>
-                      {stockValuation?.details?.slice(0, 4).map((d: any, i: number) => (
-                        <Group key={i} justify="space-between" align="center" text-xs="true">
-                          <Text size="xs" c="dimmed" truncate style={{ maxWidth: '65%' }}>
-                            {d.quantity}x {getLocMaterialName(d)}
-                          </Text>
-                          <Text size="xs" fw={600}>
-                            {formatCurrency(d.totalValue)}
-                          </Text>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </Box>
+                  )}
                 </Stack>
               </Box>
-            )}
-          </div>
+            </SimpleGrid>
+          </Box>
+        )}
+
+        {activeSection === 'staff' && (
+          <Box className="premium-card p-6 mb-6">
+            <Group justify="space-between" align="flex-start" mb="md">
+              <Box>
+                <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
+                  {t('reports.staff.workload', 'Staff Workload')}
+                </Title>
+                <Text size="xs" c="dimmed" mt={2}>
+                  {t('reports.staff.subtitle', 'Task allocation and role performance during this timeframe')}
+                </Text>
+              </Box>
+              <Badge variant="light" color="green" size="sm" radius="md">
+                {t('reports.staff.membersCount', '{{count}} Staff Members', { count: staffWorkload?.length || 0 })}
+              </Badge>
+            </Group>
+
+            <Stack gap="md">
+              {staffWorkload?.map((staff: any) => (
+                <Box key={staff.name} p="xs" className="rounded-lg bg-muted/30">
+                  <Group justify="space-between" align="center" mb={6}>
+                    <Text size="xs" fw={700}>
+                      {staff.name}
+                    </Text>
+                    <Badge size="xs" variant="outline" color="amber">
+                      {t('reports.staff.tasksCount', '{{count}} tasks', { count: staff.total })}
+                    </Badge>
+                  </Group>
+                  <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted/60 mb-2">
+                    {Object.entries(staff.roles).map(([role, count]: any, i) => {
+                      const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
+                      const width = `${(count / staff.total) * 100}%`;
+                      return (
+                        <div
+                          key={role}
+                          title={`${role}: ${count}`}
+                          style={{ width, backgroundColor: colors[i % colors.length] }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <Group gap="xs" wrap="wrap">
+                    {Object.entries(staff.roles).map(([role, count]: any, i) => {
+                      const colors = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b'];
+                      return (
+                        <Group key={role} gap={4} align="center">
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              backgroundColor: colors[i % colors.length],
+                            }}
+                          />
+                          <Text size="10px" c="dimmed">
+                            {role} ({count})
+                          </Text>
+                        </Group>
+                      );
+                    })}
+                  </Group>
+                </Box>
+              ))}
+              {staffWorkload?.length === 0 && (
+                <Text size="xs" c="dimmed">
+                  {t('reports.staff.noAssignments', 'No staff assignments in this period.')}
+                </Text>
+              )}
+            </Stack>
+          </Box>
+        )}
+
+        {/* SECTION 3: STORE VALUATIONS */}
+        {(activeSection === 'all' || activeSection === 'inventory') && (
+          <Box className="premium-card p-6 mb-6">
+            <Group justify="space-between" align="flex-start" mb="md">
+              <Box>
+                <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
+                  {t('reports.store.storeValuations', 'Dual Store Valuations')}
+                </Title>
+                <Text size="xs" c="dimmed" mt={2}>
+                  {t('reports.store.subtitle', 'Real-time inventory asset values across Mini Shop and Main Warehouse')}
+                </Text>
+              </Box>
+              <Badge variant="light" color="blue" size="sm" radius="md">
+                {t('common.total', 'Total')}: {formatCurrency(totalValuation, i18n.language as any)}
+              </Badge>
+            </Group>
+
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+              {/* Store Balances */}
+              <Stack gap="sm">
+                <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+                  {t('reports.store.hubBalances', 'Current Storage Hub Balances')}
+                </Text>
+                {stockValuation?.summary?.map((store: any) => (
+                  <Group
+                    key={store.storeName}
+                    justify="space-between"
+                    align="center"
+                    p="sm"
+                    className="rounded-xl border border-border bg-card"
+                  >
+                    <Group gap="sm" align="center">
+                      <Box
+                        className="stat-icon-wrapper"
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          color: 'var(--primary-accent)',
+                        }}
+                      >
+                        <Store size={18} />
+                      </Box>
+                      <Box>
+                        <Text size="xs" fw={700}>
+                          {getLocalizedStoreName(store.storeName)}
+                        </Text>
+                        <Text size="11px" c="dimmed">
+                          {t('reports.store.currentAssets', 'Current Assets')}
+                        </Text>
+                      </Box>
+                    </Group>
+                    <Text size="sm" fw={800} style={{ color: 'var(--primary-accent)' }}>
+                      {formatCurrency(store.totalValue, i18n.language as any)}
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+
+              {/* Top Value Materials */}
+              <Box>
+                <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }} mb="xs">
+                  {t('reports.store.topValueAssets', 'Top Value Materials')}
+                </Text>
+                <Stack gap={6}>
+                  {stockValuation?.details?.slice(0, 6).map((d: any, i: number) => (
+                    <Group key={i} justify="space-between" align="center" p="xs" className="rounded-lg bg-muted/20">
+                      <Text size="xs" c="dimmed" truncate style={{ maxWidth: '65%' }}>
+                        {d.quantity}x {getLocMaterialName(d)}
+                      </Text>
+                      <Text size="xs" fw={600}>
+                        {formatCurrency(d.totalValue, i18n.language as any)}
+                      </Text>
+                    </Group>
+                  ))}
+                  {(!stockValuation?.details || stockValuation.details.length === 0) && (
+                    <Text size="xs" c="dimmed">
+                      {t('reports.store.noMaterialRecords', 'No material records found.')}
+                    </Text>
+                  )}
+                </Stack>
+              </Box>
+            </SimpleGrid>
+          </Box>
         )}
       </Tabs>
     </Stack>

@@ -2,10 +2,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
-import { format } from 'date-fns';
 import { Button } from '../components/ui/button';
 import { Printer, ArrowLeft } from 'lucide-react';
-import { formatCurrency, formatStatus, formatPaymentMethod } from '../lib/utils';
+import { formatCurrency, formatStatus, formatPaymentMethod, formatAppDate } from '../lib/utils';
 import { formatPlateNumber } from '../utils/plate';
 import { printOrderReceipt, generateBarcodeSvg } from '../lib/receipt-printer';
 
@@ -61,10 +60,13 @@ export default function Receipt() {
     printOrderReceipt(order);
   };
 
-  const subtotal = order.totalPrice || (
+  const serviceFee = Number(order.serviceFee || 0);
+
+  const subtotal = order.totalPrice !== undefined ? Number(order.totalPrice) : (
     (order.serviceLines || []).reduce((s: number, l: any) => s + Number(l.priceAtOrderTime || 0), 0) +
     (order.standaloneLines || []).reduce((s: number, l: any) => s + (Number(l.priceAtOrderTime || 0) * Number(l.quantity || 1)), 0) +
-    (order.additionalCharges || []).reduce((s: number, l: any) => s + Number(l.price || l.amount || 0), 0)
+    (order.additionalCharges || []).reduce((s: number, l: any) => s + Number(l.price || l.amount || 0), 0) +
+    serviceFee
   );
 
   const discountAmount = Number(order.totalDiscount || order.discountAmount || 0);
@@ -78,7 +80,7 @@ export default function Receipt() {
   const customerPhone = order.customer?.phoneNumber || order.customer?.phone || '';
   const vehiclePlate = order.vehicle ? formatPlateNumber(order.vehicle.plateNumber) : '';
   const vehicleModel = order.vehicle?.carModel ? `${[order.vehicle.carModel?.brand?.name, order.vehicle.carModel?.name].filter(Boolean).join(' ')}` : '';
-  const formattedDate = order.orderDateTime ? format(new Date(order.orderDateTime), 'MMMM dd, yyyy • h:mm a') : 'N/A';
+  const formattedDate = order.orderDateTime ? formatAppDate(order.orderDateTime, true) : 'N/A';
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-background">
@@ -210,9 +212,12 @@ export default function Receipt() {
                   {order.serviceLines?.map((sl: any, idx: number) => {
                     const realServiceName = getLocServiceName(sl);
                     const categoryTier = getLocCategoryTier(sl);
+                    const stdPrice = Number(sl.serviceCategory?.price || 0);
                     const unitPrice = Number(sl.priceAtOrderTime || 0);
-                    const discount = Number(sl.discount || 0);
-                    const lineTotal = unitPrice - discount;
+                    const explicitDiscount = Number(sl.discount || 0);
+                    const catalogSavings = stdPrice > unitPrice ? (stdPrice - unitPrice) : 0;
+                    const discount = explicitDiscount > 0 ? explicitDiscount : catalogSavings;
+                    const lineTotal = unitPrice - explicitDiscount;
                     return (
                       <tr key={sl.id} className="hover:bg-gray-50/50">
                         <td className="py-2.5 px-3 text-center text-gray-500 font-semibold text-xs">{idx + 1}</td>
@@ -226,10 +231,15 @@ export default function Receipt() {
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-center font-semibold">1</td>
-                        <td className="py-2.5 px-3 text-right font-mono">{formatCurrency(unitPrice)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <div>{formatCurrency(unitPrice)}</div>
+                          {stdPrice > unitPrice && (
+                            <div className="text-[11px] text-gray-400 line-through">{formatCurrency(stdPrice)}</div>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold">
                           {formatCurrency(lineTotal)}
-                          {discount > 0 && <div className="text-[11px] text-red-600 font-normal">(-{formatCurrency(discount)})</div>}
+                          {discount > 0 && <div className="text-[11px] text-emerald-600 font-medium">(-{formatCurrency(discount)})</div>}
                         </td>
                       </tr>
                     );
@@ -237,15 +247,30 @@ export default function Receipt() {
 
                   {order.standaloneLines?.map((ml: any, idx: number) => {
                     const offset = (order.serviceLines?.length || 0);
+                    const stdUnitPrice = Number(
+                      ml.material?.brands?.find((b: any) => b.id === ml.materialBrandId)?.price ??
+                      ml.material?.currentPrice ??
+                      ml.priceAtOrderTime ??
+                      0
+                    );
                     const unitPrice = Number(ml.priceAtOrderTime || 0);
                     const qty = Number(ml.quantity || 1);
-                    const discount = Number(ml.discount || 0);
-                    const lineTotal = (unitPrice * qty) - discount;
+                    const explicitDiscount = Number(ml.discount || 0);
+                    const catalogSavings = stdUnitPrice > unitPrice ? ((stdUnitPrice - unitPrice) * qty) : 0;
+                    const discount = explicitDiscount > 0 ? explicitDiscount : catalogSavings;
+                    const lineTotal = (unitPrice * qty) - explicitDiscount;
                     return (
                       <tr key={ml.id} className="hover:bg-gray-50/50">
                         <td className="py-2.5 px-3 text-center text-gray-500 font-semibold text-xs">{offset + idx + 1}</td>
                         <td className="py-2.5 px-3">
-                          <div className="font-semibold text-gray-900">{getLocMaterialName(ml.material)}</div>
+                          <div className="font-semibold text-gray-900 flex items-center gap-1.5 flex-wrap">
+                            <span>{getLocMaterialName(ml.material)}</span>
+                            {ml.brandName && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold border border-amber-300">
+                                {ml.brandName}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500">{t('receipt.standaloneMaterial', 'Standalone Material')}</div>
                         </td>
                         <td className="py-2.5 px-3 text-center">
@@ -254,10 +279,15 @@ export default function Receipt() {
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-center font-semibold">{qty}</td>
-                        <td className="py-2.5 px-3 text-right font-mono">{formatCurrency(unitPrice)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <div>{formatCurrency(unitPrice)}</div>
+                          {stdUnitPrice > unitPrice && (
+                            <div className="text-[11px] text-gray-400 line-through">{formatCurrency(stdUnitPrice)}</div>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold">
                           {formatCurrency(lineTotal)}
-                          {discount > 0 && <div className="text-[11px] text-red-600 font-normal">(-{formatCurrency(discount)})</div>}
+                          {discount > 0 && <div className="text-[11px] text-emerald-600 font-medium">(-{formatCurrency(discount)})</div>}
                         </td>
                       </tr>
                     );
@@ -285,7 +315,27 @@ export default function Receipt() {
                     );
                   })}
 
-                  {(!order.serviceLines?.length && !order.standaloneLines?.length && !order.additionalCharges?.length) && (
+                  {serviceFee > 0 && (
+                    <tr className="hover:bg-gray-50/50">
+                      <td className="py-2.5 px-3 text-center text-gray-500 font-semibold text-xs">
+                        {(order.serviceLines?.length || 0) + (order.standaloneLines?.length || 0) + (order.additionalCharges?.length || 0) + 1}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-gray-900">{t('orders.detail.serviceFee', 'Service Fee')}</div>
+                        <div className="text-xs text-gray-500">{t('receipt.serviceFeeDesc', 'Order Service / Labor Fee')}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                          {t('receipt.fee', 'Fee')}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-semibold">1</td>
+                      <td className="py-2.5 px-3 text-right font-mono">{formatCurrency(serviceFee)}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold">{formatCurrency(serviceFee)}</td>
+                    </tr>
+                  )}
+
+                  {(!order.serviceLines?.length && !order.standaloneLines?.length && !order.additionalCharges?.length && serviceFee <= 0) && (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-gray-400 italic">
                         {t('receipt.noItemsOrder', 'No items or services in this order')}
@@ -311,7 +361,7 @@ export default function Receipt() {
                             {formatPaymentMethod(p.method)}
                           </span>
                           {p.methodDetails && <span className="text-gray-500"> ({p.methodDetails})</span>}
-                          {p.paidAt && <div className="text-[10px] text-gray-400">{format(new Date(p.paidAt), 'MMM d, yyyy • h:mm a')}</div>}
+                          {p.paidAt && <div className="text-[10px] text-gray-400">{formatAppDate(p.paidAt, true)}</div>}
                         </div>
                         <span className="font-bold text-emerald-600 font-mono">+{formatCurrency(p.amount)}</span>
                       </div>

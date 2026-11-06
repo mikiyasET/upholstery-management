@@ -2,8 +2,7 @@ import React from 'react';
 import { cn, formatAppDate } from '../lib/utils';
 import { Search, X, ChevronDown, Check } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { AppDatePicker } from './common/AppDatePicker';
 import { useTranslation } from 'react-i18next';
 
 interface TableContextType {
@@ -403,7 +402,7 @@ export const TablePageHeader: React.FC<TablePageHeaderProps> = ({
   filters,
   className
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const hasFilters =
     filters ||
     (filterPills && filterPills.length > 0) ||
@@ -453,7 +452,7 @@ export const TablePageHeader: React.FC<TablePageHeaderProps> = ({
   }
 
   if (dateFilter && dateFilter.selected) {
-    const formattedDate = formatAppDate(dateFilter.selected);
+    const formattedDate = formatAppDate(dateFilter.selected, false, i18n.language);
     const groupLabel = dateFilter.placeholderText || t('common.date', 'Date');
     activeTags.push({
       id: 'date-filter',
@@ -545,14 +544,12 @@ export const TablePageHeader: React.FC<TablePageHeaderProps> = ({
 
                 {dateFilter && (
                   <div className="min-w-[200px] w-full sm:w-auto">
-                    <DatePicker
-                      selected={dateFilter.selected}
+                    <AppDatePicker
+                      value={dateFilter.selected}
                       onChange={dateFilter.onChange}
-                      className="header-input w-full"
-                      wrapperClassName="w-full"
-                      dateFormat="dd-MM-yyyy"
-                      placeholderText={dateFilter.placeholderText || t('common.filterByDate', 'Filter By Date')}
-                      isClearable={dateFilter.isClearable}
+                      placeholder={dateFilter.placeholderText || t('common.filterByDate', 'Filter By Date')}
+                      clearable={dateFilter.isClearable}
+                      className="w-full"
                     />
                   </div>
                 )}

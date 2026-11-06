@@ -11,4 +11,32 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('/react/')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@mantine')) {
+              return 'vendor-mantine';
+            }
+            if (
+              id.includes('date-fns') ||
+              id.includes('dayjs') ||
+              id.includes('clsx') ||
+              id.includes('tailwind-merge') ||
+              id.includes('zod') ||
+              id.includes('zustand') ||
+              id.includes('axios')
+            ) {
+              return 'vendor-utils';
+            }
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 })

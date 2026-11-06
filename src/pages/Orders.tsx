@@ -11,17 +11,33 @@ import {
   TableRow,
 } from '../components/DataTable';
 import { PermissionGate } from '../components/PermissionGate';
-import { Phone, CalendarDays, MoreHorizontal } from 'lucide-react';
-import { format } from 'date-fns';
+import {
+  Phone,
+  CalendarDays,
+  MoreHorizontal,
+  Eye,
+  Printer,
+  CheckCheck,
+  Search,
+  X,
+  ListFilter,
+  Clock,
+  Wrench,
+  CheckCircle2,
+  ShieldCheck,
+  XCircle,
+  CircleDollarSign,
+  FileSearch,
+} from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { formatPlateNumber } from '../utils/plate';
-import { formatStatus } from '../lib/utils';
+import { formatStatus, formatAppDate } from '../lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
-import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
+import { PageHeader, ExecutiveAddButton, TablePagination, PlateBadge } from '../components/common';
 import {
   Box,
   Group,
@@ -32,21 +48,6 @@ import {
   Select,
   Button,
 } from '@mantine/core';
-import {
-  RiEyeLine,
-  RiPrinterLine,
-  RiCheckDoubleLine,
-  RiSearchLine,
-  RiCloseLine,
-  RiListCheck2,
-  RiTimeLine,
-  RiToolsLine,
-  RiCheckboxCircleLine,
-  RiShieldCheckLine,
-  RiCloseCircleLine,
-  RiMoneyDollarCircleLine,
-  RiFileSearchLine,
-} from 'react-icons/ri';
 import { printOrderReceipt } from '../lib/receipt-printer';
 
 export default function Orders() {
@@ -81,6 +82,8 @@ export default function Orders() {
       const res = await api.get('/orders');
       return res.data;
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Calculate live count metrics for each tab
@@ -105,39 +108,52 @@ export default function Orders() {
 
   // Combined client filtering: Status tab + Payment filter + Search keyword
   const filteredOrders = useMemo(() => {
-    return (orders || []).filter((o: any) => {
-      // 1. Status Filter
-      if (statusFilter !== 'ALL' && o.orderStatus !== statusFilter) {
-        return false;
-      }
+    return (orders || [])
+      .filter((o: any) => {
+        // 1. Status Filter
+        if (statusFilter !== 'ALL' && o.orderStatus !== statusFilter) {
+          return false;
+        }
 
-      // 2. Payment Filter
-      if (paymentFilter !== 'ALL' && o.paymentStatus !== paymentFilter) {
-        return false;
-      }
+        // 2. Payment Filter
+        if (paymentFilter !== 'ALL' && o.paymentStatus !== paymentFilter) {
+          return false;
+        }
 
-      // 3. Search query
-      if (search.trim()) {
-        const query = search.toLowerCase().trim();
-        const orderNum = (o.orderNumber || '').toLowerCase();
-        const custName = (o.customer?.name || '').toLowerCase();
-        const custPhone = (o.customer?.phone || o.customer?.phoneNumber || '').toLowerCase();
-        const plate = formatPlateNumber(o.vehicle?.plateNumber || '').toLowerCase();
-        const model = (o.vehicle?.carModel?.name || '').toLowerCase();
-        const brand = (o.vehicle?.carModel?.brand?.name || '').toLowerCase();
+        // 3. Search query
+        if (search.trim()) {
+          const query = search.toLowerCase().trim();
+          const orderNum = (o.orderNumber || '').toLowerCase();
+          const fsrNum = (o.fsrNumber || '').toLowerCase();
+          const custName = (o.customer?.name || '').toLowerCase();
+          const custPhone = (o.customer?.phone || o.customer?.phoneNumber || '').toLowerCase();
+          const plate = formatPlateNumber(o.vehicle?.plateNumber || '').toLowerCase();
+          const rawPlate = (o.vehicle?.plateNumber || '').toLowerCase();
+          const model = (o.vehicle?.carModel?.name || '').toLowerCase();
+          const brand = (o.vehicle?.carModel?.brand?.name || '').toLowerCase();
 
-        return (
-          orderNum.includes(query) ||
-          custName.includes(query) ||
-          custPhone.includes(query) ||
-          plate.includes(query) ||
-          model.includes(query) ||
-          brand.includes(query)
-        );
-      }
+          return (
+            orderNum.includes(query) ||
+            fsrNum.includes(query) ||
+            custName.includes(query) ||
+            custPhone.includes(query) ||
+            plate.includes(query) ||
+            rawPlate.includes(query) ||
+            model.includes(query) ||
+            brand.includes(query)
+          );
+        }
 
-      return true;
-    });
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        const timeA = new Date(a.orderDateTime || a.createdAt || 0).getTime();
+        const timeB = new Date(b.orderDateTime || b.createdAt || 0).getTime();
+        if (timeB !== timeA) return timeB - timeA;
+        const createA = new Date(a.createdAt || 0).getTime();
+        const createB = new Date(b.createdAt || 0).getTime();
+        return createB - createA;
+      });
   }, [orders, statusFilter, paymentFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
@@ -149,37 +165,37 @@ export default function Orders() {
     {
       key: 'ALL',
       label: t('common.all', 'All Orders'),
-      icon: RiListCheck2,
+      icon: ListFilter,
       activeColor: '#F59E0B',
     },
     {
       key: 'OPEN',
       label: t('orders.status.open', 'Open'),
-      icon: RiTimeLine,
+      icon: Clock,
       activeColor: '#3B82F6',
     },
     {
       key: 'IN_PROGRESS',
       label: t('orders.status.inProgress', 'In Progress'),
-      icon: RiToolsLine,
+      icon: Wrench,
       activeColor: '#F59E0B',
     },
     {
       key: 'COMPLETED',
       label: t('orders.status.completed', 'Ready'),
-      icon: RiCheckboxCircleLine,
+      icon: CheckCircle2,
       activeColor: '#A855F7',
     },
     {
       key: 'DELIVERED',
       label: t('orders.status.delivered', 'Delivered'),
-      icon: RiShieldCheckLine,
+      icon: ShieldCheck,
       activeColor: '#10B981',
     },
     {
       key: 'CANCELLED',
       label: t('orders.status.cancelled', 'Cancelled'),
-      icon: RiCloseCircleLine,
+      icon: XCircle,
       activeColor: '#EF4444',
     },
   ];
@@ -230,12 +246,12 @@ export default function Orders() {
           <Group justify="space-between" align="center" wrap="wrap" gap="sm">
             {/* Live Search Input */}
             <TextInput
-              placeholder={t('orders.searchPlaceholder', 'Search by order #, customer, phone, or plate...')}
-              leftSection={<RiSearchLine size={16} style={{ color: 'var(--text-muted)' }} />}
+              placeholder={t('orders.searchPlaceholder', 'Search by order #, FSR #, customer, phone, or plate...')}
+              leftSection={<Search size={16} style={{ color: 'var(--text-muted)' }} />}
               rightSection={
                 search ? (
                   <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => setSearch('')} title="Clear search">
-                    <RiCloseLine size={14} />
+                    <X size={14} />
                   </ActionIcon>
                 ) : null
               }
@@ -267,7 +283,7 @@ export default function Orders() {
                 size="sm"
                 radius="md"
                 w={{ base: '100%', sm: 160 }}
-                leftSection={<RiMoneyDollarCircleLine size={15} style={{ color: 'var(--text-muted)' }} />}
+                leftSection={<CircleDollarSign size={15} style={{ color: 'var(--text-muted)' }} />}
               />
 
               {/* Reset Filters CTA if any filter is active */}
@@ -283,7 +299,7 @@ export default function Orders() {
                     setSearch('');
                     setCurrentPage(1);
                   }}
-                  leftSection={<RiCloseLine size={13} />}
+                  leftSection={<X size={13} />}
                   style={{
                     fontFamily: "'Plus Jakarta Sans', sans-serif",
                     fontWeight: 600,
@@ -402,7 +418,7 @@ export default function Orders() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <RiFileSearchLine size={38} className="text-muted-foreground/50 mb-1" />
+                      <FileSearch size={38} className="text-muted-foreground/50 mb-1" />
                       <div className="font-semibold text-foreground text-sm">
                         {t('orders.table.noOrders', 'No work orders found')}
                       </div>
@@ -423,7 +439,7 @@ export default function Orders() {
                             setPaymentFilter('ALL');
                             setSearch('');
                           }}
-                          leftSection={<RiCloseLine size={14} />}
+                          leftSection={<X size={14} />}
                         >
                           {t('common.clearFilters', 'Reset all filters')}
                         </Button>
@@ -435,26 +451,50 @@ export default function Orders() {
                 paginatedOrders.map((order: any) => (
                   <TableRow key={order.id}>
                     <TableCell>
-                      <div 
-                        className="font-medium text-primary hover:underline cursor-pointer mb-1 transition-all"
-                        onClick={() => navigate(`/orders/${order.id}`)}
-                      >
-                        {order.orderNumber}
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        <span 
+                          className="font-semibold text-primary hover:underline cursor-pointer transition-all"
+                          onClick={() => navigate(`/orders/${order.id}`)}
+                        >
+                          {order.orderNumber}
+                        </span>
+                        {order.fsrNumber && (
+                          <span 
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 tracking-wide"
+                            title={`Fiscal Sales Receipt / Paper Audit FSR #: ${order.fsrNumber}`}
+                          >
+                            FSR: {order.fsrNumber}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <CalendarDays className="w-3.5 h-3.5" />
-                        {format(new Date(order.orderDateTime), 'MMM d, yyyy HH:mm')}
+                        {formatAppDate(order.orderDateTime, true)}
                       </div>
+                      {order.deadline && (
+                        <div className={`flex items-center gap-1 text-[11px] font-bold mt-1 ${
+                          new Date(order.deadline) < new Date() && order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'DELIVERED'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : order.deadlineWarningSent
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-blue-600 dark:text-blue-400'
+                        }`}>
+                          <Clock className="w-3 h-3" />
+                          <span>{t('orders.create.deadlineSchedule', 'Due')}: {formatAppDate(order.deadline, true)}</span>
+                          {order.deadlineWarningSent && (
+                            <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 font-extrabold">
+                              70% Alert
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-md mb-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
-                        <span className="text-sm font-bold tracking-wider text-amber-800 dark:text-amber-300">
-                          {formatPlateNumber(order.vehicle.plateNumber)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {order.vehicle.carModel.brand.name} {order.vehicle.carModel.name}
+                      <div className="flex flex-col items-start gap-1">
+                        <PlateBadge plate={order.vehicle?.plateNumber} size="sm" />
+                        <div className="text-xs text-muted-foreground font-medium">
+                          {order.vehicle?.carModel?.brand?.name} {order.vehicle?.carModel?.name}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -473,6 +513,11 @@ export default function Orders() {
                       <Badge variant="outline" className={getPaymentColor(order.paymentStatus)}>
                         {formatStatus(order.paymentStatus)}
                       </Badge>
+                      {Number(order.downPayment || 0) > 0 && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                          Adv: {Number(order.downPayment).toLocaleString()} ETB
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
@@ -483,7 +528,7 @@ export default function Orders() {
                             size="sm"
                             onClick={() => navigate(`/orders/${order.id}`)}
                           >
-                            <RiEyeLine size={16} />
+                            <Eye size={16} />
                           </ActionIcon>
                         </Tooltip>
 
@@ -494,7 +539,7 @@ export default function Orders() {
                             size="sm"
                             onClick={() => handlePrintOrder(order.id)}
                           >
-                            <RiPrinterLine size={16} />
+                            <Printer size={16} />
                           </ActionIcon>
                         </Tooltip>
 
@@ -508,7 +553,7 @@ export default function Orders() {
                               setIsStatusModalOpen(true);
                             }}
                           >
-                            <RiCheckDoubleLine size={16} />
+                            <CheckCheck size={16} />
                           </ActionIcon>
                         </Tooltip>
 

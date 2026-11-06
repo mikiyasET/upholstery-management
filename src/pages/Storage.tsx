@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import api from '../lib/api';
-import { getImageUrl, formatUnit, formatCurrency } from '../lib/utils';
+import { getImageUrl, formatUnit, formatCurrency, isUnitIntegerOnly, getQuantityStep, formatBrandSizeLabel, formatAppDate } from '../lib/utils';
 import {
   Table,
   TableBody,
@@ -29,12 +30,20 @@ import {
   ClipboardCheck,
   ImageOff,
   History,
+  Store,
+  Archive,
+  AlertTriangle,
+  AlertCircle,
+  Search,
+  X,
+  Boxes,
+  CheckCircle2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { PageHeader, TablePagination } from '../components/common';
 import { Box, Group, TextInput, ActionIcon, Button as MantineButton, Badge } from '@mantine/core';
-import { RiStore2Line, RiArchiveLine, RiAlertLine, RiSearchLine, RiCloseLine } from 'react-icons/ri';
 
 type MaterialStock = {
   id: string;
@@ -47,55 +56,161 @@ type MaterialStock = {
   };
 };
 
+type MaterialBrandStock = {
+  id: string;
+  storeId: string;
+  quantity: string | number;
+  store: {
+    id: string;
+    name: string;
+    type: 'MAIN' | 'MINI';
+  };
+};
+
+type MaterialBrand = {
+  id: string;
+  name: string;
+  size?: string | null;
+  color?: string | null;
+  type?: string | null;
+  price: number | string;
+  brandStocks?: MaterialBrandStock[];
+};
+
 type Material = {
   id: string;
+  itemCode?: string;
   nameEn: string;
   nameAm: string;
   unit: string;
   isBulkTracked: boolean;
   lowStockThreshold: number;
   imageUrl?: string;
+  brands?: MaterialBrand[];
   materialStocks: MaterialStock[];
 };
 
 type HistoryEntry = {
   id: string;
-  type: 'RESTOCK' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT';
+  type: 'RESTOCK' | 'ADJUSTMENT' | 'TRANSFER' | 'COUNT' | 'DIRECT_SALE' | 'ORDER';
   date: string;
   store: string;
+  brandName?: string | null;
+  sizeName?: string | null;
+  colorName?: string | null;
+  typeName?: string | null;
   quantity: string;
   detail: string | null;
   user: string;
   notes: string | null;
+  metadata?: any;
 };
 
 export default function Storage() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [activeStore, setActiveStore] = useState<'MAIN' | 'MINI'>('MINI');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const urlSearch = searchParams.get('search') || searchParams.get('q') || '';
+  const urlStore = (searchParams.get('store') as 'MAIN' | 'MINI') || 'MINI';
+  const shouldAutoAllocate = searchParams.get('allocate') === 'true';
+  const targetMaterialId = searchParams.get('materialId');
+
+  const [search, setSearch] = useState(urlSearch);
+  const [activeStore, setActiveStore] = useState<'MAIN' | 'MINI'>(urlStore);
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const handleCopyItemCode = (code?: string) => {
+    if (!code) return;
+    const onCopied = () => {
+      setCopiedCode(code);
+      toast.success(t('materials.itemCodeCopied', 'Item code {{code}} copied to clipboard', { code }));
+      setTimeout(() => {
+        setCopiedCode((prev) => (prev === code ? null : prev));
+      }, 2000);
+    };
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).then(onCopied).catch(() => {
+        try {
+          const textArea = document.createElement('textarea');
+          textArea.value = code;
+          textArea.style.position = 'fixed';
+          textArea.style.opacity = '0';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          textArea.remove();
+          onCopied();
+        } catch {
+          toast.error(t('common.copyFailed', 'Failed to copy to clipboard'));
+        }
+      });
+    } else {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = code;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+        onCopied();
+      } catch {
+        toast.error(t('common.copyFailed', 'Failed to copy to clipboard'));
+      }
+    }
+  };
+
+  const hasAutoAllocatedRef = useRef(false);
+
+  // Sync state if URL query params change
+  useEffect(() => {
+    const q = searchParams.get('search') || searchParams.get('q');
+    if (q !== null && q !== undefined) {
+      setSearch(q);
+      setCurrentPage(1);
+    }
+    const store = searchParams.get('store') as 'MAIN' | 'MINI';
+    if (store === 'MAIN' || store === 'MINI') {
+      setActiveStore(store);
+    }
+  }, [searchParams]);
   
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [historyMaterial, setHistoryMaterial] = useState<Material | null>(null);
   const [historyDetail, setHistoryDetail] = useState<any>(null);
 
-  const getLocName = (m: Material) => (i18n?.language === 'am' && m.nameAm ? m.nameAm : m.nameEn);
+  const getLocName = (m: any) =>
+    i18n?.language === 'am' && m?.nameAm ? m.nameAm : (m?.nameEn || m?.name || '');
 
   // Dialog states
   const [restockMaterial, setRestockMaterial] = useState<Material | null>(null);
   const [transferMaterial, setTransferMaterial] = useState<Material | null>(null);
   const [adjustMaterial, setAdjustMaterial] = useState<Material | null>(null);
   const [countMaterial, setCountMaterial] = useState<Material | null>(null);
+  const [allocateMaterial, setAllocateMaterial] = useState<Material | null>(null);
 
-
-  // Form states
-  const [restockForm, setRestockForm] = useState({ quantityAdded: '', unitCost: '' });
-  const [transferForm, setTransferForm] = useState({ quantityTransferred: '', notes: '', direction: 'MAIN_TO_MINI' });
-  const [adjustForm, setAdjustForm] = useState({ storeType: 'MAIN', quantityDelta: '', reason: 'DAMAGE', notes: '' });
-  const [countForm, setCountForm] = useState({ storeType: 'MAIN', countedQuantity: '', notes: '' });
+  // Form states with brand support
+  const [restockForm, setRestockForm] = useState({ quantityAdded: '', unitCost: '', materialBrandId: '' });
+  const [transferForm, setTransferForm] = useState({ quantityTransferred: '', notes: '', direction: 'MAIN_TO_MINI', materialBrandId: '' });
+  const [adjustForm, setAdjustForm] = useState({ storeType: 'MAIN', quantityDelta: '', reason: 'DAMAGE', notes: '', materialBrandId: '' });
+  const [countForm, setCountForm] = useState({ storeType: 'MAIN', countedQuantity: '', notes: '', materialBrandId: '' });
+  const [allocateForm, setAllocateForm] = useState<{
+    storeType: 'MAIN' | 'MINI';
+    allocations: Record<string, string>;
+    notes: string;
+  }>({
+    storeType: 'MINI',
+    allocations: {},
+    notes: '',
+  });
 
   const { data: materials, isLoading } = useQuery<Material[]>({
     queryKey: ['storage_materials'],
@@ -120,6 +235,7 @@ export default function Storage() {
       await api.post(`/storage/materials/${restockMaterial.id}/restock`, {
         quantityAdded: Number(restockForm.quantityAdded),
         unitCost: restockForm.unitCost ? Number(restockForm.unitCost) : undefined,
+        materialBrandId: restockForm.materialBrandId || undefined,
       });
     },
     onSuccess: () => {
@@ -127,7 +243,7 @@ export default function Storage() {
       queryClient.invalidateQueries({ queryKey: ['material-history'] });
       toast.success(t('storage.alerts.stockAdded', 'Stock added successfully'));
       setRestockMaterial(null);
-      setRestockForm({ quantityAdded: '', unitCost: '' });
+      setRestockForm({ quantityAdded: '', unitCost: '', materialBrandId: '' });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error?.message || t('storage.alerts.errorRestock', 'Error restocking material'));
@@ -137,11 +253,17 @@ export default function Storage() {
   const transferMutation = useMutation({
     mutationFn: async () => {
       if (!transferMaterial) return;
+      const srcStore = transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI';
+      const unalloc = getUnallocatedStock(transferMaterial, srcStore);
+      if (unalloc > 0) {
+        throw new Error(t('storage.cannotTransferUnallocated', 'Must allocate brand stock before transfer'));
+      }
       await api.post(`/storage/store-transfers`, {
         materialId: transferMaterial.id,
         quantityTransferred: Number(transferForm.quantityTransferred),
         notes: transferForm.notes || undefined,
         direction: transferForm.direction,
+        materialBrandId: transferForm.materialBrandId || undefined,
       });
     },
     onSuccess: () => {
@@ -149,19 +271,12 @@ export default function Storage() {
       queryClient.invalidateQueries({ queryKey: ['material-history'] });
       toast.success(t('storage.alerts.stockTransferred', 'Stock transferred successfully'));
       setTransferMaterial(null);
-      setTransferForm({ quantityTransferred: '', notes: '', direction: 'MAIN_TO_MINI' });
+      setTransferForm({ quantityTransferred: '', notes: '', direction: 'MAIN_TO_MINI', materialBrandId: '' });
     },
     onError: (err: any) => {
       const msg = err.response?.data?.error?.message || '';
       if (msg.includes('Insufficient stock')) {
-        const storeMatch = msg.includes('Main') ? t('storage.mainStore', 'Main Store') : t('storage.miniStore', 'Mini Store');
-        const availableMatch = msg.match(/Available: ([\d.]+)/);
-        const available = availableMatch ? availableMatch[1] : 0;
-        toast.error(t('storage.alerts.insufficientStock', { 
-          defaultValue: `Insufficient stock in {{store}} for transfer. Available: {{available}}`,
-          store: storeMatch,
-          available
-        }));
+        toast.error(msg);
       } else {
         toast.error(msg || t('storage.alerts.errorTransfer', 'Error transferring stock'));
       }
@@ -183,6 +298,7 @@ export default function Storage() {
         quantityDelta: Number(adjustForm.quantityDelta),
         reason: adjustForm.reason,
         notes: adjustForm.notes || undefined,
+        materialBrandId: adjustForm.materialBrandId || undefined,
       });
     },
     onSuccess: () => {
@@ -190,7 +306,7 @@ export default function Storage() {
       queryClient.invalidateQueries({ queryKey: ['material-history'] });
       toast.success(t('storage.alerts.stockAdjusted', 'Stock adjusted successfully'));
       setAdjustMaterial(null);
-      setAdjustForm({ storeType: 'MAIN', quantityDelta: '', reason: 'DAMAGE', notes: '' });
+      setAdjustForm({ storeType: 'MAIN', quantityDelta: '', reason: 'DAMAGE', notes: '', materialBrandId: '' });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error?.message || t('storage.alerts.errorAdjust', 'Error adjusting stock'));
@@ -208,6 +324,7 @@ export default function Storage() {
         storeId,
         countedQuantity: Number(countForm.countedQuantity),
         notes: countForm.notes || undefined,
+        materialBrandId: countForm.materialBrandId || undefined,
       });
     },
     onSuccess: () => {
@@ -215,10 +332,70 @@ export default function Storage() {
       queryClient.invalidateQueries({ queryKey: ['material-history'] });
       toast.success(t('storage.alerts.stockCountRecorded', 'Stock count recorded successfully'));
       setCountMaterial(null);
-      setCountForm({ storeType: 'MAIN', countedQuantity: '', notes: '' });
+      setCountForm({ storeType: 'MAIN', countedQuantity: '', notes: '', materialBrandId: '' });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error?.message || t('storage.alerts.errorStockCount', 'Error recording stock count'));
+    },
+  });
+
+  const allocateBrandStockMutation = useMutation({
+    mutationFn: async () => {
+      if (!allocateMaterial || !allocateMaterial.brands) return;
+      const isPcs = isUnitIntegerOnly(allocateMaterial.unit);
+      for (const b of allocateMaterial.brands) {
+        const val = Number(allocateForm.allocations[b.id] || 0);
+        if (isPcs && !Number.isInteger(val)) {
+          toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
+          throw new Error('PCS requires integer quantity');
+        }
+      }
+      const payloadAllocations = allocateMaterial.brands.map((b) => ({
+        materialBrandId: b.id,
+        quantity: Number(allocateForm.allocations[b.id] || 0),
+      }));
+      await api.post(`/storage/materials/${allocateMaterial.id}/allocate-brand-stock`, {
+        storeType: allocateForm.storeType,
+        allocations: payloadAllocations,
+        notes: allocateForm.notes || undefined,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['storage_materials'] });
+      await queryClient.invalidateQueries({ queryKey: ['material-history'] });
+      toast.success(t('storage.alerts.brandStockAllocated', 'Brand stock allocated successfully'));
+
+      try {
+        const res = await api.get('/catalog/materials');
+        const updatedMat = res.data?.find((x: any) => x.id === allocateMaterial?.id);
+        if (updatedMat) {
+          setAllocateMaterial(updatedMat);
+          const otherStore = allocateForm.storeType === 'MINI' ? 'MAIN' : 'MINI';
+          const otherUnallocated = getUnallocatedStock(updatedMat, otherStore);
+
+          if (otherUnallocated > 0) {
+            const nextAlloc: Record<string, string> = {};
+            updatedMat.brands?.forEach((b: any) => {
+              const cur = getBrandStock(b, otherStore);
+              nextAlloc[b.id] = cur > 0 ? String(cur) : '';
+            });
+            setAllocateForm({
+              storeType: otherStore,
+              allocations: nextAlloc,
+              notes: '',
+            });
+          } else {
+            setAllocateMaterial(null);
+          }
+        } else {
+          setAllocateMaterial(null);
+        }
+      } catch {
+        setAllocateMaterial(null);
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || t('storage.alerts.errorAllocate', 'Error allocating brand stock'));
     },
   });
 
@@ -227,34 +404,122 @@ export default function Storage() {
     return stock ? Number(stock.quantity) : 0;
   };
 
+  const getBrandStock = (brand: MaterialBrand, storeType: 'MAIN' | 'MINI') => {
+    const stock = brand.brandStocks?.find(s => s.store.type === storeType);
+    return stock ? Number(stock.quantity) : 0;
+  };
+
+  const getUnallocatedStock = (material: Material, storeType: 'MAIN' | 'MINI') => {
+    if (!material.brands || material.brands.length === 0) return 0;
+    const total = getStock(material, storeType);
+    const brandTotal = material.brands.reduce((sum, b) => sum + getBrandStock(b, storeType), 0);
+    return Math.max(0, total - brandTotal);
+  };
+
+  const isMaterialLowStock = (m: Material, storeType: 'MAIN' | 'MINI') => {
+    const threshold = m.lowStockThreshold || 10;
+    if (m.brands && m.brands.length > 0) {
+      return m.brands.some(b => getBrandStock(b, storeType) <= threshold);
+    }
+    return getStock(m, storeType) <= threshold;
+  };
+
+  const handleOpenAllocate = (m: Material, storeType?: 'MAIN' | 'MINI') => {
+    const targetStore = storeType || activeStore;
+    const initialAlloc: Record<string, string> = {};
+    m.brands?.forEach((b) => {
+      const cur = getBrandStock(b, targetStore);
+      initialAlloc[b.id] = cur > 0 ? String(cur) : '';
+    });
+    setAllocateForm({
+      storeType: targetStore,
+      allocations: initialAlloc,
+      notes: '',
+    });
+    setAllocateMaterial(m);
+  };
+
+  // Auto-open allocation dialog if redirected with ?allocate=true or ?materialId=...
+  useEffect(() => {
+    if (!materials || hasAutoAllocatedRef.current) return;
+    if (shouldAutoAllocate || targetMaterialId) {
+      const match = materials.find((m) =>
+        (targetMaterialId && m.id === targetMaterialId) ||
+        (urlSearch && (
+          m.nameEn.toLowerCase() === urlSearch.toLowerCase() ||
+          m.nameAm === urlSearch ||
+          (m.itemCode && m.itemCode.toLowerCase() === urlSearch.toLowerCase())
+        ))
+      );
+      if (match && match.brands && match.brands.length > 0) {
+        hasAutoAllocatedRef.current = true;
+        handleOpenAllocate(match, urlStore);
+      }
+    }
+  }, [materials, shouldAutoAllocate, targetMaterialId, urlSearch, urlStore]);
+
+  const handleOpenRestock = (m: Material) => {
+    setRestockForm({
+      quantityAdded: '',
+      unitCost: '',
+      materialBrandId: m.brands?.[0]?.id || '',
+    });
+    setRestockMaterial(m);
+  };
+
   const handleOpenTransfer = (m: Material) => {
     const mainStock = getStock(m, 'MAIN');
     const miniStock = getStock(m, 'MINI');
+    const mainUnalloc = getUnallocatedStock(m, 'MAIN');
+    const miniUnalloc = getUnallocatedStock(m, 'MINI');
     
-    // Default to MINI_TO_MAIN if main is empty but mini has stock, otherwise MAIN_TO_MINI
-    const defaultDirection = mainStock <= 0 && miniStock > 0 ? 'MINI_TO_MAIN' : 'MAIN_TO_MINI';
-    setTransferForm({ quantityTransferred: '', notes: '', direction: defaultDirection });
+    // Default to MINI_TO_MAIN if main has no stock or needs allocation while mini has allocated stock, otherwise MAIN_TO_MINI
+    const defaultDirection = ((mainStock <= 0 || mainUnalloc > 0) && miniStock > 0 && miniUnalloc === 0) ? 'MINI_TO_MAIN' : 'MAIN_TO_MINI';
+    setTransferForm({
+      quantityTransferred: '',
+      notes: '',
+      direction: defaultDirection,
+      materialBrandId: m.brands?.[0]?.id || '',
+    });
     setTransferMaterial(m);
+  };
+
+  const handleOpenAdjust = (m: Material) => {
+    setAdjustForm({
+      storeType: activeStore,
+      quantityDelta: '',
+      reason: 'DAMAGE',
+      notes: '',
+      materialBrandId: m.brands?.[0]?.id || '',
+    });
+    setAdjustMaterial(m);
+  };
+
+  const handleOpenCount = (m: Material) => {
+    setCountForm({
+      storeType: activeStore,
+      countedQuantity: '',
+      notes: '',
+      materialBrandId: m.brands?.[0]?.id || '',
+    });
+    setCountMaterial(m);
   };
 
   // Count of items running low in the active store
   const lowStockCount = useMemo(() => {
     if (!materials) return 0;
-    return materials.filter((m) => {
-      const stock = getStock(m, activeStore);
-      const threshold = m.lowStockThreshold || 10;
-      return stock <= threshold;
-    }).length;
+    return materials.filter((m) => isMaterialLowStock(m, activeStore)).length;
   }, [materials, activeStore]);
 
   const filteredMaterials = materials?.filter((m) => {
-    const matchesSearch = m.nameEn.toLowerCase().includes(search.toLowerCase()) || m.nameAm.includes(search);
+    const matchesSearch = 
+      m.nameEn.toLowerCase().includes(search.toLowerCase()) || 
+      m.nameAm.includes(search) ||
+      (m.itemCode && m.itemCode.toLowerCase().includes(search.toLowerCase()));
     if (!matchesSearch) return false;
     
     if (showLowStockOnly) {
-      const stock = getStock(m, activeStore);
-      const threshold = m.lowStockThreshold || 10;
-      if (stock > threshold) return false;
+      if (!isMaterialLowStock(m, activeStore)) return false;
     }
     
     return true;
@@ -368,7 +633,7 @@ export default function Storage() {
             color="amber"
             size="sm"
             radius="md"
-            leftSection={<RiStore2Line size={16} />}
+            leftSection={<Store size={16} />}
             rightSection={
               <Badge
                 size="xs"
@@ -398,7 +663,7 @@ export default function Storage() {
             color="amber"
             size="sm"
             radius="md"
-            leftSection={<RiArchiveLine size={16} />}
+            leftSection={<Archive size={16} />}
             rightSection={
               <Badge
                 size="xs"
@@ -428,7 +693,7 @@ export default function Storage() {
             color="red"
             size="sm"
             radius="md"
-            leftSection={<RiAlertLine size={16} />}
+            leftSection={<AlertTriangle size={16} />}
             rightSection={
               <Badge
                 size="xs"
@@ -453,17 +718,35 @@ export default function Storage() {
           >
             {t('storage.showLowStock', 'Low Stock Alert')}
           </MantineButton>
+
+          <MantineButton
+            variant="subtle"
+            color="gray"
+            size="sm"
+            radius="md"
+            leftSection={<History size={16} />}
+            onClick={() => navigate('/storage/history')}
+            style={{
+              fontWeight: 500,
+              height: 36,
+              fontSize: '13px',
+              fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+            }}
+            title={t('storage.stockHistoryTitle', 'Stock Movement History')}
+          >
+            {t('storage.stockHistory', 'Stock History')}
+          </MantineButton>
         </Box>
 
         {/* Live Search Input on the Same Row */}
         <Group gap="xs" align="center" style={{ flex: '1 1 240px', maxWidth: 340, minWidth: 200 }}>
           <TextInput
             placeholder={t('storage.searchPlaceholder', 'Search inventory by name, code...')}
-            leftSection={<RiSearchLine size={16} style={{ color: 'var(--text-muted)' }} />}
+            leftSection={<Search size={16} style={{ color: 'var(--text-muted)' }} />}
             rightSection={
               search ? (
                 <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => setSearch('')} title="Clear search">
-                  <RiCloseLine size={14} />
+                  <X size={14} />
                 </ActionIcon>
               ) : null
             }
@@ -497,7 +780,7 @@ export default function Storage() {
               title={t('common.clear', 'Reset filters')}
               style={{ height: 36 }}
             >
-              <RiCloseLine size={16} />
+              <X size={16} />
             </ActionIcon>
           )}
         </Group>
@@ -509,20 +792,20 @@ export default function Storage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[70px] py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('storage.table.image', 'Image')}</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.material', 'Material')}</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('orders.detail.quantity', 'Quantity')}</TableHead>
-                <TableHead className="text-right py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('common.actions', 'Actions')}</TableHead>
+                <TableHead className="w-[64px] py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{t('storage.table.image', 'Image')}</TableHead>
+                <TableHead className="w-[340px] sm:w-[380px] py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{t('common.material', 'Material')}</TableHead>
+                <TableHead className="w-[280px] sm:w-[320px] py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{t('orders.detail.quantity', 'Quantity')}</TableHead>
+                <TableHead className="text-right py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{t('common.actions', 'Actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">{t('storage.loading', 'Loading inventory...')}</TableCell>
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground text-sm">{t('storage.loading', 'Loading inventory...')}</TableCell>
                 </TableRow>
               ) : filteredMaterials?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">{t('storage.noMaterials', 'No materials found.')}</TableCell>
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground text-sm">{t('storage.noMaterials', 'No materials found.')}</TableCell>
                 </TableRow>
               ) : (
                 paginatedMaterials.map((m) => {
@@ -531,7 +814,7 @@ export default function Storage() {
 
                   return (
                     <TableRow key={m.id}>
-                      <TableCell className="py-3 px-4">
+                      <TableCell className="w-[64px] py-3 px-4">
                         {m.imageUrl ? (
                           <div 
                             className="w-9 h-9 shrink-0 bg-secondary/50 rounded-md flex items-center justify-center overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
@@ -545,19 +828,104 @@ export default function Storage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="text-[13px] font-semibold text-foreground leading-snug">{getLocName(m)}</div>
-                        <div className="text-xs text-muted-foreground leading-snug mt-0.5">
-                          {i18n?.language === 'am' ? m.nameEn : m.nameAm} • {formatUnit(m.unit)}
+                      <TableCell className="w-[340px] sm:w-[380px] py-3 px-4">
+                        <div className="max-w-[360px]">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[13px] font-semibold text-foreground leading-snug whitespace-nowrap truncate max-w-[200px] sm:max-w-[220px]" title={getLocName(m)}>{getLocName(m)}</span>
+                            {m.itemCode && (
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyItemCode(m.itemCode);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleCopyItemCode(m.itemCode);
+                                  }
+                                }}
+                                title={t('materials.clickToCopyCode', 'Click to copy item code')}
+                                className="group inline-flex items-center gap-1 max-w-[120px] px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border cursor-pointer transition-all active:scale-95 shadow-xs shrink-0"
+                              >
+                                <span className="inline-block min-w-0 overflow-x-auto whitespace-nowrap scrollbar-none no-scrollbar font-mono text-[11px] font-medium py-0.5">
+                                  {m.itemCode}
+                                </span>
+                                {copiedCode === m.itemCode ? (
+                                  <Check className="h-3 w-3 text-emerald-500 shrink-0 animate-in zoom-in-50" />
+                                ) : (
+                                  <Copy className="h-2.5 w-2.5 text-muted-foreground group-hover:text-foreground shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground leading-snug mt-0.5 whitespace-nowrap truncate max-w-[320px]" title={`${i18n?.language === 'am' ? m.nameEn : m.nameAm} • ${formatUnit(m.unit)}`}>
+                            {i18n?.language === 'am' ? m.nameEn : m.nameAm} • {formatUnit(m.unit)}
+                          </div>
+                          {m.brands && m.brands.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1 overflow-x-auto whitespace-nowrap scrollbar-none no-scrollbar py-0.5 max-w-[320px]">
+                              <span className="text-[10px] font-medium text-muted-foreground shrink-0">{t('materials.brands', 'Brands')}:</span>
+                              {m.brands.map((b) => (
+                                <span key={b.id || `${b.name}-${b.size}-${b.color}-${b.type}`} className="inline-flex shrink-0 items-center text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium whitespace-nowrap">
+                                  {formatBrandSizeLabel(b)} ({formatCurrency(b.price)})
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="text-[13px] font-bold text-foreground leading-snug">{stock} {formatUnit(m.unit)}</div>
-                        {activeStore === 'MAIN' ? (
-                          m.isBulkTracked && <div className="text-[11px] text-amber-500 font-semibold leading-tight mt-0.5">{t('storage.bulkTracked', 'Bulk Tracked')}</div>
-                        ) : (
-                          !m.isBulkTracked && <div className="text-[11px] text-blue-500 font-medium leading-tight mt-0.5">{t('storage.directDelivery', 'Direct Delivery')}</div>
-                        )}
+                      <TableCell className="w-[280px] sm:w-[320px] py-3 px-4">
+                        <div className="max-w-[300px]">
+                          <div className="text-[13px] font-bold text-foreground leading-snug whitespace-nowrap">{stock} {formatUnit(m.unit)}</div>
+                          {activeStore === 'MAIN' ? (
+                            m.isBulkTracked && <div className="text-[11px] text-amber-500 font-semibold leading-tight mt-0.5 whitespace-nowrap">{t('storage.bulkTracked', 'Bulk Tracked')}</div>
+                          ) : (
+                            !m.isBulkTracked && <div className="text-[11px] text-blue-500 font-medium leading-tight mt-0.5 whitespace-nowrap">{t('storage.directDelivery', 'Direct Delivery')}</div>
+                          )}
+                          {m.brands && m.brands.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1.5 pt-1 border-t border-border/40 overflow-x-auto whitespace-nowrap scrollbar-none no-scrollbar py-0.5 max-w-[300px]">
+                              {m.brands.map((b) => {
+                                const bStock = getBrandStock(b, activeStore);
+                                const isLow = bStock <= (m.lowStockThreshold || 10);
+                                return (
+                                  <span 
+                                    key={b.id || `${b.name}-${b.size}-${b.color}-${b.type}`} 
+                                    className={`inline-flex shrink-0 items-center text-[10px] px-1.5 py-0.5 rounded font-mono whitespace-nowrap ${
+                                      isLow 
+                                        ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 font-semibold' 
+                                        : 'bg-muted text-muted-foreground border border-border'
+                                    }`}
+                                    title={`${formatBrandSizeLabel(b)}: ${bStock} ${formatUnit(m.unit)} in ${activeStore === 'MAIN' ? t('storage.mainStore', 'Main Store') : t('storage.miniStore', 'Mini Store')}`}
+                                  >
+                                    <span className="font-sans font-medium mr-1">{formatBrandSizeLabel(b)}:</span> {bStock}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {m.brands && m.brands.length > 0 && (() => {
+                            const unallocated = getUnallocatedStock(m, activeStore);
+                            return unallocated > 0 ? (
+                              <div className="flex items-center gap-1.5 mt-1.5 pt-1 border-t border-amber-500/30 whitespace-nowrap max-w-[300px]">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/25 shrink-0">
+                                  <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+                                  <span>{unallocated} {m.unit} {t('storage.unallocatedStock', 'unallocated')}</span>
+                                </span>
+                                <PermissionGate permission="storage.edit">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenAllocate(m, activeStore)}
+                                    className="text-[10px] font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 underline cursor-pointer bg-transparent border-0 p-0 shrink-0"
+                                  >
+                                    {t('storage.allocate', 'Allocate')}
+                                  </button>
+                                </PermissionGate>
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right py-3 px-4">
                         <PermissionGate permission="storage.edit">
@@ -575,36 +943,57 @@ export default function Storage() {
                               variant="outline" 
                               size="sm" 
                               className="h-8 px-2.5 text-xs gap-1.5"
-                              onClick={() => setRestockMaterial(m)}
+                              onClick={() => handleOpenRestock(m)}
                             >
                               <PackagePlus className="w-3.5 h-3.5" />
                               <span>{t('storage.restock', 'Restock')}</span>
                             </Button>
-                            <span 
-                              title={(mainStock <= 0 && getStock(m, 'MINI') <= 0) ? t('storage.noStockAnywhere', 'No stock in any store') : ''}
-                              className="inline-block"
-                            >
-                              <Button 
-                                variant="default" 
-                                size="sm" 
-                                className="h-8 px-2.5 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs disabled:pointer-events-none"
-                                onClick={() => handleOpenTransfer(m)}
-                                disabled={mainStock <= 0 && getStock(m, 'MINI') <= 0}
-                              >
-                                <ArrowRightLeft className="w-3.5 h-3.5" />
-                                <span>{t('storage.transfer', 'Transfer')}</span>
-                              </Button>
-                            </span>
+                            {(() => {
+                              const mainUnalloc = getUnallocatedStock(m, 'MAIN');
+                              const miniUnalloc = getUnallocatedStock(m, 'MINI');
+                              const bothUnallocated = mainUnalloc > 0 && miniUnalloc > 0;
+                              const noStock = mainStock <= 0 && getStock(m, 'MINI') <= 0;
+                              const disableTransfer = noStock || bothUnallocated;
+                              const tooltipTitle = bothUnallocated 
+                                ? t('storage.cannotTransferUnallocated', 'Must allocate brand stock before transfer')
+                                : noStock 
+                                ? t('storage.noStockAnywhere', 'No stock in any store') 
+                                : '';
+
+                              return (
+                                <span 
+                                  title={tooltipTitle}
+                                  className="inline-block"
+                                >
+                                  <Button 
+                                    variant="default" 
+                                    size="sm" 
+                                    className="h-8 px-2.5 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs disabled:pointer-events-none"
+                                    onClick={() => handleOpenTransfer(m)}
+                                    disabled={disableTransfer}
+                                  >
+                                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                                    <span>{t('storage.transfer', 'Transfer')}</span>
+                                  </Button>
+                                </span>
+                              );
+                            })()}
                             <DropdownMenu>
                               <DropdownMenuTrigger className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-muted focus:outline-none text-muted-foreground hover:text-foreground">
                                 <MoreHorizontal className="h-4 w-4" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-48 text-xs">
-                                <DropdownMenuItem onClick={() => setAdjustMaterial(m)} className="gap-2 text-xs cursor-pointer">
+                                {m.brands && m.brands.length > 0 && (
+                                  <DropdownMenuItem onClick={() => handleOpenAllocate(m, activeStore)} className="gap-2 text-xs cursor-pointer text-amber-600 dark:text-amber-400 focus:text-amber-600">
+                                    <Boxes className="h-4 w-4" />
+                                    <span>{t('storage.allocateBrandStock', 'Allocate Brand Stock')}</span>
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => handleOpenAdjust(m)} className="gap-2 text-xs cursor-pointer">
                                   <Settings2 className="h-4 w-4" />
                                   <span>{t('storage.adjustStock', 'Adjust Stock')}</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setCountMaterial(m)} className="gap-2 text-xs cursor-pointer">
+                                <DropdownMenuItem onClick={() => handleOpenCount(m)} className="gap-2 text-xs cursor-pointer">
                                   <ClipboardCheck className="h-4 w-4" />
                                   <span>{t('storage.physicalCount', 'Physical Count')}</span>
                                 </DropdownMenuItem>
@@ -675,11 +1064,23 @@ export default function Storage() {
                     </div>
                     <div className="flex-1 min-w-0 w-full">
                       <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 sm:gap-2">
-                        <span className="font-semibold text-sm text-foreground">
-                          {getLocalizedQuantity(entry, historyMaterial?.unit)}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-sm text-foreground">
+                            {getLocalizedQuantity(entry, historyMaterial?.unit)}
+                          </span>
+                          {(entry.brandName || entry.sizeName || entry.colorName || entry.typeName) && (
+                            <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 font-semibold">
+                              {formatBrandSizeLabel({
+                                name: entry.brandName || '',
+                                size: entry.sizeName,
+                                color: entry.colorName,
+                                type: entry.typeName,
+                              })}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {format(new Date(entry.date), 'MMM d, yyyy h:mm a')}
+                          {formatAppDate(entry.date, true)}
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-0.5">
@@ -713,7 +1114,7 @@ export default function Storage() {
                 <span className="text-foreground font-semibold">{getHistoryLabel(historyDetail.type)}</span>
 
                 <span className="text-muted-foreground font-medium">{t('storage.date', 'Date')}:</span>
-                <span className="text-foreground">{format(new Date(historyDetail.date), 'MMM d, yyyy h:mm a')}</span>
+                <span className="text-foreground">{formatAppDate(historyDetail.date, true)}</span>
 
                 <span className="text-muted-foreground font-medium">{t('storage.quantity', 'Quantity')}:</span>
                 <span className="text-foreground font-bold">{getLocalizedQuantity(historyDetail, historyMaterial?.unit)}</span>
@@ -725,6 +1126,20 @@ export default function Storage() {
                   <>
                     <span className="text-muted-foreground font-medium">{t('storage.store', 'Store')}:</span>
                     <span className="text-foreground">{getLocalizedStoreName(historyDetail.store)}</span>
+                  </>
+                )}
+
+                {(historyDetail.brandName || historyDetail.sizeName || historyDetail.colorName || historyDetail.typeName) && (
+                  <>
+                    <span className="text-muted-foreground font-medium">{t('storage.brand', 'Brand / Variant')}:</span>
+                    <span className="text-foreground font-semibold text-amber-600 dark:text-amber-400">
+                      {formatBrandSizeLabel({
+                        name: historyDetail.brandName || '',
+                        size: historyDetail.sizeName,
+                        color: historyDetail.colorName,
+                        type: historyDetail.typeName,
+                      })}
+                    </span>
                   </>
                 )}
                 
@@ -787,14 +1202,44 @@ export default function Storage() {
                   : t('storage.notBulkTrackedInfo', '🏪 This is not bulk-tracked — stock goes directly to Mini Store.')}
               </p>
             </div>
+            {restockMaterial?.brands && restockMaterial.brands.length > 0 && (
+              <div className="space-y-2">
+                <Label>{t('storage.selectBrand', 'Select Brand')} <span className="text-red-500">*</span></Label>
+                <Select
+                  value={restockForm.materialBrandId || ''}
+                  onValueChange={(val) => setRestockForm({ ...restockForm, materialBrandId: val || '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('storage.selectBrand', 'Select Brand')}>
+                      {(val: string) => {
+                        if (!val) return <span className="text-muted-foreground">{t('storage.selectBrand', 'Select Brand')}</span>;
+                        const b = restockMaterial?.brands?.find((x) => x.id === val);
+                        return b ? formatBrandSizeLabel(b) : val;
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {restockMaterial.brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {formatBrandSizeLabel(b)} ({formatCurrency(b.price)}) — {t('common.current', 'Current')}: {getBrandStock(b, restockMaterial.isBulkTracked ? 'MAIN' : 'MINI')} {formatUnit(restockMaterial.unit)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>{t('storage.quantityToAdd', 'Quantity to Add')} ({formatUnit(restockMaterial?.unit)})</Label>
               <Input
                 type="number"
-                min="0.01"
-                step="0.01"
+                min={isUnitIntegerOnly(restockMaterial?.unit) ? "1" : "0.01"}
+                step={getQuantityStep(restockMaterial?.unit)}
                 value={restockForm.quantityAdded}
-                onChange={(e) => setRestockForm({ ...restockForm, quantityAdded: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (isUnitIntegerOnly(restockMaterial?.unit) && val.includes('.')) return;
+                  setRestockForm({ ...restockForm, quantityAdded: val });
+                }}
                 placeholder={t('storage.placeholders.quantity', 'e.g. 50')}
               />
             </div>
@@ -812,13 +1257,25 @@ export default function Storage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRestockMaterial(null)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button 
-              onClick={() => restockMutation.mutate()} 
-              disabled={restockMutation.isPending || !restockForm.quantityAdded}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
-            >
-              {restockMutation.isPending ? t('storage.restocking', 'Restocking...') : t('storage.confirmRestock', 'Confirm Restock')}
-            </Button>
+            {(() => {
+              const isPcs = isUnitIntegerOnly(restockMaterial?.unit);
+              const qtyNum = Number(restockForm.quantityAdded);
+              const isQtyValid = Boolean(
+                restockForm.quantityAdded &&
+                !isNaN(qtyNum) &&
+                qtyNum > 0 &&
+                (!isPcs || Number.isInteger(qtyNum))
+              );
+              return (
+                <Button 
+                  onClick={() => restockMutation.mutate()} 
+                  disabled={restockMutation.isPending || !isQtyValid || ((restockMaterial?.brands?.length ?? 0) > 0 && !restockForm.materialBrandId)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  {restockMutation.isPending ? t('storage.restocking', 'Restocking...') : t('storage.confirmRestock', 'Confirm Restock')}
+                </Button>
+              );
+            })()}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -852,29 +1309,92 @@ export default function Storage() {
                 : t('storage.transferDescReverse', 'Move stock from Mini Store back to Main Store.')}
               </p>
             </div>
+
+            {(() => {
+              const srcStore = transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI';
+              const unallocatedInSource = transferMaterial ? getUnallocatedStock(transferMaterial, srcStore) : 0;
+              if (unallocatedInSource <= 0) return null;
+
+              return (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">{t('storage.needsAllocation', 'Needs Allocation')}</p>
+                    <p>
+                      {t('storage.unallocatedTransferNotice', {
+                        unallocated: unallocatedInSource,
+                        defaultValue: `This material has ${unallocatedInSource} unallocated stock in this store. Please allocate brand stock before transferring.`
+                      })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {transferMaterial?.brands && transferMaterial.brands.length > 0 && (
+              <div className="space-y-2">
+                <Label>{t('storage.selectBrand', 'Select Brand')} <span className="text-red-500">*</span></Label>
+                <Select
+                  value={transferForm.materialBrandId || ''}
+                  onValueChange={(val) => setTransferForm({ ...transferForm, materialBrandId: val || '', quantityTransferred: '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('storage.selectBrand', 'Select Brand')}>
+                      {(val: string) => {
+                        if (!val) return <span className="text-muted-foreground">{t('storage.selectBrand', 'Select Brand')}</span>;
+                        const b = transferMaterial?.brands?.find((x) => x.id === val);
+                        return b ? formatBrandSizeLabel(b) : val;
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {transferMaterial.brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {formatBrandSizeLabel(b)} ({t('common.current', 'Current')}: {getBrandStock(b, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI')} {formatUnit(transferMaterial.unit)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
-            <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-[#161616] rounded-lg border border-gray-200 dark:border-gray-800">
-              <span className="text-sm text-gray-500">
-                {transferForm.direction === 'MAIN_TO_MINI' 
-                  ? t('storage.availableInMain', 'Available in Main Store:') 
-                  : t('storage.availableInMini', 'Available in Mini Store:')}
-              </span>
-              <span className="font-bold text-gray-900 dark:text-white">
-                {transferMaterial ? getStock(transferMaterial, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI') : 0} {formatUnit(transferMaterial?.unit)}
-              </span>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('storage.quantityToTransfer', 'Quantity to Transfer')} ({formatUnit(transferMaterial?.unit)})</Label>
-              <Input
-                type="number"
-                min="0.01"
-                max={transferMaterial ? getStock(transferMaterial, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI') : undefined}
-                step="0.01"
-                value={transferForm.quantityTransferred}
-                onChange={(e) => setTransferForm({ ...transferForm, quantityTransferred: e.target.value })}
-                placeholder={t('storage.placeholders.quantity', 'e.g. 5')}
-              />
-            </div>
+            {(() => {
+              const selectedBrand = transferMaterial?.brands?.find((b) => b.id === transferForm.materialBrandId);
+              const availableStock = selectedBrand 
+                ? getBrandStock(selectedBrand, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI')
+                : (transferMaterial ? getStock(transferMaterial, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI') : 0);
+
+              return (
+                <>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-[#161616] rounded-lg border border-gray-200 dark:border-gray-800">
+                    <span className="text-sm text-gray-500">
+                      {transferForm.direction === 'MAIN_TO_MINI' 
+                        ? t('storage.availableInMain', 'Available in Main Store:') 
+                        : t('storage.availableInMini', 'Available in Mini Store:')}
+                    </span>
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      {availableStock} {formatUnit(transferMaterial?.unit)}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('storage.quantityToTransfer', 'Quantity to Transfer')} ({formatUnit(transferMaterial?.unit)})</Label>
+                    <Input
+                      type="number"
+                      min={isUnitIntegerOnly(transferMaterial?.unit) ? "1" : "0.01"}
+                      max={availableStock}
+                      step={getQuantityStep(transferMaterial?.unit)}
+                      value={transferForm.quantityTransferred}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (isUnitIntegerOnly(transferMaterial?.unit) && val.includes('.')) return;
+                        setTransferForm({ ...transferForm, quantityTransferred: val });
+                      }}
+                      placeholder={t('storage.placeholders.quantity', 'e.g. 5')}
+                    />
+                  </div>
+                </>
+              );
+            })()}
             <div className="space-y-2">
               <Label>{t('common.notesOptional', 'Notes (Optional)')}</Label>
               <Input
@@ -886,13 +1406,29 @@ export default function Storage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTransferMaterial(null)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button 
-              onClick={() => transferMutation.mutate()} 
-              disabled={transferMutation.isPending || !transferForm.quantityTransferred || Number(transferForm.quantityTransferred) > (transferMaterial ? getStock(transferMaterial, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI') : 0) || Number(transferForm.quantityTransferred) <= 0}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
-            >
-              {transferMutation.isPending ? t('storage.transferring', 'Transferring...') : t('storage.confirmTransfer', 'Confirm Transfer')}
-            </Button>
+            {(() => {
+              const selectedBrand = transferMaterial?.brands?.find((b) => b.id === transferForm.materialBrandId);
+              const availableStock = selectedBrand 
+                ? getBrandStock(selectedBrand, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI')
+                : (transferMaterial ? getStock(transferMaterial, transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI') : 0);
+              const hasBrands = (transferMaterial?.brands?.length ?? 0) > 0;
+              const isBrandInvalid = hasBrands && !transferForm.materialBrandId;
+              const srcStore = transferForm.direction === 'MAIN_TO_MINI' ? 'MAIN' : 'MINI';
+              const unallocatedInSource = transferMaterial ? getUnallocatedStock(transferMaterial, srcStore) : 0;
+              const qty = Number(transferForm.quantityTransferred);
+              const isPcs = isUnitIntegerOnly(transferMaterial?.unit);
+              const isInvalidQty = !transferForm.quantityTransferred || isNaN(qty) || qty <= 0 || qty > availableStock || (isPcs && !Number.isInteger(qty));
+
+              return (
+                <Button 
+                  onClick={() => transferMutation.mutate()} 
+                  disabled={transferMutation.isPending || isInvalidQty || isBrandInvalid || unallocatedInSource > 0}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  {transferMutation.isPending ? t('storage.transferring', 'Transferring...') : t('storage.confirmTransfer', 'Confirm Transfer')}
+                </Button>
+              );
+            })()}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -912,25 +1448,63 @@ export default function Storage() {
               <p>{t('storage.adjustDesc', 'Manually correct stock when there\'s a known discrepancy — for example, damaged items, lost stock, or items found that weren\'t in the system.')}</p>
               <p className="text-xs opacity-80 mt-1">{t('storage.adjustTip', '💡 Use negative values to deduct, positive to add. Always provide a reason.')}</p>
             </div>
+            {adjustMaterial?.brands && adjustMaterial.brands.length > 0 && (
+              <div className="space-y-2">
+                <Label>{t('storage.selectBrand', 'Select Brand')} <span className="text-red-500">*</span></Label>
+                <Select
+                  value={adjustForm.materialBrandId || ''}
+                  onValueChange={(val) => setAdjustForm({ ...adjustForm, materialBrandId: val || '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('storage.selectBrand', 'Select Brand')}>
+                      {(val: string) => {
+                        if (!val) return <span className="text-muted-foreground">{t('storage.selectBrand', 'Select Brand')}</span>;
+                        const b = adjustMaterial?.brands?.find((x) => x.id === val);
+                        return b ? formatBrandSizeLabel(b) : val;
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {adjustMaterial.brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {formatBrandSizeLabel(b)} ({t('common.current', 'Current')}: {getBrandStock(b, adjustForm.storeType as 'MAIN' | 'MINI')} {formatUnit(adjustMaterial.unit)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {(() => {
+              const selectedBrand = adjustMaterial?.brands?.find((b) => b.id === adjustForm.materialBrandId);
+              const mainCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MAIN') : (adjustMaterial ? getStock(adjustMaterial, 'MAIN') : 0);
+              const miniCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MINI') : (adjustMaterial ? getStock(adjustMaterial, 'MINI') : 0);
+
+              return (
+                <div className="space-y-2">
+                  <Label>{t('storage.store', 'Store')}</Label>
+                  <Select value={adjustForm.storeType} onValueChange={(val) => setAdjustForm({ ...adjustForm, storeType: val as string })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('storage.selectStore', 'Select Store')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">{t('storage.mainStore', 'Main Store')} ({t('common.current', 'Current')}: {mainCurrent} {formatUnit(adjustMaterial?.unit)})</SelectItem>
+                      <SelectItem value="MINI">{t('storage.miniStore', 'Mini Store')} ({t('common.current', 'Current')}: {miniCurrent} {formatUnit(adjustMaterial?.unit)})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             <div className="space-y-2">
-              <Label>{t('storage.store', 'Store')}</Label>
-              <Select value={adjustForm.storeType} onValueChange={(val) => setAdjustForm({ ...adjustForm, storeType: val as string })}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('storage.selectStore', 'Select Store')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MAIN">{t('storage.mainStore', 'Main Store')} ({t('common.current', 'Current')}: {adjustMaterial ? getStock(adjustMaterial, 'MAIN') : 0} {formatUnit(adjustMaterial?.unit)})</SelectItem>
-                  <SelectItem value="MINI">{t('storage.miniStore', 'Mini Store')} ({t('common.current', 'Current')}: {adjustMaterial ? getStock(adjustMaterial, 'MINI') : 0} {formatUnit(adjustMaterial?.unit)})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('storage.adjustmentQuantity', 'Adjustment Quantity')}</Label>
+              <Label>{t('storage.adjustmentQuantity', 'Adjustment Quantity')} ({formatUnit(adjustMaterial?.unit)})</Label>
               <Input
                 type="number"
-                step="0.01"
+                step={getQuantityStep(adjustMaterial?.unit)}
                 value={adjustForm.quantityDelta}
-                onChange={(e) => setAdjustForm({ ...adjustForm, quantityDelta: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (isUnitIntegerOnly(adjustMaterial?.unit) && val.includes('.')) return;
+                  setAdjustForm({ ...adjustForm, quantityDelta: val });
+                }}
                 placeholder={t('storage.placeholders.adjustQuantity', 'e.g. -5 for loss, +5 for gain')}
               />
             </div>
@@ -960,13 +1534,25 @@ export default function Storage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustMaterial(null)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button 
-              onClick={() => adjustMutation.mutate()} 
-              disabled={adjustMutation.isPending || !adjustForm.quantityDelta}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
-            >
-              {adjustMutation.isPending ? t('storage.adjusting', 'Adjusting...') : t('storage.confirmAdjustment', 'Confirm Adjustment')}
-            </Button>
+            {(() => {
+              const isPcs = isUnitIntegerOnly(adjustMaterial?.unit);
+              const deltaNum = Number(adjustForm.quantityDelta);
+              const isDeltaValid = Boolean(
+                adjustForm.quantityDelta !== '' &&
+                !isNaN(deltaNum) &&
+                deltaNum !== 0 &&
+                (!isPcs || Number.isInteger(deltaNum))
+              );
+              return (
+                <Button 
+                  onClick={() => adjustMutation.mutate()} 
+                  disabled={adjustMutation.isPending || !isDeltaValid || ((adjustMaterial?.brands?.length ?? 0) > 0 && !adjustForm.materialBrandId)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  {adjustMutation.isPending ? t('storage.adjusting', 'Adjusting...') : t('storage.confirmAdjustment', 'Confirm Adjustment')}
+                </Button>
+              );
+            })()}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -986,26 +1572,64 @@ export default function Storage() {
               <p>{t('storage.countDesc', 'Physically count the actual items on the shelf and enter the real number. The system will compare it against recorded stock and log any discrepancy.')}</p>
               <p className="text-xs opacity-80 mt-1">{t('storage.countTip', '📋 This replaces the system quantity with the counted amount. Use during audits or when you suspect stock numbers are off.')}</p>
             </div>
-            <div className="space-y-2">
-              <Label>{t('storage.store', 'Store')}</Label>
-              <Select value={countForm.storeType} onValueChange={(v) => setCountForm({ ...countForm, storeType: v as string })}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('storage.selectStore', 'Select Store')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MAIN">{t('storage.mainStore', 'Main Store')} ({t('storage.systemStock', 'System')}: {countMaterial ? getStock(countMaterial, 'MAIN') : 0} {formatUnit(countMaterial?.unit)})</SelectItem>
-                  <SelectItem value="MINI">{t('storage.miniStore', 'Mini Store')} ({t('storage.systemStock', 'System')}: {countMaterial ? getStock(countMaterial, 'MINI') : 0} {formatUnit(countMaterial?.unit)})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {countMaterial?.brands && countMaterial.brands.length > 0 && (
+              <div className="space-y-2">
+                <Label>{t('storage.selectBrand', 'Select Brand')} <span className="text-red-500">*</span></Label>
+                <Select
+                  value={countForm.materialBrandId || ''}
+                  onValueChange={(val) => setCountForm({ ...countForm, materialBrandId: val || '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('storage.selectBrand', 'Select Brand')}>
+                      {(val: string) => {
+                        if (!val) return <span className="text-muted-foreground">{t('storage.selectBrand', 'Select Brand')}</span>;
+                        const b = countMaterial?.brands?.find((x) => x.id === val);
+                        return b ? formatBrandSizeLabel(b) : val;
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countMaterial.brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {formatBrandSizeLabel(b)} ({t('storage.systemStock', 'System')}: {getBrandStock(b, countForm.storeType as 'MAIN' | 'MINI')} {formatUnit(countMaterial.unit)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {(() => {
+              const selectedBrand = countMaterial?.brands?.find((b) => b.id === countForm.materialBrandId);
+              const mainCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MAIN') : (countMaterial ? getStock(countMaterial, 'MAIN') : 0);
+              const miniCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MINI') : (countMaterial ? getStock(countMaterial, 'MINI') : 0);
+
+              return (
+                <div className="space-y-2">
+                  <Label>{t('storage.store', 'Store')}</Label>
+                  <Select value={countForm.storeType} onValueChange={(v) => setCountForm({ ...countForm, storeType: v as string })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('storage.selectStore', 'Select Store')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">{t('storage.mainStore', 'Main Store')} ({t('storage.systemStock', 'System')}: {mainCurrent} {formatUnit(countMaterial?.unit)})</SelectItem>
+                      <SelectItem value="MINI">{t('storage.miniStore', 'Mini Store')} ({t('storage.systemStock', 'System')}: {miniCurrent} {formatUnit(countMaterial?.unit)})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             <div className="space-y-2">
               <Label>{t('storage.actualCount', 'Actual Count')} ({formatUnit(countMaterial?.unit)})</Label>
               <Input
                 type="number"
                 min="0"
-                step="0.01"
+                step={getQuantityStep(countMaterial?.unit)}
                 value={countForm.countedQuantity}
-                onChange={(e) => setCountForm({ ...countForm, countedQuantity: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (isUnitIntegerOnly(countMaterial?.unit) && val.includes('.')) return;
+                  setCountForm({ ...countForm, countedQuantity: val });
+                }}
                 placeholder={t('storage.placeholders.quantity', 'e.g. 45')}
               />
             </div>
@@ -1021,15 +1645,409 @@ export default function Storage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCountMaterial(null)}>{t('common.cancel', 'Cancel')}</Button>
-            <Button 
-              onClick={() => countMutation.mutate()} 
-              disabled={countMutation.isPending || !countForm.countedQuantity}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
-            >
-              {countMutation.isPending ? t('storage.recording', 'Recording...') : t('storage.recordCount', 'Record Count')}
-            </Button>
+            {(() => {
+              const isPcs = isUnitIntegerOnly(countMaterial?.unit);
+              const countNum = Number(countForm.countedQuantity);
+              const isCountValid = Boolean(
+                countForm.countedQuantity !== '' &&
+                !isNaN(countNum) &&
+                countNum >= 0 &&
+                (!isPcs || Number.isInteger(countNum))
+              );
+              return (
+                <Button 
+                  onClick={() => countMutation.mutate()} 
+                  disabled={countMutation.isPending || !isCountValid || ((countMaterial?.brands?.length ?? 0) > 0 && !countForm.materialBrandId)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  {countMutation.isPending ? t('storage.recording', 'Recording...') : t('storage.recordCount', 'Record Count')}
+                </Button>
+              );
+            })()}
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
+      {/* ===== Allocate Brand Stock Dialog ===== */}
+      <Dialog open={!!allocateMaterial} onOpenChange={(open) => !open && setAllocateMaterial(null)}>
+        {allocateMaterial && (() => {
+          const isPcsAlloc = isUnitIntegerOnly(allocateMaterial.unit);
+          const hasFractionalAllocations = Boolean(
+            isPcsAlloc &&
+            Object.values(allocateForm.allocations).some((val) => val && !Number.isInteger(Number(val)))
+          );
+
+          const currentStoreStock = getStock(allocateMaterial, allocateForm.storeType);
+          const currentAllocTotal = (allocateMaterial.brands || []).reduce((sum, b) => {
+            const val = Number(allocateForm.allocations[b.id] || 0);
+            return sum + (isNaN(val) ? 0 : val);
+          }, 0);
+          const remaining = currentStoreStock - currentAllocTotal;
+
+          const miniStock = getStock(allocateMaterial, 'MINI');
+          const mainStock = getStock(allocateMaterial, 'MAIN');
+          const miniUnallocated = getUnallocatedStock(allocateMaterial, 'MINI');
+          const mainUnallocated = getUnallocatedStock(allocateMaterial, 'MAIN');
+          const isMiniIssue = miniUnallocated > 0;
+          const isMainIssue = mainUnallocated > 0;
+
+          const handleStoreChange = (newStore: 'MAIN' | 'MINI') => {
+            const newAlloc: Record<string, string> = {};
+            allocateMaterial.brands?.forEach((b) => {
+              const cur = getBrandStock(b, newStore);
+              newAlloc[b.id] = cur > 0 ? String(cur) : '';
+            });
+            setAllocateForm({
+              ...allocateForm,
+              storeType: newStore,
+              allocations: newAlloc,
+            });
+          };
+
+          const handleEvenSplit = () => {
+            const brands = allocateMaterial.brands || [];
+            if (brands.length === 0) return;
+            const newAlloc: Record<string, string> = {};
+
+            if (isPcsAlloc) {
+              const intStock = Math.floor(currentStoreStock);
+              const perBrand = Math.floor(intStock / brands.length);
+              const remainder = intStock % brands.length;
+              brands.forEach((b, idx) => {
+                const qty = perBrand + (idx === 0 ? remainder : 0);
+                newAlloc[b.id] = String(qty);
+              });
+            } else {
+              const perBrand = Math.floor((currentStoreStock / brands.length) * 100) / 100;
+              const allocatedSum = Math.round(perBrand * brands.length * 100) / 100;
+              const remainder = Math.round((currentStoreStock - allocatedSum) * 100) / 100;
+              brands.forEach((b, idx) => {
+                const qty = idx === 0 ? Math.round((perBrand + remainder) * 100) / 100 : perBrand;
+                newAlloc[b.id] = String(qty);
+              });
+            }
+
+            setAllocateForm({
+              ...allocateForm,
+              allocations: newAlloc,
+            });
+          };
+
+          const handleFillRemaining = (brandId: string) => {
+            const otherSum = (allocateMaterial.brands || [])
+              .filter((b) => b.id !== brandId)
+              .reduce((sum, b) => sum + Number(allocateForm.allocations[b.id] || 0), 0);
+            let needed = Math.max(0, currentStoreStock - otherSum);
+            if (isPcsAlloc) {
+              needed = Math.round(needed);
+            } else {
+              needed = Math.round(needed * 100) / 100;
+            }
+            setAllocateForm({
+              ...allocateForm,
+              allocations: {
+                ...allocateForm.allocations,
+                [brandId]: String(needed),
+              },
+            });
+          };
+
+          // Detect which brand fields are empty (0 or unset)
+          const emptyBrands = (allocateMaterial.brands || []).filter((b) => {
+            const v = allocateForm.allocations[b.id];
+            return !v || Number(v) === 0;
+          });
+          const isOnlyOneBrandLeft = emptyBrands.length === 1 && remaining > 0;
+
+          return (
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Boxes className="w-5 h-5 text-amber-600" />
+                  {t('storage.allocateBrandStock', 'Allocate Brand Stock')} — {allocateMaterial ? getLocName(allocateMaterial) : ''}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                {/* 1. Store selector cards with warning & check icons */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Mini Store Tab */}
+                  <button
+                    type="button"
+                    onClick={() => handleStoreChange('MINI')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+                      allocateForm.storeType === 'MINI'
+                        ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5 shadow-xs'
+                        : 'border-border bg-card hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${
+                          allocateForm.storeType === 'MINI' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <Store className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">
+                            {t('storage.miniStore', 'Mini Store')}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {miniStock} {formatUnit(allocateMaterial.unit)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isMiniIssue ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                          <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 animate-pulse" />
+                          <span>{miniUnallocated} {t('storage.unallocatedStock', 'unallocated')}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>{t('storage.storeHealthy', 'Allocated')}</span>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Main Store Tab */}
+                  <button
+                    type="button"
+                    onClick={() => handleStoreChange('MAIN')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+                      allocateForm.storeType === 'MAIN'
+                        ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5 shadow-xs'
+                        : 'border-border bg-card hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${
+                          allocateForm.storeType === 'MAIN' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <Archive className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">
+                            {t('storage.mainStore', 'Main Store')}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {mainStock} {formatUnit(allocateMaterial.unit)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {isMainIssue ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                          <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 animate-pulse" />
+                          <span>{mainUnallocated} {t('storage.unallocatedStock', 'unallocated')}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>{t('storage.storeHealthy', 'Allocated')}</span>
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </div>
+
+                {/* 2. Metric Summary Cards */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-center">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      {t('storage.totalStoreStock', 'Total Store Stock')}
+                    </span>
+                    <span className="text-base sm:text-lg font-bold text-foreground">
+                      {currentStoreStock} {formatUnit(allocateMaterial.unit)}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-center">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      {t('storage.allocatedSoFar', 'Allocated')}
+                    </span>
+                    <span className="text-base sm:text-lg font-bold text-foreground">
+                      {currentAllocTotal} {formatUnit(allocateMaterial.unit)}
+                    </span>
+                  </div>
+                  <div className={`p-2.5 rounded-lg border text-center ${
+                    remaining === 0 
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' 
+                      : remaining > 0 
+                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400' 
+                      : 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400'
+                  }`}>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider block">
+                      {remaining >= 0 ? t('storage.remainingToAllocate', 'Remaining') : t('storage.overallocated', 'Over Total')}
+                    </span>
+                    <span className="text-base sm:text-lg font-bold flex items-center justify-center gap-1">
+                      {remaining === 0 && <CheckCircle2 className="w-4 h-4 text-emerald-600 inline shrink-0" />}
+                      {Math.abs(remaining)} {formatUnit(allocateMaterial.unit)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Warning Card when allocated exceeds current stock */}
+                {currentAllocTotal > currentStoreStock && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3 text-amber-800 dark:text-amber-300 animate-in fade-in duration-200">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-1">
+                      <p className="font-bold text-sm text-amber-900 dark:text-amber-200">
+                        {t('storage.warningAllocationExceedsTitle', 'Allocation Exceeds Current Stock')}
+                      </p>
+                      <p className="leading-relaxed opacity-90">
+                        {t('storage.warningAllocationExceedsDesc', 
+                          'The sum of brand quantities ({{totalAllocated}}) exceeds current store stock ({{totalStore}}). Saving will increase the store total to {{totalAllocated}} {{unit}} (+{{delta}} {{unit}}).',
+                          {
+                            totalAllocated: currentAllocTotal,
+                            totalStore: currentStoreStock,
+                            delta: currentAllocTotal - currentStoreStock,
+                            unit: formatUnit(allocateMaterial.unit),
+                          }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3.1 Warning Card when PCS item has decimal values */}
+                {hasFractionalAllocations && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3 text-red-800 dark:text-red-300 animate-in fade-in duration-200">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-0.5">
+                      <p className="font-bold text-sm text-red-900 dark:text-red-200">
+                        {t('alerts.error', 'Invalid Quantity')}
+                      </p>
+                      <p className="leading-relaxed text-red-700 dark:text-red-300">
+                        {t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Brands Input List */}
+                <div className="space-y-2.5 max-h-[38vh] overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                      {t('materials.brands', 'Brands')} ({allocateMaterial.brands?.length || 0})
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[11px] px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                      onClick={handleEvenSplit}
+                    >
+                      {t('storage.evenSplit', 'Even Split')}
+                    </Button>
+                  </div>
+
+                  {allocateMaterial.brands?.map((brand) => {
+                    const curBrandStock = getBrandStock(brand, allocateForm.storeType);
+                    const currentVal = allocateForm.allocations[brand.id] ?? '';
+                    const isTheOnlyEmpty = isOnlyOneBrandLeft && emptyBrands[0]?.id === brand.id;
+
+                    return (
+                      <div
+                        key={brand.id}
+                        className="p-3 rounded-xl border border-border bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-sm text-foreground truncate">{formatBrandSizeLabel(brand)}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
+                              {formatCurrency(brand.price)}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            {t('common.current', 'Current')}: {curBrandStock} {formatUnit(allocateMaterial.unit)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          {isTheOnlyEmpty && (
+                            <button
+                              type="button"
+                              onClick={() => handleFillRemaining(brand.id)}
+                              className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:underline flex items-center gap-1.5 transition-colors cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-md border border-amber-500/30 shrink-0"
+                              title={t('storage.fillTheRest', 'Fill the rest')}
+                            >
+                              <span>{t('storage.fillTheRest', 'Fill the rest')}</span>
+                              <span className="font-mono font-bold">({remaining})</span>
+                            </button>
+                          )}
+
+                          <Input
+                            type="number"
+                            min="0"
+                            step={getQuantityStep(allocateMaterial.unit)}
+                            value={currentVal}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (isPcsAlloc && val.includes('.')) return;
+                              setAllocateForm({
+                                ...allocateForm,
+                                allocations: {
+                                  ...allocateForm.allocations,
+                                  [brand.id]: val,
+                                },
+                              });
+                            }}
+                            placeholder="0"
+                            className="w-24 h-9 text-sm text-right font-mono"
+                          />
+                          <span className="text-xs text-muted-foreground w-8 truncate">
+                            {formatUnit(allocateMaterial.unit)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 5. Notes Input */}
+                <div className="space-y-1.5 pt-1">
+                  <Label className="text-xs font-medium text-foreground">{t('common.notesOptional', 'Notes (Optional)')}</Label>
+                  <Input
+                    value={allocateForm.notes}
+                    onChange={(e) => setAllocateForm({ ...allocateForm, notes: e.target.value })}
+                    placeholder={t('storage.placeholders.allocateNotes', 'e.g. Initial brand allocation of existing stock across Abro and Flamingo')}
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-border">
+                <Button
+                  variant="outline"
+                  onClick={() => setAllocateMaterial(null)}
+                  disabled={allocateBrandStockMutation.isPending}
+                  className="h-10 px-5 rounded-lg font-medium border-border hover:bg-muted text-foreground transition-all cursor-pointer"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </Button>
+                <Button
+                  onClick={() => allocateBrandStockMutation.mutate()}
+                  disabled={allocateBrandStockMutation.isPending || hasFractionalAllocations}
+                  className="h-10 px-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm hover:shadow-md transition-all gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {allocateBrandStockMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>{t('storage.allocating', 'Saving...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Boxes className="w-4 h-4" />
+                      <span>{t('storage.confirmAllocation', 'Save Allocation')}</span>
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          );
+        })()}
       </Dialog>
     </div>
   );

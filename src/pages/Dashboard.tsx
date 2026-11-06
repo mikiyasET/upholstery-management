@@ -3,8 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../lib/api";
-import { formatCurrency, formatStatus } from "../lib/utils";
-import { formatPlateNumber } from "../utils/plate";
+import { 
+  formatCurrency, 
+  formatStatus, 
+  formatDashboardBannerDate, 
+  formatShortDate,
+  formatPaymentMethod,
+  formatUnit 
+} from "../lib/utils";
 import { usePermission } from "../lib/permissions";
 import { useAuthStore } from "../store/authStore";
 import {
@@ -23,24 +29,24 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import {
-  RiCarLine,
-  RiShoppingBag3Line,
-  RiCheckDoubleLine,
-  RiAlertLine,
-  RiArrowRightLine,
-  RiToolsLine,
-  RiShieldCheckLine,
-  RiArchiveLine,
-  RiCalendarEventLine,
-  RiRefreshLine,
-  RiEyeLine,
-  RiPrinterLine,
-  RiExchangeDollarLine,
-  RiPhoneLine,
-} from "react-icons/ri";
+  Car,
+  ShoppingBag,
+  CheckCheck,
+  AlertTriangle,
+  ArrowRight,
+  Wrench,
+  ShieldCheck,
+  Archive,
+  Calendar,
+  RotateCw,
+  Eye,
+  Printer,
+  DollarSign,
+  Phone,
+} from "lucide-react";
 import { printOrderReceipt } from "../lib/receipt-printer";
-import { ExecutiveAddButton, TablePagination } from "../components/common";
-import dayjs from "dayjs";
+import { ExecutiveAddButton, TablePagination, PlateBadge } from "../components/common";
+import { DailyRevenueChart } from "../components/dashboard/DailyRevenueChart";
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
@@ -62,6 +68,8 @@ export default function Dashboard() {
   const canViewDirectSales = usePermission("directSales.view");
   const canCreateOrder = usePermission("orders.create");
   const canCreateDirectSale = usePermission("directSales.create");
+  const canViewReports = usePermission("reports.view");
+  const canViewRevenueChart = canViewOrders || canViewDirectSales || canViewReports;
 
   const { data: orders = [], refetch: refetchOrders } = useQuery({
     queryKey: ["active-orders"],
@@ -101,7 +109,7 @@ export default function Dashboard() {
   };
 
   const getLocName = (item: any) =>
-    i18n.language === "am" && item?.nameAm ? item.nameAm : item?.name || item?.nameEn || "";
+    i18n.language === "am" && item?.nameAm ? item.nameAm : item?.nameEn || item?.name || "";
 
   const activeOrders = Array.isArray(orders)
     ? orders.filter((o: any) => o.status === "WAITING" || o.status === "IN_PROGRESS" || o.orderStatus === "IN_PROGRESS" || o.orderStatus === "OPEN")
@@ -143,15 +151,15 @@ export default function Dashboard() {
           <Box>
             <Group gap="xs" align="center" mb={4}>
               <Title order={2} style={{ letterSpacing: "-0.02em", fontWeight: 800 }}>
-                Welcome back, {user?.name || "Operations Team"}
+                {t("dashboard.welcome", "Welcome back")}, {user?.name || t("dashboard.operationsTeam", "Operations Team")}
               </Title>
               <span style={{ fontSize: "1.4rem" }}>🚗</span>
             </Group>
             <Group gap="sm" mt={4} wrap="wrap" align="center">
               <Group gap={4} align="center">
-                <RiCalendarEventLine size={13} style={{ color: "var(--primary-accent)" }} />
+                <Calendar size={13} style={{ color: "var(--primary-accent)" }} />
                 <Text size="xs" fw={600} style={{ color: "var(--text-main)" }}>
-                  {dayjs().format("dddd, MMMM D, YYYY")}
+                  {formatDashboardBannerDate(new Date(), i18n.language)}
                 </Text>
               </Group>
               <Text size="xs" c="dimmed" style={{ opacity: 0.4 }}>
@@ -169,7 +177,7 @@ export default function Dashboard() {
                   }}
                 />
                 <Text size="xs" c="dimmed">
-                  Live Workshop & POS System
+                  {t("dashboard.liveSystem", "Live Workshop & POS System")}
                 </Text>
               </Group>
             </Group>
@@ -177,7 +185,7 @@ export default function Dashboard() {
 
           {/* Quick Action Toolbar on the Right */}
           <Group gap="xs" wrap="wrap" align="center">
-            <Tooltip label="Refresh dashboard" withArrow>
+            <Tooltip label={t("dashboard.refresh", "Refresh dashboard")} withArrow>
               <ActionIcon
                 variant="subtle"
                 color="amber"
@@ -185,9 +193,9 @@ export default function Dashboard() {
                 radius="md"
                 loading={isRefreshing}
                 onClick={handleRefresh}
-                aria-label="Refresh dashboard"
+                aria-label={t("dashboard.refresh", "Refresh dashboard")}
               >
-                <RiRefreshLine size={18} />
+                <RotateCw size={18} />
               </ActionIcon>
             </Tooltip>
 
@@ -195,7 +203,7 @@ export default function Dashboard() {
               <Button
                 variant="default"
                 radius="md"
-                leftSection={<RiShoppingBag3Line size={16} />}
+                leftSection={<ShoppingBag size={16} />}
                 onClick={() => navigate("/direct-sales")}
                 style={{
                   height: 36,
@@ -233,22 +241,29 @@ export default function Dashboard() {
             <Box
               className="stat-icon-wrapper"
               style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
                 background: "rgba(245, 158, 11, 0.12)",
                 color: "var(--primary-accent)",
               }}
             >
-              <RiCarLine size={20} />
+              <Car size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
-            <Group gap={4}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+            <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
               <span className="pulse-dot" style={{ backgroundColor: "#f59e0b", width: 5, height: 5 }} />
-              <Text size="11px" fw={600} style={{ color: "var(--primary-accent)" }}>
-                Workshop active
+              <Text size="11px" fw={600} style={{ color: "var(--primary-accent)", whiteSpace: "nowrap" }}>
+                {t("dashboard.workshopActive", "Workshop active")}
               </Text>
             </Group>
-            <Text size="11px" c="dimmed">
-              Live tailoring jobs
+            <Text size="11px" c="dimmed" truncate style={{ whiteSpace: "nowrap", flexShrink: 1 }}>
+              {t("dashboard.liveTailoringJobs", "Live tailoring jobs")}
             </Text>
           </Group>
         </Box>
@@ -267,19 +282,26 @@ export default function Dashboard() {
             <Box
               className="stat-icon-wrapper"
               style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
                 background: "rgba(59, 130, 246, 0.12)",
                 color: "#3b82f6",
               }}
             >
-              <RiShoppingBag3Line size={20} />
+              <ShoppingBag size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
-            <Text size="11px" fw={600} style={{ color: "#3b82f6" }}>
-              {formatCurrency(directSalesTotalRevenue)}
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+            <Text size="11px" fw={600} style={{ color: "#3b82f6", whiteSpace: "nowrap", flexShrink: 0 }}>
+              {formatCurrency(directSalesTotalRevenue, i18n.language as any)}
             </Text>
-            <Text size="11px" c="dimmed">
-              Counter sales
+            <Text size="11px" c="dimmed" truncate style={{ whiteSpace: "nowrap", flexShrink: 1 }}>
+              {t("dashboard.counterSales", "Counter sales")}
             </Text>
           </Group>
         </Box>
@@ -307,25 +329,34 @@ export default function Dashboard() {
             <Box
               className="stat-icon-wrapper"
               style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
                 background: lowStockMaterials.length > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.12)",
                 color: lowStockMaterials.length > 0 ? "#ef4444" : "#10b981",
               }}
             >
-              <RiAlertLine size={20} />
+              <AlertTriangle size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
             <Text
               size="11px"
               fw={600}
               style={{
                 color: lowStockMaterials.length > 0 ? "#ef4444" : "#10b981",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
             >
-              {lowStockMaterials.length > 0 ? "Requires restock" : "Optimal stock"}
+              {lowStockMaterials.length > 0 ? t("dashboard.requiresRestock", "Requires restock") : t("dashboard.optimalStock", "Optimal stock")}
             </Text>
-            <Text size="11px" c="dimmed">
-              Mini store buffer
+            <Text size="11px" c="dimmed" truncate style={{ whiteSpace: "nowrap", flexShrink: 1 }}>
+              {t("dashboard.miniStoreBuffer", "Mini store buffer")}
             </Text>
           </Group>
         </Box>
@@ -344,37 +375,49 @@ export default function Dashboard() {
             <Box
               className="stat-icon-wrapper"
               style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
                 background: "rgba(16, 185, 129, 0.12)",
                 color: "#10b981",
               }}
             >
-              <RiCheckDoubleLine size={20} />
+              <CheckCheck size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
-            <Text size="11px" fw={600} style={{ color: "#10b981" }}>
-              100% Handed over
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+            <Text size="11px" fw={600} style={{ color: "#10b981", whiteSpace: "nowrap", flexShrink: 0 }}>
+              {t("dashboard.handedOver", "100% Handed over")}
             </Text>
-            <Text size="11px" c="dimmed">
-              Client cleared
+            <Text size="11px" c="dimmed" truncate style={{ whiteSpace: "nowrap", flexShrink: 1 }}>
+              {t("dashboard.clientCleared", "Client cleared")}
             </Text>
           </Group>
         </Box>
       </SimpleGrid>
 
-      {/* 3. Multi-View Operations Hub with Tabs */}
+      {/* 3. Executive Daily Total Revenue & Orders Pre-Aggregated Chart */}
+      {canViewRevenueChart && (
+        <DailyRevenueChart isRefreshing={isRefreshing} />
+      )}
+
+      {/* 4. Multi-View Operations Hub with Tabs */}
       <Box className="premium-card" p="md">
         <Tabs value={activeTab} onChange={setActiveTab} variant="pills" radius="md">
           <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
             <Tabs.List style={{ gap: 8 }}>
-              <Tabs.Tab value="bay" leftSection={<RiToolsLine size={16} />}>
-                Workshop Bay Jobs ({activeOrders.length})
+              <Tabs.Tab value="bay" leftSection={<Wrench size={16} />}>
+                {t("dashboard.tabs.bay", "Workshop Bay Jobs")} ({activeOrders.length})
               </Tabs.Tab>
-              <Tabs.Tab value="sales" leftSection={<RiShoppingBag3Line size={16} />}>
-                Direct POS Sales ({directSales.length})
+              <Tabs.Tab value="sales" leftSection={<ShoppingBag size={16} />}>
+                {t("dashboard.tabs.sales", "Direct POS Sales")} ({directSales.length})
               </Tabs.Tab>
-              <Tabs.Tab value="stock" leftSection={<RiArchiveLine size={16} />}>
-                Stock Alerts ({lowStockMaterials.length})
+              <Tabs.Tab value="stock" leftSection={<Archive size={16} />}>
+                {t("dashboard.tabs.stock", "Stock Alerts")} ({lowStockMaterials.length})
               </Tabs.Tab>
             </Tabs.List>
 
@@ -384,7 +427,7 @@ export default function Dashboard() {
               variant="subtle"
               color="amber"
               size="xs"
-              rightSection={<RiArrowRightLine size={14} />}
+              rightSection={<ArrowRight size={14} />}
             >
               {t("dashboard.viewAll", "View all records")}
             </Button>
@@ -395,10 +438,10 @@ export default function Dashboard() {
             {!canViewOrders ? (
               <Box py="xl" style={{ textAlign: "center" }}>
                 <ThemeIcon size={44} radius="xl" color="gray" variant="light" mb="xs">
-                  <RiShieldCheckLine size={24} />
+                  <ShieldCheck size={24} />
                 </ThemeIcon>
                 <Text size="sm" c="dimmed">
-                  Access restricted for this section.
+                  {t("dashboard.accessRestricted", "Access restricted for this section.")}
                 </Text>
               </Box>
             ) : activeOrders.length === 0 ? (
@@ -413,16 +456,15 @@ export default function Dashboard() {
                   <Table verticalSpacing="sm" highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>Order #</Table.Th>
-                        <Table.Th>Plate / Vehicle</Table.Th>
-                        <Table.Th>Customer</Table.Th>
-                        <Table.Th>Status</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
+                        <Table.Th>{t("dashboard.table.orderNumber", "Order #")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.plateVehicle", "Plate / Vehicle")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.customer", "Customer")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.status", "Status")}</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>{t("dashboard.table.actions", "Actions")}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
                       {paginatedBayOrders.map((order: any) => {
-                        const plate = order.vehicle?.plateNumber ? formatPlateNumber(order.vehicle.plateNumber) : "—";
                         const vehicleModel = [order.vehicle?.carModel?.brand?.name, order.vehicle?.carModel?.name].filter(Boolean).join(" ");
 
                         return (
@@ -432,26 +474,24 @@ export default function Dashboard() {
                                 {order.orderNumber}
                               </Text>
                               <Text size="11px" c="dimmed">
-                                {dayjs(order.orderDateTime).format("MMM D, HH:mm")}
+                                {formatShortDate(order.orderDateTime, true, i18n.language)}
                               </Text>
                             </Table.Td>
 
                             <Table.Td>
-                              <Badge variant="light" color="amber" size="sm" mb={2}>
-                                {plate}
-                              </Badge>
-                              <Text size="11px" c="dimmed">
-                                {vehicleModel || "Vehicle"}
+                              <PlateBadge plate={order.vehicle?.plateNumber} size="xs" />
+                              <Text size="11px" c="dimmed" mt={1}>
+                                {vehicleModel || t("dashboard.table.vehicle", "Vehicle")}
                               </Text>
                             </Table.Td>
 
                             <Table.Td>
                               <Text size="sm" fw={600}>
-                                {order.customer?.name || "Walk-in"}
+                                {order.customer?.name || t("dashboard.table.walkIn", "Walk-in")}
                               </Text>
                               {order.customer?.phoneNumber && (
                                 <Group gap={4} align="center">
-                                  <RiPhoneLine size={11} color="var(--text-muted)" />
+                                  <Phone size={11} color="var(--text-muted)" />
                                   <Text size="11px" c="dimmed">
                                     {order.customer.phoneNumber}
                                   </Text>
@@ -471,31 +511,31 @@ export default function Dashboard() {
                                 variant="light"
                                 size="sm"
                               >
-                                {formatStatus(order.status || order.orderStatus || "OPEN")}
+                                {formatStatus(order.status || order.orderStatus || "OPEN", i18n.language as any)}
                               </Badge>
                             </Table.Td>
 
                             <Table.Td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                               <Group gap={6} justify="flex-end" wrap="nowrap">
-                                <Tooltip label="View Order Detail" withArrow>
+                                <Tooltip label={t("dashboard.tooltips.viewOrder", "View Order Detail")} withArrow>
                                   <ActionIcon
                                     variant="subtle"
                                     color="amber"
                                     size="sm"
                                     onClick={() => navigate(`/orders/${order.id}`)}
                                   >
-                                    <RiEyeLine size={16} />
+                                    <Eye size={16} />
                                   </ActionIcon>
                                 </Tooltip>
 
-                                <Tooltip label="Print Invoice" withArrow>
+                                <Tooltip label={t("dashboard.tooltips.printInvoice", "Print Invoice")} withArrow>
                                   <ActionIcon
                                     variant="subtle"
                                     color="gray"
                                     size="sm"
                                     onClick={() => printOrderReceipt(order)}
                                   >
-                                    <RiPrinterLine size={16} />
+                                    <Printer size={16} />
                                   </ActionIcon>
                                 </Tooltip>
                               </Group>
@@ -518,7 +558,7 @@ export default function Dashboard() {
                     setBayPage(1);
                   }}
                   pageSizeOptions={["5", "10", "20"]}
-                  itemLabel="active orders"
+                  itemLabel={t("dashboard.pagination.activeOrders", "active orders")}
                 />
               </>
             )}
@@ -529,7 +569,7 @@ export default function Dashboard() {
             {directSales.length === 0 ? (
               <Box py="xl" style={{ textAlign: "center" }}>
                 <Text size="sm" c="dimmed">
-                  No direct counter sales recorded today.
+                  {t("dashboard.noSalesToday", "No direct counter sales recorded today.")}
                 </Text>
               </Box>
             ) : (
@@ -538,12 +578,12 @@ export default function Dashboard() {
                   <Table verticalSpacing="sm" highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>Transaction #</Table.Th>
-                        <Table.Th>Date & Time</Table.Th>
-                        <Table.Th>Customer</Table.Th>
-                        <Table.Th>Total Amount</Table.Th>
-                        <Table.Th>Payment Method</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>Actions</Table.Th>
+                        <Table.Th>{t("dashboard.table.transactionNumber", "Transaction #")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.dateTime", "Date & Time")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.customer", "Customer")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.totalAmount", "Total Amount")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.paymentMethod", "Payment Method")}</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>{t("dashboard.table.actions", "Actions")}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -556,34 +596,34 @@ export default function Dashboard() {
                           </Table.Td>
                           <Table.Td>
                             <Text size="xs">
-                              {dayjs(sale.createdAt || sale.date).format("MMM D, HH:mm")}
+                              {formatShortDate(sale.createdAt || sale.date || sale.saleDateTime, true, i18n.language)}
                             </Text>
                           </Table.Td>
                           <Table.Td>
                             <Text size="sm" fw={500}>
-                              {sale.customerName || sale.customer?.name || "Walk-in Retail Client"}
+                              {sale.customerName || sale.customer?.name || t("dashboard.table.walkInRetailClient", "Walk-in Retail Client")}
                             </Text>
                           </Table.Td>
                           <Table.Td>
                             <Text fw={700} size="sm">
-                              {formatCurrency(sale.totalPrice || sale.netTotal || 0)}
+                              {formatCurrency(sale.totalPrice || sale.netTotal || 0, i18n.language as any)}
                             </Text>
                           </Table.Td>
                           <Table.Td>
                             <Badge variant="light" color="blue" size="sm">
-                              {sale.paymentMethod || "CASH"}
+                              {formatPaymentMethod(sale.paymentMethod || "CASH", i18n.language as any)}
                             </Badge>
                           </Table.Td>
                           <Table.Td style={{ textAlign: "right" }}>
                             <Group gap={6} justify="flex-end" wrap="nowrap">
-                              <Tooltip label="View History" withArrow>
+                              <Tooltip label={t("dashboard.tooltips.viewHistory", "View History")} withArrow>
                                 <ActionIcon
                                   variant="subtle"
                                   color="amber"
                                   size="sm"
                                   onClick={() => navigate("/direct-sales/history")}
                                 >
-                                  <RiEyeLine size={16} />
+                                  <Eye size={16} />
                                 </ActionIcon>
                               </Tooltip>
                             </Group>
@@ -605,7 +645,7 @@ export default function Dashboard() {
                     setSalesPage(1);
                   }}
                   pageSizeOptions={["5", "10", "20"]}
-                  itemLabel="sales"
+                  itemLabel={t("dashboard.pagination.sales", "sales")}
                 />
               </>
             )}
@@ -616,10 +656,10 @@ export default function Dashboard() {
             {lowStockMaterials.length === 0 ? (
               <Box py="xl" style={{ textAlign: "center" }}>
                 <ThemeIcon size={44} radius="xl" color="green" variant="light" mb="xs">
-                  <RiCheckDoubleLine size={24} />
+                  <CheckCheck size={24} />
                 </ThemeIcon>
                 <Text size="sm" c="dimmed">
-                  All workshop fabrics and materials are currently above threshold levels.
+                  {t("dashboard.allMaterialsOptimal", "All workshop fabrics and materials are currently above threshold levels.")}
                 </Text>
               </Box>
             ) : (
@@ -628,11 +668,11 @@ export default function Dashboard() {
                   <Table verticalSpacing="sm" highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>Material</Table.Th>
-                        <Table.Th>Mini Store (Floor)</Table.Th>
-                        <Table.Th>Main Warehouse</Table.Th>
-                        <Table.Th>Threshold</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+                        <Table.Th>{t("dashboard.table.material", "Material")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.miniStore", "Mini Store (Floor)")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.mainWarehouse", "Main Warehouse")}</Table.Th>
+                        <Table.Th>{t("dashboard.table.threshold", "Threshold")}</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>{t("dashboard.table.action", "Action")}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -650,22 +690,22 @@ export default function Dashboard() {
                                 {getLocName(mat)}
                               </Text>
                               <Text size="11px" c="dimmed">
-                                Unit: {mat.unit || "Meter"}
+                                {t("dashboard.table.unit", "Unit")}: {formatUnit(mat.unit || "Meter", i18n.language as any)}
                               </Text>
                             </Table.Td>
                             <Table.Td>
                               <Badge color={miniQty <= threshold ? "red" : "gray"} variant="light">
-                                {miniQty} {mat.unit}
+                                {miniQty} {formatUnit(mat.unit, i18n.language as any)}
                               </Badge>
                             </Table.Td>
                             <Table.Td>
                               <Text size="sm" fw={600}>
-                                {mainQty} {mat.unit}
+                                {mainQty} {formatUnit(mat.unit, i18n.language as any)}
                               </Text>
                             </Table.Td>
                             <Table.Td>
                               <Text size="xs" c="dimmed">
-                                {threshold} {mat.unit}
+                                {threshold} {formatUnit(mat.unit, i18n.language as any)}
                               </Text>
                             </Table.Td>
                             <Table.Td style={{ textAlign: "right" }}>
@@ -673,10 +713,10 @@ export default function Dashboard() {
                                 size="xs"
                                 variant="light"
                                 color="amber"
-                                leftSection={<RiExchangeDollarLine size={14} />}
+                                leftSection={<DollarSign size={14} />}
                                 onClick={() => navigate("/storage")}
                               >
-                                Transfer
+                                {t("dashboard.transfer", "Transfer")}
                               </Button>
                             </Table.Td>
                           </Table.Tr>
@@ -697,7 +737,7 @@ export default function Dashboard() {
                     setInvPage(1);
                   }}
                   pageSizeOptions={["5", "10", "20"]}
-                  itemLabel="materials"
+                  itemLabel={t("dashboard.pagination.materials", "materials")}
                 />
               </>
             )}

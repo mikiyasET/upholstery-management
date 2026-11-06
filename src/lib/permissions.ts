@@ -26,7 +26,11 @@ export type PermissionKey =
   | 'catalog.cars.remove'
   | 'users.view'
   | 'users.edit'
-  | 'reports.view';
+  | 'reports.view'
+  | 'assets.view'
+  | 'assets.add'
+  | 'assets.edit'
+  | 'assets.remove';
 
 /**
  * Hook: check if the current user has a given permission.

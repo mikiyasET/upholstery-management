@@ -1,17 +1,24 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import i18n from "../i18n"
+import { formatEthiopian } from "amharic-datepicker-utils"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatAppDate(dateInput: any, includeTime = false): string {
+export function formatAppDate(dateInput: any, includeTime = false, language?: string): string {
   if (!dateInput) return '-';
   try {
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return '-';
-    
+
+    const currentLang = (language || i18n.language || 'en').startsWith('am') ? 'am' : 'en';
+
+    if (currentLang === 'am') {
+      return formatEthiopian(d, includeTime ? 'datetime' : 'long');
+    }
+
     const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', 
       month: 'short', 
@@ -20,6 +27,47 @@ export function formatAppDate(dateInput: any, includeTime = false): string {
     };
     return d.toLocaleDateString('en-US', options);
   } catch (error) {
+    return String(dateInput);
+  }
+}
+
+export function formatDashboardBannerDate(dateInput: any = new Date(), language?: string): string {
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    const currentLang = (language || i18n.language || 'en').startsWith('am') ? 'am' : 'en';
+
+    if (currentLang === 'am') {
+      return formatEthiopian(d, 'full');
+    }
+
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  } catch {
+    return '';
+  }
+}
+
+export function formatShortDate(dateInput: any, includeTime = false, language?: string): string {
+  if (!dateInput) return '-';
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '-';
+    const currentLang = (language || i18n.language || 'en').startsWith('am') ? 'am' : 'en';
+
+    if (currentLang === 'am') {
+      return formatEthiopian(d, includeTime ? 'MMMM D, a h:mm' : 'MMMM D');
+    }
+
+    const shortMonth = d.toLocaleDateString('en-US', { month: 'short' });
+    const day = d.getDate();
+    if (!includeTime) {
+      return `${shortMonth} ${day}`;
+    }
+    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${shortMonth} ${day}, ${timeStr}`;
+  } catch {
     return String(dateInput);
   }
 }
@@ -85,6 +133,80 @@ export function formatUnit(unit: string | undefined | null, language?: 'en' | 'a
     case 'LITERS': return 'Liters';
     default: return unit;
   }
+}
+
+export function isUnitIntegerOnly(unit: string | undefined | null): boolean {
+  if (!unit) return false;
+  return unit.toUpperCase().trim() === 'PCS';
+}
+
+export function isValidQuantityForUnit(
+  quantity: number | string | undefined | null,
+  unit: string | undefined | null
+): boolean {
+  if (quantity === undefined || quantity === null || quantity === '') return false;
+  const num = Number(quantity);
+  if (isNaN(num)) return false;
+  if (isUnitIntegerOnly(unit)) {
+    return Number.isInteger(num);
+  }
+  return true;
+}
+
+export function getQuantityStep(unit: string | undefined | null): string {
+  return isUnitIntegerOnly(unit) ? '1' : '0.01';
+}
+
+export function getQuantityPattern(unit: string | undefined | null, allowNegative = false): RegExp {
+  const isInt = isUnitIntegerOnly(unit);
+  if (allowNegative) {
+    return isInt ? /^-?\d*$/ : /^-?\d*\.?\d*$/;
+  }
+  return isInt ? /^\d*$/ : /^\d*\.?\d*$/;
+}
+
+export function getMaterialUnallocatedStock(
+  material: any,
+  storeType: 'MAIN' | 'MINI'
+): number {
+  if (!material || !material.brands || material.brands.length === 0) return 0;
+  const storeTypeStr = String(storeType);
+  const matStock = material.materialStocks?.find(
+    (s: any) => s.store?.type === storeTypeStr || s.storeType === storeTypeStr
+  );
+  const total = matStock ? Number(matStock.quantity) || 0 : 0;
+  if (total <= 0) return 0;
+
+  let brandTotal = 0;
+  for (const b of material.brands) {
+    const bStock = b.brandStocks?.find(
+      (s: any) => s.store?.type === storeTypeStr || s.storeType === storeTypeStr
+    );
+    brandTotal += bStock ? Number(bStock.quantity) || 0 : 0;
+  }
+
+  const unallocated = total - brandTotal;
+  return unallocated > 0 ? Math.round(unallocated * 100) / 100 : 0;
+}
+
+export function formatBrandSizeLabel(brand?: { name?: string | null; size?: string | null; color?: string | null; type?: string | null; brandName?: string | null; sizeName?: string | null; colorName?: string | null; typeName?: string | null }): string {
+  if (!brand) return '';
+  const name = (brand.name || brand.brandName || '').trim();
+  const size = (brand.size || brand.sizeName || '').trim();
+  const color = (brand.color || brand.colorName || '').trim();
+  const type = (brand.type || brand.typeName || '').trim();
+  const isUniversal = name.toLowerCase() === 'universal' || name.toLowerCase() === 'standard';
+
+  // Build attribute parts (skip empties)
+  const attrs = [size, color, type].filter(Boolean);
+
+  if (isUniversal) {
+    return attrs.length > 0 ? attrs.join(' • ') : '';
+  }
+  if (name && attrs.length > 0) {
+    return `${name} • ${attrs.join(' • ')}`;
+  }
+  return name || (attrs.length > 0 ? attrs.join(' • ') : '');
 }
 
 export function formatStatus(status: string | undefined | null, language?: 'en' | 'am'): string {
@@ -170,8 +292,8 @@ export function formatPaymentMethod(method: string | undefined | null, language?
     case 'CASH': return 'Cash';
     case 'TELEBIRR': return 'Telebirr';
     case 'CBE_BIRR':
-    case 'CBEBIRR': return 'ሲቢኢ ብር';
-    case 'CBE': return 'ንግድ ባንክ';
+    case 'CBEBIRR': return 'CBE Birr';
+    case 'CBE': return 'CBE';
     case 'BANK_TRANSFER':
     case 'BANK': return 'Bank Transfer';
     case 'CARD': return 'Card';

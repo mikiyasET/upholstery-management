@@ -11,7 +11,7 @@ import {
   Button,
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
-import { RiArrowLeftLine, RiRefreshLine, RiAddLine } from "react-icons/ri";
+import { ArrowLeft, RotateCw, Plus } from "lucide-react";
 import { type ReactNode } from "react";
 
 export interface BreadcrumbItem {
@@ -63,13 +63,13 @@ export function ExecutiveAddButton({
 
      //  gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
       radius="md"
-      leftSection={icon !== undefined ? icon : <RiAddLine size={18} />}
+      leftSection={icon !== undefined ? icon : <Plus size={18} />}
       disabled={disabled}
       loading={loading}
       className={className}
       onClick={to ? () => navigate(to) : onClick}
       style={{
-        boxShadow: "0 2px 10px rgba(245, 158, 11, 0.25)",
+        boxShadow: disabled ? "none" : "0 2px 10px rgba(245, 158, 11, 0.25)",
         fontWeight: 600,
         fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         letterSpacing: "-0.01em",
@@ -173,7 +173,7 @@ export function PageHeader({
               title="Go back"
               style={{ flexShrink: 0, marginTop: 2 }}
             >
-              <RiArrowLeftLine size={20} />
+              <ArrowLeft size={20} />
             </ActionIcon>
           )}
 
@@ -223,7 +223,7 @@ export function PageHeader({
                 aria-label={refreshTooltip}
                 style={{ height: 36, width: 36 }}
               >
-                <RiRefreshLine size={18} />
+                <RotateCw size={18} />
               </ActionIcon>
             </Tooltip>
           )}

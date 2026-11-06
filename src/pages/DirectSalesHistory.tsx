@@ -3,17 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
-import { Calendar, FileText, Clock } from 'lucide-react';
+import { Calendar, FileText, Printer, Eye } from 'lucide-react';
 import { TableSearch } from '../components/DataTable';
-import { formatCurrency, formatStatus, formatPaymentMethod } from '../lib/utils';
-import { format } from 'date-fns';
+import { formatCurrency, formatStatus, formatPaymentMethod, formatAppDate } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-import { Printer } from 'lucide-react';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { RiEyeLine, RiPrinterLine } from 'react-icons/ri';
 
 export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
@@ -162,9 +159,7 @@ export default function DirectSalesHistory() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 text-foreground/80">
                         <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                        {format(new Date(sale.saleDateTime), 'MMM d, yyyy')}
-                        <Clock className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                        {format(new Date(sale.saleDateTime), 'h:mm a')}
+                        {formatAppDate(sale.saleDateTime, true)}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -191,7 +186,7 @@ export default function DirectSalesHistory() {
                             size="sm"
                             onClick={() => handleRowClick(sale)}
                           >
-                            <RiEyeLine size={16} />
+                            <Eye size={16} />
                           </ActionIcon>
                         </Tooltip>
 
@@ -202,7 +197,7 @@ export default function DirectSalesHistory() {
                             size="sm"
                             onClick={() => printDirectSaleReceipt(sale)}
                           >
-                            <RiPrinterLine size={16} />
+                            <Printer size={16} />
                           </ActionIcon>
                         </Tooltip>
                       </div>
@@ -236,7 +231,7 @@ export default function DirectSalesHistory() {
             <DialogTitle className="flex items-center justify-between pr-4">
               <span>{t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}</span>
               <span className="text-sm font-normal text-muted-foreground">
-                {selectedSale && format(new Date(selectedSale.saleDateTime), 'PPp')}
+                {selectedSale && formatAppDate(selectedSale.saleDateTime, true)}
               </span>
             </DialogTitle>
           </DialogHeader>
@@ -273,7 +268,14 @@ export default function DirectSalesHistory() {
                   {fullSaleDetails.lines?.map((line: any) => (
                     <div key={line.id} className="flex justify-between items-start text-sm bg-card border rounded-lg p-3">
                       <div>
-                        <div className="font-medium">{getLocName(line.material)}</div>
+                        <div className="font-medium flex items-center gap-1.5 flex-wrap">
+                          <span>{getLocName(line.material)}</span>
+                          {line.brandName && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold rounded border border-amber-500/30">
+                              {line.brandName}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-muted-foreground text-xs">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
                       </div>
                       <div className="font-semibold">

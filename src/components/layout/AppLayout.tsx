@@ -4,6 +4,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
+import { preloadPlateAssets } from "../../utils/plateAssets";
 
 function ColorSchemeSync() {
   const computedColorScheme = useComputedColorScheme("dark", { getInitialValueInEffect: true });
@@ -22,6 +23,11 @@ function ColorSchemeSync() {
 export function AppLayout() {
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const location = useLocation();
+
+  // Preload plate assets (CARGO font & holographic foil) when admin panel is loaded
+  useEffect(() => {
+    preloadPlateAssets();
+  }, []);
 
   // Automatically close mobile sidebar whenever route changes
   useEffect(() => {

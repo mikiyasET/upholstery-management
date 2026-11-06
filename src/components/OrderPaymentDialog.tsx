@@ -5,7 +5,7 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Banknote, Landmark, CreditCard, Smartphone, Sparkles } from 'lucide-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { toast } from 'sonner';
 import { formatInputNumber, parseInputNumber, formatCurrency } from '../lib/utils';
@@ -30,6 +30,7 @@ export function OrderPaymentDialog({
   netTotal: initialNetTotal
 }: OrderPaymentDialogProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [paymentForm, setPaymentForm] = useState({ amount: '', method: 'CASH', referenceNumber: '' });
 
   // If metrics are not passed in directly, fetch the order data
@@ -80,7 +81,11 @@ export function OrderPaymentDialog({
         amount: parseInputNumber(paymentForm.amount)
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+      await queryClient.invalidateQueries({ queryKey: ['reports'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       onSuccess();
       onClose();
       toast.success(t('alerts.paymentAdded'));

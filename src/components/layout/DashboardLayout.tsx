@@ -30,6 +30,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import ConfirmDialog from '../ConfirmDialog';
+import { BrandLogo } from '../common';
 
 // Section Heading Component
 function NavSection({ title }: { title: string }) {
@@ -196,6 +197,7 @@ export default function DashboardLayout() {
   const canViewMaterials = usePermission('catalog.materials.view');
   const canViewServices = usePermission('catalog.services.view');
   const canViewCars = usePermission('catalog.cars.view');
+  const canViewAssets = usePermission('assets.view');
   const canViewUsers = usePermission('users.view');
   const canViewReports = usePermission('reports.view');
 
@@ -209,19 +211,7 @@ export default function DashboardLayout() {
   };
 
   const BrandTitle = () => (
-    <div className="flex items-center gap-2 md:gap-3">
-      <img src="/logo.png" alt="Yonatan Logo" className="h-9 w-auto object-contain drop-shadow-sm" />
-      <div className="flex flex-col justify-center">
-        <h2 className="text-xl md:text-2xl leading-none font-black bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent uppercase flex justify-between w-full">
-          {'YONATAN'.split('').map((char, i) => (
-            <span key={i}>{char}</span>
-          ))}
-        </h2>
-        <span className="text-[7.5px] md:text-[9px] leading-tight font-extrabold tracking-[0.1em] bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent uppercase mt-0.5 whitespace-nowrap">
-          CAR DECORATION & UPHOLSTERY
-        </span>
-      </div>
-    </div>
+    <BrandLogo size="md" onClick={() => navigate('/')} />
   );
 
   const SidebarContent = () => (
@@ -330,6 +320,11 @@ export default function DashboardLayout() {
             {canViewCars && (
               <Link to="/cars" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium ${location.pathname === '/cars' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}>
                 {t('common.carCatalog')}
+              </Link>
+            )}
+            {canViewAssets && (
+              <Link to="/assets" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm font-medium ${location.pathname === '/assets' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}>
+                {t('assets.title', 'Company Assets')}
               </Link>
             )}
           </NavGroup>

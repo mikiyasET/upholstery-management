@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Checkbox } from '../components/ui/checkbox';
-import { Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '../components/ui/switch';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
@@ -19,11 +19,6 @@ import {
   Button as MantineButton,
   Badge as MantineBadge,
 } from '@mantine/core';
-import {
-  RiShieldUserLine,
-  RiUserSettingsLine,
-  RiTeamLine,
-} from 'react-icons/ri';
 
 // -------------------------------------------------------
 // Types
@@ -368,9 +363,9 @@ export default function Users() {
   };
 
   const tabs: { key: TabKey; label: string; icon: any }[] = [
-    { key: 'admins', label: t('users.tabs.admins', 'Super Admins'), icon: RiShieldUserLine },
-    { key: 'managers', label: t('users.tabs.managers', 'Managers'), icon: RiUserSettingsLine },
-    { key: 'employees', label: t('users.tabs.employees', 'Employees'), icon: RiTeamLine },
+    { key: 'admins', label: t('users.tabs.admins', 'Super Admins'), icon: Shield },
+    { key: 'managers', label: t('users.tabs.managers', 'Managers'), icon: UserCog },
+    { key: 'employees', label: t('users.tabs.employees', 'Employees'), icon: UsersIcon },
   ];
 
   const tabCounts = {

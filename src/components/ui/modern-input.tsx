@@ -12,7 +12,7 @@ export interface ModernInputProps extends InputHTMLAttributes<HTMLInputElement> 
 }
 
 export const ModernInput = forwardRef<HTMLInputElement, ModernInputProps>(
-  ({ className, icon: Icon, label, error, containerClassName, inputSize = 'default', id: externalId, placeholder, ...props }, ref) => {
+  ({ className, icon: Icon, label, error, containerClassName, inputSize = 'default', id: externalId, placeholder, disabled, ...props }, ref) => {
     const internalId = useId();
     const id = externalId || internalId;
 
@@ -21,35 +21,41 @@ export const ModernInput = forwardRef<HTMLInputElement, ModernInputProps>(
     return (
       <div className={cn("flex flex-col gap-1.5", containerClassName)}>
         {label && (
-          <label htmlFor={id} className={cn("font-semibold text-gray-700 dark:text-gray-300", isSm ? "text-xs" : "text-sm")}>
+          <label htmlFor={id} className={cn("font-medium text-foreground/85 block select-none", isSm ? "text-xs" : "text-sm")}>
             {label}
           </label>
         )}
         <div className="relative group flex items-center w-full">
           {Icon && (
-            <div className={cn("absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none", isSm ? "left-2.5" : "left-3.5")}>
-              <Icon className={cn(isSm ? "w-4 h-4" : "w-5 h-5")} />
+            <div className={cn(
+              "absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none z-10",
+              isSm ? "left-3" : "left-3.5"
+            )}>
+              <Icon className={cn(isSm ? "w-4 h-4" : "w-4.5 h-4.5")} />
             </div>
           )}
 
           <input
             id={id}
             ref={ref}
+            disabled={disabled}
             placeholder={placeholder}
             className={cn(
-              "w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 font-medium text-gray-900 dark:text-white transition-all duration-200 outline-none",
-              "focus:border-primary focus:ring-1 focus:ring-primary",
-              "placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-medium",
-              isSm ? "h-9 text-xs" : "h-[46px] text-sm",
-              Icon && (isSm ? "pl-9" : "pl-11"),
-              error && "border-red-500 focus:ring-red-500 focus:border-red-500",
+              "w-full rounded-lg border border-input bg-background font-normal text-foreground transition-all duration-200 outline-none shadow-2xs",
+              "hover:border-foreground/30",
+              "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+              "placeholder:text-muted-foreground/60 placeholder:font-normal",
+              "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted/30",
+              isSm ? "h-9 text-xs px-3" : "h-10 text-sm px-3.5",
+              Icon && (isSm ? "pl-9" : "pl-10"),
+              error && "border-destructive text-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
               className
             )}
             {...props}
           />
         </div>
         {error && (
-          <span className="text-xs text-red-500 font-medium ml-1">{error}</span>
+          <span className="text-xs text-destructive font-medium ml-1">{error}</span>
         )}
       </div>
     );

@@ -137,7 +137,145 @@ body {
   background: var(--brand-gradient);
 }
 
-/* Brand Text Header */
+/* ========================================================
+   True Luxury Metallic Gold Branding
+   ======================================================== */
+:root {
+  --gold-stop-0: #A67C1E;
+  --gold-stop-1: #C59B27;
+  --gold-stop-2: #E5B83B;
+  --gold-stop-3: #B8860B;
+  --gold-stop-4: #8A6208;
+  --gold-svg-shadow: drop-shadow(0 1px 1px rgba(138, 98, 8, 0.22));
+
+  --gold-gradient-primary: linear-gradient(135deg, #A67C1E 0%, #C59B27 25%, #E5B83B 55%, #B8860B 80%, #8A6208 100%);
+  --gold-gradient-secondary: linear-gradient(135deg, #A67C1E 0%, #C59B27 30%, #D4AF37 60%, #8A6208 100%);
+  --gold-glow: 0 1px 2px rgba(138, 98, 8, 0.22);
+}
+
+.dark,
+[data-mantine-color-scheme="dark"],
+:root[data-mantine-color-scheme="dark"] {
+  --gold-stop-0: #C59B27;
+  --gold-stop-1: #F5C542;
+  --gold-stop-2: #FFDF6D;
+  --gold-stop-3: #D4AF37;
+  --gold-stop-4: #A67C1E;
+  --gold-svg-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+
+  --gold-gradient-primary: linear-gradient(135deg, #C59B27 0%, #F5C542 25%, #FFDF6D 55%, #D4AF37 80%, #A67C1E 100%);
+  --gold-gradient-secondary: linear-gradient(135deg, #C59B27 0%, #F5C542 35%, #D4AF37 70%, #996515 100%);
+  --gold-glow: 0 0 12px rgba(229, 184, 59, 0.42), 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.brand-logo-svg {
+  filter: var(--gold-svg-shadow);
+}
+
+.brand-gold-title {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 900;
+  font-size: 1.15rem;
+  line-height: 1.05;
+  letter-spacing: 0.12em;
+  background: var(--gold-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  text-transform: uppercase;
+  display: block;
+  white-space: nowrap;
+  filter: var(--gold-glow);
+  user-select: none;
+}
+
+.brand-gold-subtitle {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  font-size: 0.68rem;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  background: var(--gold-gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  text-transform: uppercase;
+  display: block;
+  white-space: nowrap;
+  margin-top: 2.5px;
+  filter: var(--gold-glow);
+  user-select: none;
+}
+
+/* Symmetrical flex lines with identical width & space-between letters */
+.brand-gold-line1,
+.brand-gold-line2 {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  filter: var(--gold-glow);
+}
+
+.brand-gold-line1 {
+  font-weight: 900;
+  background: var(--gold-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-gold-line2 {
+  font-weight: 800;
+  background: var(--gold-gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-gold-line1 > span,
+.brand-gold-line2 > span {
+  background: inherit;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+/* Backward-compatible inline gold */
+.brand-title-gold {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 900;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  background: var(--gold-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  white-space: nowrap;
+  filter: var(--gold-glow);
+  user-select: none;
+}
+
+.brand-subtitle-gold {
+  font-weight: 800;
+  font-size: 0.88em;
+  letter-spacing: 0.08em;
+  background: var(--gold-gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
 .brand-title-text {
   font-weight: 800;
   font-size: 1.15rem;
@@ -184,6 +322,18 @@ body {
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
   border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Stat Icon Wrapper - Perfectly Centered with Rounded Radius */
+.stat-icon-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0 !important;
+  transition: transform 0.2s ease;
 }
 
 /* Table Pagination Bar (Exact Exporter-Docs Luxury Standard) */
@@ -588,3 +738,118 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(161, 161, 170, 0.5);
 }
+
+/* Hide scrollbar while preserving scrollability (no scroll mover) */
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ========================================================
+   Executive User Profile Capsule
+   ======================================================== */
+.exec-profile-capsule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: var(--surface-card);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 12px rgba(212, 175, 55, 0.06);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  user-select: none;
+}
+
+.exec-profile-capsule:hover {
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.exec-avatar-wrapper {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 55%, #8A6208 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(212, 175, 55, 0.5), 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
+.exec-online-pip {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 2px solid var(--surface-card);
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.5);
+}
+
+.exec-user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.15;
+}
+
+.exec-user-name {
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.exec-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  margin-top: 2px;
+  width: fit-content;
+  background: rgba(217, 119, 6, 0.1);
+  color: #B45309;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.dark .exec-role-pill,
+[data-mantine-color-scheme="dark"] .exec-role-pill,
+:root[data-mantine-color-scheme="dark"] .exec-role-pill {
+  background: rgba(212, 175, 55, 0.15);
+  color: #F5C542;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.exec-chevron {
+  color: var(--text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+  margin-left: 2px;
+}
+
+.exec-profile-capsule:hover .exec-chevron {
+  color: var(--text-main);
+}
+

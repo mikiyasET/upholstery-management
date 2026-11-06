@@ -4,26 +4,49 @@ import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
-import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight } from 'lucide-react';
 import { ModernInput } from '../components/ui/modern-input';
 import { ModernSelect } from '../components/ui/modern-select';
 import { toast } from 'sonner';
-import { formatCurrency, getImageUrl, formatPaymentMethod } from '../lib/utils';
-import { format } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { formatCurrency, getImageUrl, formatPaymentMethod, isUnitIntegerOnly, getMaterialUnallocatedStock, formatBrandSizeLabel, formatAppDate } from '../lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Printer, History } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PermissionGate } from '../components/PermissionGate';
 import ConfirmDialog from '../components/ConfirmDialog';
 
+type MaterialBrandStock = {
+  id: string;
+  storeId: string;
+  quantity: string | number;
+  store: {
+    id: string;
+    name: string;
+    type: 'MAIN' | 'MINI';
+  };
+};
+
+type MaterialBrand = {
+  id?: string;
+  name: string;
+  size?: string | null;
+  color?: string | null;
+  type?: string | null;
+  price: number | string;
+  brandStocks?: MaterialBrandStock[];
+};
+
 type Material = {
   id: string;
+  itemCode?: string;
   nameEn: string;
   nameAm: string;
+  unit?: string;
   currentPrice: string;
   isStandaloneSellable: boolean;
   imageUrl?: string;
+  brands?: MaterialBrand[];
   materialStocks?: {
     storeId: string;
     quantity: string | number;
@@ -34,7 +57,10 @@ type Material = {
 };
 
 type CartItem = {
+  key: string;
   material: Material;
+  brand?: { id?: string; name: string; size?: string | null; color?: string | null; type?: string | null; price: number };
+  unitPrice: number;
   quantity: number;
 };
 
@@ -56,6 +82,7 @@ export default function DirectSales() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [brandPickerMaterial, setBrandPickerMaterial] = useState<Material | null>(null);
 
   // Tax toggle
   const [taxEnabled, setTaxEnabled] = useState(localStorage.getItem('defaultVatEnabled') === 'true');
@@ -126,8 +153,15 @@ export default function DirectSales() {
       editSaleData.lines?.forEach((line: any) => {
         const mat = materials.find(m => m.id === line.materialId);
         if (mat) {
+          const brand = line.brandName
+            ? { id: line.materialBrandId || undefined, name: line.brandName, size: line.sizeName || null, color: line.colorName || null, type: line.typeName || null, price: Number(line.priceAtSaleTime) }
+            : undefined;
+          const key = `${mat.id}-${brand?.name || 'standard'}`;
           newCart.push({
+            key,
             material: mat,
+            brand,
+            unitPrice: Number(line.priceAtSaleTime),
             quantity: line.quantity,
           });
         }
@@ -152,6 +186,7 @@ export default function DirectSales() {
   const filteredMaterials = (materials || []).filter(m => 
     (m.nameEn && m.nameEn.toLowerCase().includes(searchTerm.toLowerCase())) || 
     (m.nameAm && m.nameAm.includes(searchTerm)) ||
+    (m.itemCode && m.itemCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
     getLocName(m).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -161,56 +196,139 @@ export default function DirectSales() {
     return miniStock ? Number(miniStock.quantity) : 0;
   };
 
+  const getBrandMiniStock = (brand: MaterialBrand) => {
+    const stock = brand.brandStocks?.find(s => s.store?.type === 'MINI');
+    return stock ? Number(stock.quantity) : 0;
+  };
+
+  const getCartQuantityForMaterial = (materialId: string, currentCart: CartItem[] = cart) => {
+    return currentCart
+      .filter(item => item.material.id === materialId)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  };
+
+  const navigateToStorageAllocation = (material: Material) => {
+    const searchTarget = (i18n.language === 'am' && material.nameAm) ? material.nameAm : (material.nameEn || material.itemCode || '');
+    toast.info(
+      t('storage.redirectingToAllocate', 'Redirecting to Stock to allocate "{{name}}"...', {
+        name: getLocName(material),
+      })
+    );
+    navigate(`/storage?search=${encodeURIComponent(searchTarget)}&store=MINI&allocate=true&materialId=${material.id}`);
+  };
+
   // Cart operations
-  const addToCart = (material: Material) => {
+  const handleMaterialCardClick = (material: Material) => {
+    const unallocated = getMaterialUnallocatedStock(material, 'MINI');
+    if (material.brands && material.brands.length > 0 && unallocated > 0) {
+      toast.error(t('storage.unallocatedSaleBlocked', 'Cannot sell "{{name}}": It has {{unallocated}} unallocated stock in Mini Store. It must be allocated in Storage before selling.', {
+        name: getLocName(material),
+        unallocated: `${unallocated} ${material.unit || ''}`,
+      }), {
+        action: {
+          label: t('storage.allocate', 'Allocate'),
+          onClick: () => navigateToStorageAllocation(material),
+        },
+      });
+      navigateToStorageAllocation(material);
+      return;
+    }
+
     const currentStock = getMiniStoreStock(material);
     if (currentStock <= 0) {
       toast.error(t('storage.outOfStock', 'This item is out of stock in Mini Store'));
       return;
     }
 
+    if (material.brands && material.brands.length > 0) {
+      setBrandPickerMaterial(material);
+    } else {
+      addItemToCart(material, undefined);
+    }
+  };
+
+  const addItemToCart = (material: Material, brand?: { id?: string; name: string; size?: string | null; color?: string | null; type?: string | null; price: number }) => {
+    if (brand && material.brands) {
+      const fullBrand = material.brands.find(b => b.id === brand.id || (b.name === brand.name && (b.size || null) === (brand.size || null) && (b.color || null) === (brand.color || null) && (b.type || null) === (brand.type || null)));
+      if (fullBrand) {
+        const bStock = getBrandMiniStock(fullBrand);
+        const brandKey = `${material.id}-${brand.id || `${brand.name}-${brand.size || 'std'}-${brand.color || ''}-${brand.type || ''}`}`;
+        const inCartForBrand = cart.find(i => i.key === brandKey)?.quantity || 0;
+        const brandLabel = formatBrandSizeLabel(brand);
+        if (inCartForBrand >= bStock) {
+          toast.error(`${brandLabel}: ${t('storage.outOfStock', 'Cannot add more')} (${t('storage.availableStock', 'Only')} ${bStock} ${t('storage.availableStock', 'available')})`);
+          return;
+        }
+      }
+    }
+
+    const currentStock = getMiniStoreStock(material);
+    const currentTotalInCart = getCartQuantityForMaterial(material.id);
+    if (currentTotalInCart >= currentStock) {
+      toast.error(`${t('storage.outOfStock', 'Cannot add more')}: ${t('storage.availableStock', 'Only')} ${currentStock} ${t('storage.availableStock', 'available')}`);
+      return;
+    }
+
     setIsBouncing(true);
     setTimeout(() => setIsBouncing(false), 300);
 
+    const key = `${material.id}-${brand?.id || `${brand?.name || 'standard'}-${brand?.size || 'std'}-${brand?.color || ''}-${brand?.type || ''}`}`;
+    const unitPrice = brand ? Number(brand.price) : Number(material.currentPrice || 0);
+
     setCart(prev => {
-      const existing = prev.find(item => item.material.id === material.id);
-      if (existing) {
-        if (existing.quantity >= currentStock) {
-          toast.error(`${t('storage.outOfStock', 'Cannot add more')}: ${t('storage.availableStock', 'Only')} ${currentStock} ${t('storage.availableStock', 'available')}`);
-          return prev;
-        }
-        return prev.map(item =>
-          item.material.id === material.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+      const existingIndex = prev.findIndex(item => item.key === key);
+      if (existingIndex >= 0) {
+        return prev.map((item, idx) =>
+          idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prev, { material, quantity: 1 }];
+      return [...prev, { key, material, brand, unitPrice, quantity: 1 }];
     });
+
+    if (brandPickerMaterial) {
+      setBrandPickerMaterial(null);
+    }
   };
 
-  const updateQuantity = (materialId: string, quantity: number) => {
+  const updateQuantity = (key: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(materialId);
+      removeFromCart(key);
       return;
     }
-    const mat = materials?.find(m => m.id === materialId);
-    if (mat) {
-      const currentStock = getMiniStoreStock(mat);
-      if (quantity > currentStock) {
-        toast.error(`${t('storage.outOfStock', 'Cannot set quantity to')} ${quantity}: ${t('storage.availableStock', 'Only')} ${currentStock} ${t('storage.availableStock', 'available')}`);
+    const item = cart.find(i => i.key === key);
+    if (!item) return;
+
+    if (quantity > item.quantity) {
+      if (item.brand && item.material.brands) {
+        const fullBrand = item.material.brands.find(b => b.id === item.brand?.id || (b.name === item.brand?.name && (b.size || null) === (item.brand?.size || null) && (b.color || null) === (item.brand?.color || null) && (b.type || null) === (item.brand?.type || null)));
+        if (fullBrand) {
+          const bStock = getBrandMiniStock(fullBrand);
+          const brandLabel = formatBrandSizeLabel(item.brand);
+          if (quantity > bStock) {
+            toast.error(`${brandLabel}: ${t('storage.availableStock', 'Only')} ${bStock} ${t('storage.availableStock', 'available')}`);
+            return;
+          }
+        }
+      }
+
+      const currentStock = getMiniStoreStock(item.material);
+      const otherQty = cart
+        .filter(i => i.material.id === item.material.id && i.key !== key)
+        .reduce((s, i) => s + i.quantity, 0);
+
+      if (otherQty + quantity > currentStock) {
+        toast.error(`${t('storage.outOfStock', 'Cannot set quantity to')} ${quantity}: ${t('storage.availableStock', 'Only')} ${Math.max(0, currentStock - otherQty)} ${t('storage.availableStock', 'more available')}`);
         return;
       }
     }
+
     setCart(prev =>
-      prev.map(item =>
-        item.material.id === materialId ? { ...item, quantity } : item
-      )
+      prev.map(i => (i.key === key ? { ...i, quantity } : i))
     );
   };
 
-  const removeFromCart = (materialId: string) => {
-    setCart(prev => prev.filter(item => item.material.id !== materialId));
+  const removeFromCart = (key: string) => {
+    setCart(prev => prev.filter(item => item.key !== key));
   };
 
   // Calculations
@@ -218,7 +336,7 @@ export default function DirectSales() {
 
   const subtotal = useMemo(() => {
     return cart.reduce((sum, item) => {
-      return sum + (Number(item.material.currentPrice) * item.quantity);
+      return sum + (item.unitPrice * item.quantity);
     }, 0);
   }, [cart]);
 
@@ -249,6 +367,31 @@ export default function DirectSales() {
     if (cart.length === 0) {
       toast.error(t('directSales.cartEmpty', 'Cart is empty. Please add items to sell.'));
       return;
+    }
+
+    // Integer validation for PCS items
+    for (const item of cart) {
+      if (isUnitIntegerOnly(item.material.unit) && !Number.isInteger(item.quantity)) {
+        toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
+        return;
+      }
+    }
+
+    // Allocation validation for branded items
+    for (const item of cart) {
+      const unallocated = getMaterialUnallocatedStock(item.material, 'MINI');
+      if (item.material.brands && item.material.brands.length > 0 && unallocated > 0) {
+        toast.error(t('storage.unallocatedSaleBlocked', 'Cannot sell "{{name}}": It has {{unallocated}} unallocated stock in Mini Store. It must be allocated in Storage before selling.', {
+          name: getLocName(item.material),
+          unallocated: `${unallocated} ${item.material.unit || ''}`,
+        }), {
+          action: {
+            label: t('storage.allocate', 'Allocate'),
+            onClick: () => navigateToStorageAllocation(item.material),
+          },
+        });
+        return;
+      }
     }
 
     // Stock validation
@@ -294,8 +437,13 @@ export default function DirectSales() {
         customerPhone: customerPhone || undefined,
         items: cart.map(item => ({
           materialId: item.material.id,
+          materialBrandId: item.brand?.id,
+          brandName: item.brand?.name,
+          sizeName: item.brand?.size || null,
+          colorName: item.brand?.color || null,
+          typeName: item.brand?.type || null,
           quantity: item.quantity,
-          unitPrice: Number(item.material.currentPrice),
+          unitPrice: item.unitPrice,
           discount: 0,
         })),
         payments: finalPayments,
@@ -370,15 +518,19 @@ export default function DirectSales() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredMaterials.map(m => {
                 const stock = getMiniStoreStock(m);
+                const unallocated = getMaterialUnallocatedStock(m, 'MINI');
+                const needsAllocation = Boolean(m.brands && m.brands.length > 0 && unallocated > 0);
                 const isOutOfStock = stock <= 0;
                 
                 return (
                 <div
                   key={m.id}
-                  onClick={() => !isOutOfStock && addToCart(m)}
+                  onClick={() => !isOutOfStock && handleMaterialCardClick(m)}
                   className={`border border-border rounded-lg overflow-hidden h-40 flex flex-col group relative bg-card ${
                     isOutOfStock 
                       ? 'opacity-50 cursor-not-allowed grayscale' 
+                      : needsAllocation
+                      ? 'border-amber-500/50 hover:border-amber-500 hover:shadow-md cursor-pointer'
                       : 'cursor-pointer hover:border-amber-500 hover:shadow-md transition-all'
                   }`}
                 >
@@ -387,6 +539,29 @@ export default function DirectSales() {
                       <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg transform -rotate-12">
                         {t('common.outOfStock', 'OUT OF STOCK')}
                       </div>
+                    </div>
+                  )}
+                  {!isOutOfStock && needsAllocation && (
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateToStorageAllocation(m);
+                      }}
+                      className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/90 dark:bg-zinc-950/92 backdrop-blur-xs p-2 text-center cursor-pointer transition-all hover:bg-background/95 dark:hover:bg-zinc-950/96 group/alloc border border-amber-500/40 rounded-lg select-none"
+                    >
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold tracking-tight whitespace-nowrap shadow-2xs">
+                        <AlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-500" />
+                        <span>{t('storage.needsAllocation', 'Needs Allocation')}</span>
+                      </span>
+
+                      <span className="text-[10px] text-muted-foreground font-medium mt-1.5 whitespace-nowrap">
+                        <span className="font-bold text-amber-600 dark:text-amber-400">{unallocated} {m.unit || ''}</span> {t('storage.unallocatedStock', 'unallocated')}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 group-hover/alloc:underline mt-1 whitespace-nowrap">
+                        <span>{t('storage.allocateInStock', 'Allocate in Stock')}</span>
+                        <ArrowRight className="w-2.5 h-2.5 shrink-0 group-hover/alloc:translate-x-0.5 transition-transform" />
+                      </span>
                     </div>
                   )}
                   {m.imageUrl ? (
@@ -409,8 +584,27 @@ export default function DirectSales() {
                         </div>
                       </div>
                       <div className="p-2.5 border-t border-border bg-card">
-                        <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
-                        <div className="font-bold text-amber-500 text-sm">{formatCurrency(m.currentPrice)}</div>
+                        <div className="flex items-center gap-1.5">
+                          {m.itemCode && (
+                            <span className="font-mono text-[10px] font-semibold text-muted-foreground shrink-0">
+                              [{m.itemCode}]
+                            </span>
+                          )}
+                          <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
+                        </div>
+                        <div className="flex items-center justify-between gap-1 mt-0.5">
+                          <div className="font-bold text-amber-500 text-xs">
+                            {m.brands && m.brands.length > 0 
+                              ? formatCurrency(Math.min(...m.brands.map(b => Number(b.price))))
+                              : formatCurrency(m.currentPrice)
+                            }
+                          </div>
+                          {m.brands && m.brands.length > 0 && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                              {m.brands.length} {t('materials.brands', 'Brands')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -419,8 +613,22 @@ export default function DirectSales() {
                         {t('common.stock', 'Stock')}: {stock}
                       </div>
                       <ImageOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                      <h4 className="font-semibold text-foreground text-sm text-center line-clamp-2">{getLocName(m)}</h4>
-                      <div className="mt-1.5 font-bold text-amber-500">{formatCurrency(m.currentPrice)}</div>
+                      <h4 className="font-semibold text-foreground text-sm text-center line-clamp-2">
+                        {m.itemCode ? `[${m.itemCode}] ` : ''}{getLocName(m)}
+                      </h4>
+                      <div className="flex items-center justify-between gap-1 mt-1.5 w-full px-1">
+                        <div className="font-bold text-amber-500 text-xs">
+                          {m.brands && m.brands.length > 0 
+                            ? formatCurrency(Math.min(...m.brands.map(b => Number(b.price))))
+                            : formatCurrency(m.currentPrice)
+                          }
+                        </div>
+                        {m.brands && m.brands.length > 0 && (
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                            {m.brands.length} {t('materials.brands', 'Brands')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -473,20 +681,61 @@ export default function DirectSales() {
             ) : (
               <div className="space-y-3">
                 {cart.map(item => (
-                  <div key={item.material.id} className="flex justify-between items-start text-sm">
+                  <div key={item.key} className="flex justify-between items-start text-sm">
                     <div className="flex-1 pr-2">
-                      <div className="font-medium line-clamp-1">{getLocName(item.material)}</div>
-                      <div className="text-muted-foreground">{formatCurrency(item.material.currentPrice)}</div>
+                      <div className="font-medium line-clamp-1 flex items-center gap-1.5 flex-wrap">
+                        <span>{getLocName(item.material)}</span>
+                        {item.brand && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                            {formatBrandSizeLabel(item.brand)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground text-xs">{formatCurrency(item.unitPrice)}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.material.id, item.quantity - 1)}>
+                    <div className="flex items-center gap-1.5">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => {
+                          const isInt = isUnitIntegerOnly(item.material.unit);
+                          const next = isInt 
+                            ? Math.max(0, Math.floor(item.quantity) - 1)
+                            : Math.max(0, Math.round((item.quantity - 1) * 100) / 100);
+                          updateQuantity(item.key, next);
+                        }}
+                      >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-4 text-center font-medium">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.material.id, item.quantity + 1)}>
+                      <input
+                        type="text"
+                        className="w-12 h-6 text-center bg-transparent border border-input rounded text-xs font-mono font-medium focus:outline-none"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const isInt = isUnitIntegerOnly(item.material.unit);
+                          const regex = isInt ? /^\d*$/ : /^\d*\.?\d*$/;
+                          if (regex.test(val)) {
+                            updateQuantity(item.key, Number(val) || 0);
+                          }
+                        }}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-6 w-6" 
+                        onClick={() => {
+                          const isInt = isUnitIntegerOnly(item.material.unit);
+                          const next = isInt 
+                            ? item.quantity + 1
+                            : Math.round((item.quantity + 1) * 100) / 100;
+                          updateQuantity(item.key, next);
+                        }}
+                      >
                         <Plus className="h-3 w-3" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => removeFromCart(item.material.id)}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => removeFromCart(item.key)}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
@@ -643,12 +892,17 @@ export default function DirectSales() {
                 {t('directSales.itemsPurchased', 'Items')} ({cart.reduce((s, i) => s + i.quantity, 0)})
               </div>
               {cart.map((item) => (
-                <div key={item.material.id} className="flex justify-between items-center text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
-                  <span className="font-medium text-foreground">
-                    {item.quantity}x {getLocName(item.material)}
+                <div key={item.key} className="flex justify-between items-center text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
+                  <span className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                    <span>{item.quantity}x {getLocName(item.material)}</span>
+                    {item.brand && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                        {item.brand.name}
+                      </span>
+                    )}
                   </span>
                   <span className="font-semibold text-foreground">
-                    {formatCurrency(Number(item.material.currentPrice) * item.quantity)}
+                    {formatCurrency(item.unitPrice * item.quantity)}
                   </span>
                 </div>
               ))}
@@ -731,7 +985,7 @@ export default function DirectSales() {
           <div className="space-y-4 py-2 text-sm text-foreground">
             {/* Header info */}
             <div className="flex items-center justify-between text-xs text-muted-foreground pb-2 border-b border-border">
-              <span>{completedSale && format(new Date(completedSale.saleDateTime), 'PPp')}</span>
+              <span>{completedSale && formatAppDate(completedSale.saleDateTime, true)}</span>
               <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
             </div>
 
@@ -761,7 +1015,14 @@ export default function DirectSales() {
               {completedSale?.lines?.map((line: any) => (
                 <div key={line.id} className="flex justify-between items-start text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
                   <div>
-                    <div className="font-semibold text-foreground">{getLocName(line.material)}</div>
+                    <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+                      <span>{getLocName(line.material)}</span>
+                      {line.brandName && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                          {line.brandName}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-muted-foreground text-[11px]">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
                   </div>
                   <div className="font-bold text-foreground">
@@ -833,6 +1094,129 @@ export default function DirectSales() {
           </span>
         </a>
       )}
+
+      {/* Brand Selection Modal */}
+      <Dialog open={!!brandPickerMaterial} onOpenChange={(open) => !open && setBrandPickerMaterial(null)}>
+        <DialogContent className="sm:max-w-[420px] bg-card text-card-foreground border-border">
+          <DialogHeader className="pb-3 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Tag className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-foreground">
+                  {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
+                    ? t('materials.selectSize', 'Select Size')
+                    : t('materials.selectBrand', 'Select Brand')}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  {brandPickerMaterial ? getLocName(brandPickerMaterial) : ''}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="py-2 space-y-2 max-h-[50vh] overflow-y-auto">
+            {brandPickerMaterial && (() => {
+              const unallocated = getMaterialUnallocatedStock(brandPickerMaterial, 'MINI');
+              if (unallocated <= 0) return null;
+              return (
+                <div className="p-1.5 px-2 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 mb-2">
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0 text-amber-600" />
+                    <span>
+                      {unallocated} {brandPickerMaterial.unit || ''} {t('storage.unallocatedStock', 'unallocated')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const mat = brandPickerMaterial;
+                      setBrandPickerMaterial(null);
+                      navigateToStorageAllocation(mat);
+                    }}
+                    className="font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 cursor-pointer text-[10px] flex items-center gap-0.5"
+                  >
+                    <span>{t('storage.allocate', 'Allocate')}</span>
+                    <ArrowRight className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              );
+            })()}
+            <p className="text-xs text-muted-foreground mb-3">
+              {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
+                ? t('materials.selectSizeDesc', 'Choose a size for this item:')
+                : t('materials.hasBrandsDesc', 'Choose a brand for this item:')}
+            </p>
+            {brandPickerMaterial?.brands?.map((brand) => {
+              const bStock = getBrandMiniStock(brand);
+              const brandKey = `${brandPickerMaterial.id}-${brand.id || `${brand.name}-${brand.size || 'std'}-${brand.color || ''}-${brand.type || ''}`}`;
+              const inCartForBrand = cart.find(c => c.key === brandKey)?.quantity || 0;
+              const isOutOfStock = bStock <= 0;
+              const isMaxInCart = inCartForBrand >= bStock;
+              const isDisabled = isOutOfStock || isMaxInCart;
+
+              return (
+                <button
+                  key={brand.id || `${brand.name}-${brand.size}-${brand.color}-${brand.type}`}
+                  type="button"
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (brandPickerMaterial) {
+                      addItemToCart(brandPickerMaterial, {
+                        id: brand.id,
+                        name: brand.name,
+                        size: brand.size,
+                        color: brand.color,
+                        type: brand.type,
+                        price: Number(brand.price),
+                      });
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left group ${
+                    isDisabled 
+                      ? 'border-border/40 bg-muted/20 opacity-60 cursor-not-allowed' 
+                      : 'border-border bg-card hover:border-amber-500 hover:bg-amber-500/5 cursor-pointer'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                      {formatBrandSizeLabel(brand)}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                      <span>{t('materials.brandPrice', 'Price')}: <span className="font-medium text-foreground">{formatCurrency(brand.price)}</span></span>
+                      <span>•</span>
+                      <span className={bStock <= 0 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}>
+                        {t('storage.brandStock', 'Stock')}: <span className="font-medium text-foreground">{bStock}</span>
+                      </span>
+                    </div>
+                  </div>
+                  {isOutOfStock ? (
+                    <div className="text-[11px] font-semibold text-red-500 bg-red-500/10 px-2.5 py-1 rounded-md border border-red-500/20">
+                      {t('storage.outOfStock', 'Out of Stock')}
+                    </div>
+                  ) : isMaxInCart ? (
+                    <div className="text-[11px] font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                      {t('storage.limitReached', 'Max in Cart')}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{t('common.add', 'Add')}</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="border-t border-border pt-3">
+            <Button variant="outline" size="sm" onClick={() => setBrandPickerMaterial(null)}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         isOpen={isVatConfirmOpen}

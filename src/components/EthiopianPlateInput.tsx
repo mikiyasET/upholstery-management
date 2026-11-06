@@ -8,6 +8,15 @@ import { ModernSelect } from './ui/modern-select';
 import { ModernInput } from './ui/modern-input';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
+import {
+  loadCargoFont,
+  loadHolographicFoil,
+  loadEfpLogo,
+  preloadPlateAssets,
+  getCachedCargoFont,
+  getCachedHoloFoil,
+  getCachedEfpLogo,
+} from '../utils/plateAssets';
 
 const createWatermarkedPattern = (ctx: CanvasRenderingContext2D, color: string) => {
   const pCanvas = document.createElement('canvas');
@@ -39,64 +48,6 @@ const createWatermarkedPattern = (ctx: CanvasRenderingContext2D, color: string) 
   }
   return pattern || color;
 };
-
-let cachedCargoFont: opentype.Font | null = null;
-let fontLoadingPromise: Promise<opentype.Font | null> | null = null;
-
-async function loadCargoFont() {
-  if (cachedCargoFont) return cachedCargoFont;
-  if (fontLoadingPromise) return fontLoadingPromise;
-  
-  fontLoadingPromise = fetch('/CARGO2.ttf')
-    .then(res => res.arrayBuffer())
-    .then(buffer => {
-      cachedCargoFont = opentype.parse(buffer);
-      return cachedCargoFont;
-    })
-    .catch(err => {
-      console.error('Failed to load CARGO2.ttf', err);
-      return null;
-    });
-  return fontLoadingPromise;
-}
-
-let cachedEfpLogo: HTMLImageElement | null = null;
-let efpLoadingPromise: Promise<HTMLImageElement | null> | null = null;
-
-async function loadEfpLogo() {
-  if (cachedEfpLogo) return cachedEfpLogo;
-  if (efpLoadingPromise) return efpLoadingPromise;
-
-  efpLoadingPromise = new Promise((resolve) => {
-    const img = new Image();
-    img.src = '/efp.png';
-    img.onload = () => {
-      cachedEfpLogo = img;
-      resolve(img);
-    };
-    img.onerror = () => resolve(null);
-  });
-  return efpLoadingPromise;
-}
-
-let cachedHoloFoil: HTMLImageElement | null = null;
-let holoFoilLoadingPromise: Promise<HTMLImageElement | null> | null = null;
-
-async function loadHolographicFoil() {
-  if (cachedHoloFoil) return cachedHoloFoil;
-  if (holoFoilLoadingPromise) return holoFoilLoadingPromise;
-
-  holoFoilLoadingPromise = new Promise((resolve) => {
-    const img = new Image();
-    img.src = '/holographic-foil.jpg';
-    img.onload = () => {
-      cachedHoloFoil = img;
-      resolve(img);
-    };
-    img.onerror = () => resolve(null);
-  });
-  return holoFoilLoadingPromise;
-}
 
 const CargoTextOverlay = ({ text, font, className = '' }: { text: string, font: opentype.Font | null, className?: string }) => {
   const [svgPath, setSvgPath] = useState<any>(null);
@@ -161,6 +112,7 @@ interface Props {
   value: string;
   onChange: (val: string) => void;
   isSearching?: boolean;
+  inputSize?: 'sm' | 'default';
 }
 
 export function EthiopianPlateConfigurator({ value, onChange }: Props) {
@@ -177,9 +129,9 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
     };
   });
   const [interactedParts, setInteractedParts] = useState({ letters: false, numbers: false });
-  const [cargoFont, setCargoFont] = useState<opentype.Font | null>(cachedCargoFont);
-  const [efpLogo, setEfpLogo] = useState<HTMLImageElement | null>(cachedEfpLogo);
-  const [holoFoil, setHoloFoil] = useState<HTMLImageElement | null>(cachedHoloFoil);
+  const [cargoFont, setCargoFont] = useState<opentype.Font | null>(() => getCachedCargoFont());
+  const [efpLogo, setEfpLogo] = useState<HTMLImageElement | null>(() => getCachedEfpLogo());
+  const [holoFoil, setHoloFoil] = useState<HTMLImageElement | null>(() => getCachedHoloFoil());
   const [qrImage, setQrImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -195,24 +147,28 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
   }, [data.serial, data.system]);
 
   useEffect(() => {
-    loadCargoFont().then(f => {
-      if (f) setCargoFont(f);
-    });
-  }, []);
+    if (!cargoFont) {
+      loadCargoFont().then(f => {
+        if (f) setCargoFont(f);
+      });
+    }
+  }, [cargoFont]);
 
   useEffect(() => {
-    if (data.category === 'police') {
+    if (data.category === 'police' && !efpLogo) {
       loadEfpLogo().then(img => {
         if (img) setEfpLogo(img);
       });
     }
-  }, [data.category]);
+  }, [data.category, efpLogo]);
 
   useEffect(() => {
-    loadHolographicFoil().then(img => {
-      if (img) setHoloFoil(img);
-    });
-  }, []);
+    if (!holoFoil) {
+      loadHolographicFoil().then(img => {
+        if (img) setHoloFoil(img);
+      });
+    }
+  }, [holoFoil]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const newLettersInputRef = useRef<HTMLInputElement>(null);
@@ -710,16 +666,6 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
 
   return (
     <div className="space-y-5">
-      <style>{`
-        @font-face {
-          font-family: 'CARGO';
-          src: url('/CARGO2.ttf') format('truetype');
-          font-weight: normal;
-          font-style: normal;
-        }
-      `}</style>
-      <div style={{ fontFamily: 'CARGO' }} />
-      
       {/* 1. Plate Showcase & System Selector */}
       <div className="rounded-2xl border border-border bg-muted/30 dark:bg-muted/10 p-5 flex flex-col items-center">
         {/* Creative Segmented Switcher */}
@@ -1498,10 +1444,15 @@ function drawStencilChar(
     ctx.restore();
 }
 
-export default function EthiopianPlateInput({ value, onChange, isSearching }: Props) {
+export default function EthiopianPlateInput({ value, onChange, isSearching, inputSize = 'default' }: Props) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [tempValue, setTempValue] = useState(value);
+
+  // Preload plate assets as soon as the input component mounts
+  useEffect(() => {
+    preloadPlateAssets();
+  }, []);
 
   const displayData = parsePlateNumber(value);
   const displayText = displayData 
@@ -1526,21 +1477,26 @@ export default function EthiopianPlateInput({ value, onChange, isSearching }: Pr
 
   return (
     <>
-      <div className="relative cursor-pointer group" onClick={handleOpen}>
+      <div 
+        className="relative cursor-pointer group" 
+        onClick={handleOpen}
+        onMouseEnter={() => preloadPlateAssets()}
+      >
         <ModernInput
           readOnly
           value={displayText}
           icon={Car}
-          className="cursor-pointer pr-24 font-mono font-bold text-gray-800 dark:text-gray-200"
+          inputSize={inputSize}
+          className={`cursor-pointer pr-24 ${displayData ? 'font-mono font-semibold text-xs text-foreground' : 'font-medium text-xs text-muted-foreground'}`}
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
           {isSearching ? (
-            <span className="flex items-center gap-1.5 text-[10px] text-blue-600 dark:text-blue-400 font-bold px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-md uppercase tracking-wider shadow-sm">
-              <Loader2 className="w-3 h-3 animate-spin" />
+            <span className="flex items-center gap-1.5 text-[8.5px] text-blue-600 dark:text-blue-400 font-bold px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded uppercase tracking-wider shadow-xs">
+              <Loader2 className="w-2.5 h-2.5 animate-spin" />
               {t('orders.create.searching', 'Searching...')}
             </span>
           ) : (
-            <span className="text-[10px] text-primary font-bold px-2.5 py-1 bg-primary/10 rounded-md uppercase tracking-wider shadow-sm">{t('plate.configureBadge', 'Configure')}</span>
+            <span className="text-[9px] text-primary font-bold px-2 py-0.5 bg-primary/10 rounded uppercase tracking-wider shadow-2xs">{t('plate.configureBadge', 'Configure')}</span>
           )}
         </div>
       </div>

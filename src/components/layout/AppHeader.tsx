@@ -3,31 +3,32 @@ import {
   Burger,
   ActionIcon,
   Menu,
-  Avatar,
   Text,
   Box,
   UnstyledButton,
-  Badge,
   Tooltip,
   Button,
 } from "@mantine/core";
 import {
-  RiMoonLine,
-  RiSunLine,
-  RiLogoutBoxRLine,
-  RiAddLine,
-  RiTranslate2,
-  RiCarLine,
-  RiShoppingBag3Line,
-  RiExchangeDollarLine,
-  RiSettings4Line,
-} from "react-icons/ri";
+  Moon,
+  Sun,
+  LogOut,
+  Plus,
+  Languages,
+  Car,
+  ShoppingBag,
+  CircleDollarSign,
+  Settings,
+  ShieldCheck,
+  ChevronDown,
+} from "lucide-react";
 import { useMantineColorScheme, useComputedColorScheme } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useTranslation } from "react-i18next";
 import { usePermission } from "../../lib/permissions";
+import { BrandLogo } from "../common";
 
 interface AppHeaderProps {
   mobileOpened: boolean;
@@ -60,7 +61,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
     modals.openConfirmModal({
       title: (
         <Group gap="xs">
-          <RiLogoutBoxRLine size={20} color="var(--status-warning, #EF4444)" />
+          <LogOut size={20} color="var(--status-warning, #EF4444)" />
           <Text fw={700} size="md">
             {t("auth.signOutConfirmTitle", "Sign Out Confirmation")}
           </Text>
@@ -116,33 +117,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
           aria-label="Toggle navigation"
         />
 
-        <UnstyledButton onClick={() => navigate("/")} style={{ textDecoration: "none" }}>
-          <Group gap="xs" wrap="nowrap">
-            <Box
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "var(--brand-glow)",
-                background: "var(--brand-gradient)",
-                color: "#FFFFFF",
-                flexShrink: 0,
-              }}
-            >
-              <RiCarLine size={22} />
-            </Box>
-
-            <Box visibleFrom="xs">
-              <Text className="brand-title-text">YONATAN</Text>
-              <Text className="brand-subtitle-badge">
-                POS & UPHOLSTERY
-              </Text>
-            </Box>
-          </Group>
-        </UnstyledButton>
+        <BrandLogo size="md" onClick={() => navigate("/")} />
       </Group>
 
       {/* Right: Quick Actions, Language, Dark Mode & User Profile */}
@@ -155,7 +130,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
                 size="xs"
                 variant="gradient"
                 gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-                leftSection={<RiAddLine size={16} />}
+                leftSection={<Plus size={16} />}
                 style={{ fontWeight: 600 }}
               >
                 {t("common.new", "New Action")}
@@ -164,7 +139,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
             <Menu.Dropdown>
               {canCreateOrder && (
                 <Menu.Item
-                  leftSection={<RiCarLine size={16} color="var(--primary-accent)" />}
+                  leftSection={<Car size={16} color="var(--primary-accent)" />}
                   onClick={() => navigate("/orders/new")}
                 >
                   {t("orders.newOrder", "New Work Order")}
@@ -172,14 +147,14 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
               )}
               {canCreateDirectSale && (
                 <Menu.Item
-                  leftSection={<RiShoppingBag3Line size={16} color="var(--secondary-accent)" />}
+                  leftSection={<ShoppingBag size={16} color="var(--secondary-accent)" />}
                   onClick={() => navigate("/direct-sales")}
                 >
                   {t("directSales.title", "Direct Sale")}
                 </Menu.Item>
               )}
               <Menu.Item
-                leftSection={<RiExchangeDollarLine size={16} />}
+                leftSection={<CircleDollarSign size={16} />}
                 onClick={() => navigate("/storage")}
               >
                 {t("storage.transfers", "Store Transfer")}
@@ -197,7 +172,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
             onClick={toggleLanguage}
             aria-label="Toggle language"
           >
-            <RiTranslate2 size={18} />
+            <Languages size={18} />
           </ActionIcon>
         </Tooltip>
 
@@ -211,75 +186,104 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
             aria-label="Toggle theme"
           >
             {isDark ? (
-              <RiSunLine size={18} color="var(--primary-accent)" />
+              <Sun size={18} color="var(--primary-accent)" />
             ) : (
-              <RiMoonLine size={18} />
+              <Moon size={18} />
             )}
           </ActionIcon>
         </Tooltip>
 
-        {/* User Profile Menu */}
-        <Menu shadow="md" width={220} position="bottom-end">
+        {/* Executive User Profile Menu */}
+        <Menu shadow="md" width={240} position="bottom-end" transitionProps={{ transition: "pop-top-right", duration: 150 }}>
           <Menu.Target>
             <UnstyledButton
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "4px 8px",
-                borderRadius: 10,
-                border: "1px solid var(--surface-border)",
-                background: "var(--surface-card)",
-              }}
+              className="exec-profile-capsule"
+              aria-label="User profile menu"
             >
-              <Avatar
-                size={30}
-                radius="md"
-                color="amber"
-                style={{ fontWeight: 700, fontSize: "0.8rem" }}
-              >
+              <Box className="exec-avatar-wrapper">
                 {initials}
-              </Avatar>
-              <Box visibleFrom="sm" style={{ textAlign: "left", lineHeight: 1.15 }}>
-                <Text size="xs" fw={700} truncate maw={110}>
-                  {user?.name || "User"}
-                </Text>
-                <Text size="10px" c="dimmed" style={{ textTransform: "uppercase" }}>
-                  {user?.role || "Staff"}
-                </Text>
+                <span className="exec-online-pip" />
               </Box>
+              <Box visibleFrom="sm" className="exec-user-info">
+                <Text size="xs" fw={700} truncate maw={120} className="exec-user-name">
+                  {user?.name || "System Admin"}
+                </Text>
+                <span className="exec-role-pill">
+                  <ShieldCheck size={9} />
+                  {user?.role || "Admin"}
+                </span>
+              </Box>
+              <ChevronDown size={15} className="exec-chevron" />
             </UnstyledButton>
           </Menu.Target>
-          <Menu.Dropdown>
-            <Box px="xs" py={6}>
-              <Text size="xs" fw={700}>
-                {user?.name}
-              </Text>
-              <Text size="10px" c="dimmed">
-                {user?.phone || user?.role}
-              </Text>
-              <Badge size="xs" variant="light" color="amber" mt={4}>
-                {user?.role}
-              </Badge>
+          <Menu.Dropdown
+            style={{
+              padding: 6,
+              borderRadius: 14,
+              border: "1px solid var(--surface-border)",
+              boxShadow: "var(--shadow-dropdown)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <Box px="sm" py="xs" style={{ borderBottom: "1px solid var(--surface-border-subtle)" }}>
+              <Group gap="xs" wrap="nowrap" align="center">
+                <Box
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, #D4AF37 0%, #B8860B 55%, #8A6208 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#FFFFFF",
+                    fontWeight: 800,
+                    fontSize: 13,
+                    flexShrink: 0,
+                    boxShadow: "0 0 0 1.5px rgba(212, 175, 55, 0.4), 0 2px 6px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {initials}
+                </Box>
+                <Box style={{ overflow: "hidden", minWidth: 0 }}>
+                  <Text size="xs" fw={700} truncate>
+                    {user?.name || "System Admin"}
+                  </Text>
+                  <Text size="11px" c="dimmed" truncate>
+                    {user?.phone || "0941398934"}
+                  </Text>
+                  <span className="exec-role-pill" style={{ marginTop: 3 }}>
+                    <ShieldCheck size={9} />
+                    {user?.role || "Admin"}
+                  </span>
+                </Box>
+              </Group>
             </Box>
+
+            <Box py={4}>
+              <Menu.Item
+                leftSection={<Languages size={16} />}
+                onClick={toggleLanguage}
+                style={{ borderRadius: 8, fontSize: "0.8125rem", fontWeight: 500 }}
+              >
+                {i18n.language === "am" ? "English" : "አማርኛ (Amharic)"}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<Settings size={16} />}
+                onClick={() => navigate("/settings")}
+                style={{ borderRadius: 8, fontSize: "0.8125rem", fontWeight: 500 }}
+              >
+                {t("settings.title", "Settings")}
+              </Menu.Item>
+            </Box>
+
             <Menu.Divider />
-            <Menu.Item
-              leftSection={<RiTranslate2 size={16} />}
-              onClick={toggleLanguage}
-            >
-              {i18n.language === "am" ? "English" : "አማርኛ (Amharic)"}
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<RiSettings4Line size={16} />}
-              onClick={() => navigate("/settings")}
-            >
-              {t("settings.title", "Settings & Studio")}
-            </Menu.Item>
-            <Menu.Divider />
+
             <Menu.Item
               color="red"
-              leftSection={<RiLogoutBoxRLine size={16} />}
+              leftSection={<LogOut size={16} />}
               onClick={handleLogout}
+              style={{ borderRadius: 8, fontSize: "0.8125rem", fontWeight: 600 }}
             >
               {t("common.signOut", "Sign Out")}
             </Menu.Item>

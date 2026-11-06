@@ -158,13 +158,14 @@ export function ModernSelect({
   }, [options, recentValues, cacheKey]);
 
   const btnClasses = cn(
-    "flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-2 font-medium text-gray-900 dark:text-white transition-all duration-200",
-    "focus-visible:outline-none focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary shadow-none",
-    !value && "text-gray-400 dark:text-gray-500 font-normal",
-    isSm ? "h-9 text-xs" : "h-[46px] text-sm",
-    Icon && (isSm ? "pl-9" : "pl-11"), // extra padding for icon
-    error && "border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500",
-    disabled && "opacity-50 cursor-not-allowed",
+    "flex w-full items-center justify-between gap-2 rounded-lg border border-input bg-background font-normal text-foreground transition-all duration-200 shadow-2xs outline-none",
+    "hover:border-foreground/30",
+    "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+    !value && "text-muted-foreground/60 font-normal",
+    isSm ? "h-9 text-xs px-3" : "h-10 text-sm px-3.5",
+    Icon && (isSm ? "pl-9" : "pl-10"), // extra padding for icon
+    error && "border-destructive text-destructive focus-visible:border-destructive focus-visible:ring-destructive/20",
+    disabled && "opacity-50 cursor-not-allowed pointer-events-none bg-muted/30",
     triggerClassName
   );
 
@@ -174,18 +175,21 @@ export function ModernSelect({
       const selected = options.find(o => o.value === value);
       if (selected) return selected.label;
     }
-    return placeholder || "Select...";
+    return placeholder || t('common.select', "Select...");
   };
 
   const TopLabel = label ? (
-    <label htmlFor={id} className={cn("font-semibold text-gray-700 dark:text-gray-300", isSm ? "text-xs" : "text-sm")}>
+    <label htmlFor={id} className={cn("font-medium text-foreground/85 block select-none", isSm ? "text-xs" : "text-sm")}>
       {label}
     </label>
   ) : null;
 
   const LeftIcon = Icon ? (
-    <div className={cn("absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-gray-400 group-focus-within:text-primary transition-colors pointer-events-none z-10", isSm ? "left-2.5" : "left-3.5")}>
-      <Icon className={cn(isSm ? "w-4 h-4" : "w-5 h-5")} />
+    <div className={cn(
+      "absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none z-10",
+      isSm ? "left-3" : "left-3.5"
+    )}>
+      <Icon className={cn(isSm ? "w-4 h-4" : "w-4.5 h-4.5")} />
     </div>
   ) : null;
 
@@ -204,34 +208,37 @@ export function ModernSelect({
               className={btnClasses}
               type="button"
             >
-              <span className="truncate">{renderValue()}</span>
-              <ChevronDownIcon className="size-4 opacity-50 shrink-0" />
+              <div className="truncate flex-1 text-left min-w-0">{renderValue()}</div>
+              <ChevronDownIcon className={cn("size-4 text-muted-foreground/70 shrink-0 transition-transform duration-200", open && "rotate-180")} />
             </PopoverTrigger>
             <PopoverContent 
-              className="p-0 shadow-xl border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-[#111]" 
-              style={{ width: 'var(--anchor-width, 100%)' }}
+              className="p-0 shadow-2xl border border-border rounded-xl overflow-hidden bg-popover text-popover-foreground w-[var(--radix-popover-trigger-width,var(--anchor-width,100%))] min-w-[220px]" 
               align="start"
             >
-              <Command>
+              <Command className="bg-popover text-popover-foreground">
                 <CommandInput 
                   placeholder={t('common.searchOptions', `Search ${label?.toLowerCase() || 'options'}...`)} 
-                  className={isSm ? "h-8 py-2 text-xs" : ""}
+                  className={isSm ? "h-9 py-2 text-xs" : "h-10 py-2.5 text-sm"}
                 />
-                <CommandList>
-                  <CommandEmpty>{t('common.noResultsFound', 'No results found.')}</CommandEmpty>
+                <CommandList className="max-h-60 p-1">
+                  <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">{t('common.noResultsFound', 'No results found.')}</CommandEmpty>
                   {groupedOptions.map(group => (
-                    <CommandGroup key={group.category || 'all'} heading={group.category || undefined}>
+                    <CommandGroup key={group.category || 'all'} heading={group.category || undefined} className="text-muted-foreground font-semibold">
                       {group.items.map((option) => (
                         <CommandItem
                           key={option.value}
                           value={`${option.category || ''} ${option.label}`}
                           disabled={option.disabled}
                           onSelect={() => handleSelect(option.value)}
-                          className={isSm ? "px-2 py-1.5 text-xs" : ""}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg cursor-pointer transition-colors",
+                            isSm ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm",
+                            value === option.value.replace('__recent', '') && "bg-primary/10 text-primary font-semibold"
+                          )}
                         >
                           <CheckIcon
                             className={cn(
-                              "mr-2 size-4 shrink-0",
+                              "size-3.5 shrink-0 text-primary transition-opacity",
                               value === option.value.replace('__recent', '') ? "opacity-100" : "opacity-0"
                             )}
                           />
@@ -247,7 +254,7 @@ export function ModernSelect({
             </PopoverContent>
           </Popover>
         </div>
-        {error && <span className="text-xs text-red-500 font-medium ml-1">{error}</span>}
+        {error && <span className="text-xs text-destructive font-medium ml-1">{error}</span>}
       </div>
     );
   }
@@ -260,19 +267,19 @@ export function ModernSelect({
         {LeftIcon}
         <Select value={value} onValueChange={handleSelect} disabled={disabled}>
           <SelectTrigger id={id} className={btnClasses} size={isSm ? "sm" : "default"}>
-            <span className="truncate">{renderValue()}</span>
+            <div className="truncate flex-1 text-left min-w-0">{renderValue()}</div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover border-border shadow-xl rounded-xl">
             {options ? (
               groupedOptions.map(group => (
                 <SelectGroup key={group.category || 'all'}>
-                  {group.category && <SelectLabel>{group.category}</SelectLabel>}
+                  {group.category && <SelectLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1">{group.category}</SelectLabel>}
                   {group.items.map(opt => (
                     <SelectItem 
                       key={opt.value} 
                       value={opt.value} 
                       disabled={opt.disabled}
-                      className={isSm ? "text-xs py-1.5 px-2" : ""}
+                      className={cn("rounded-lg cursor-pointer", isSm ? "text-xs py-1.5 px-2" : "text-sm py-2 px-3")}
                     >
                       {opt.labelNode ? opt.labelNode : opt.label}
                     </SelectItem>
@@ -283,7 +290,7 @@ export function ModernSelect({
           </SelectContent>
         </Select>
       </div>
-      {error && <span className="text-xs text-red-500 font-medium ml-1">{error}</span>}
+      {error && <span className="text-xs text-destructive font-medium ml-1">{error}</span>}
     </div>
   );
 }
