@@ -109,8 +109,8 @@ export function getImageUrl(relativeUrl?: string | null): string | undefined {
   // Clean up leading slashes just in case
   const path = relativeUrl.startsWith('/') ? relativeUrl.slice(1) : relativeUrl;
   
-  // Use VITE_API_URL or default to localhost
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  // Use VITE_API_BASE_URL or VITE_API_URL or default to localhost
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000';
   
   return `${baseUrl}/uploads/${path}`;
 }

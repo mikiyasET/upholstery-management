@@ -22,6 +22,15 @@ Web Dashboard and POS Frontend for the **Yonatan Car Decor & Upholstery Manageme
 npm install
 ```
 
+### Environment Configuration
+Copy `.env.example` to `.env` and adjust the backend URL if necessary:
+```bash
+cp .env.example .env
+```
+Available environment variables:
+- `VITE_API_BASE_URL`: Backend API URL (default: `http://localhost:3000`)
+- `VITE_API_URL`: Backend API URL alias (used for uploads/media, default: `http://localhost:3000`)
+
 ### Development
 ```bash
 npm run dev
