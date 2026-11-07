@@ -199,11 +199,18 @@ export default function Storage() {
 
   // Form states with brand support
   const [restockForm, setRestockForm] = useState<{
+    storeType: 'MAIN' | 'MINI';
+    brandInputs: Record<string, { quantity: string; unitCost: string }>;
     quantityAdded: string;
     unitCost: string;
-    materialBrandId: string;
-    storeType: 'MAIN' | 'MINI';
-  }>({ quantityAdded: '', unitCost: '', materialBrandId: '', storeType: 'MAIN' });
+    notes: string;
+  }>({
+    storeType: 'MAIN',
+    brandInputs: {},
+    quantityAdded: '',
+    unitCost: '',
+    notes: '',
+  });
   const [transferForm, setTransferForm] = useState({ quantityTransferred: '', notes: '', direction: 'MAIN_TO_MINI', materialBrandId: '' });
   const [adjustForm, setAdjustForm] = useState({ storeType: 'MAIN', quantityDelta: '', reason: 'DAMAGE', notes: '', materialBrandId: '' });
   const [countForm, setCountForm] = useState({ storeType: 'MAIN', countedQuantity: '', notes: '', materialBrandId: '' });
@@ -237,19 +244,70 @@ export default function Storage() {
   const restockMutation = useMutation({
     mutationFn: async () => {
       if (!restockMaterial) return;
-      await api.post(`/storage/materials/${restockMaterial.id}/restock`, {
-        quantityAdded: Number(restockForm.quantityAdded),
-        unitCost: restockForm.unitCost ? Number(restockForm.unitCost) : undefined,
-        materialBrandId: restockForm.materialBrandId || undefined,
-        storeType: restockForm.storeType,
-      });
+
+      if (restockMaterial.brands && restockMaterial.brands.length > 0) {
+        const items = restockMaterial.brands
+          .map((b) => {
+            const input = restockForm.brandInputs[b.id];
+            const qty = Number(input?.quantity || 0);
+            const cost = input?.unitCost ? Number(input.unitCost) : undefined;
+            return {
+              materialBrandId: b.id,
+              quantityAdded: qty,
+              unitCost: cost,
+            };
+          })
+          .filter((item) => item.quantityAdded > 0);
+
+        if (items.length === 0) {
+          toast.error(t('storage.enterQuantity', 'Please enter quantity to add'));
+          throw new Error('No quantity entered');
+        }
+
+        const isPcs = isUnitIntegerOnly(restockMaterial.unit);
+        for (const item of items) {
+          if (isPcs && !Number.isInteger(item.quantityAdded)) {
+            toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
+            throw new Error('PCS requires integer quantity');
+          }
+        }
+
+        await api.post(`/storage/materials/${restockMaterial.id}/restock`, {
+          storeType: restockForm.storeType,
+          items,
+        });
+      } else {
+        const qtyNum = Number(restockForm.quantityAdded);
+        if (!qtyNum || qtyNum <= 0) {
+          toast.error(t('storage.enterQuantity', 'Please enter quantity to add'));
+          throw new Error('No quantity entered');
+        }
+
+        const isPcs = isUnitIntegerOnly(restockMaterial.unit);
+        if (isPcs && !Number.isInteger(qtyNum)) {
+          toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
+          throw new Error('PCS requires integer quantity');
+        }
+
+        await api.post(`/storage/materials/${restockMaterial.id}/restock`, {
+          storeType: restockForm.storeType,
+          quantityAdded: qtyNum,
+          unitCost: restockForm.unitCost ? Number(restockForm.unitCost) : undefined,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage_materials'] });
       queryClient.invalidateQueries({ queryKey: ['material-history'] });
       toast.success(t('storage.alerts.stockAdded', 'Stock added successfully'));
       setRestockMaterial(null);
-      setRestockForm({ quantityAdded: '', unitCost: '', materialBrandId: '', storeType: 'MAIN' });
+      setRestockForm({
+        storeType: 'MAIN',
+        brandInputs: {},
+        quantityAdded: '',
+        unitCost: '',
+        notes: '',
+      });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error?.message || t('storage.alerts.errorRestock', 'Error restocking material'));
@@ -349,6 +407,17 @@ export default function Storage() {
     mutationFn: async () => {
       if (!allocateMaterial || !allocateMaterial.brands) return;
       const isPcs = isUnitIntegerOnly(allocateMaterial.unit);
+      const currentStoreStock = getStock(allocateMaterial, allocateForm.storeType);
+      const currentAllocTotal = (allocateMaterial.brands || []).reduce((sum, b) => {
+        const val = Number(allocateForm.allocations[b.id] || 0);
+        return sum + (isNaN(val) ? 0 : val);
+      }, 0);
+
+      if (currentAllocTotal > currentStoreStock) {
+        toast.error(t('storage.cannotExceedAcquiredStock', 'Total allocated quantity cannot exceed acquired store stock'));
+        throw new Error('Total allocated quantity cannot exceed acquired store stock');
+      }
+
       for (const b of allocateMaterial.brands) {
         const val = Number(allocateForm.allocations[b.id] || 0);
         if (isPcs && !Number.isInteger(val)) {
@@ -465,11 +534,18 @@ export default function Storage() {
   }, [materials, shouldAutoAllocate, targetMaterialId, urlSearch, urlStore]);
 
   const handleOpenRestock = (m: Material) => {
+    const initialBrandInputs: Record<string, { quantity: string; unitCost: string }> = {};
+    if (m.brands && m.brands.length > 0) {
+      m.brands.forEach((b) => {
+        initialBrandInputs[b.id] = { quantity: '', unitCost: '' };
+      });
+    }
     setRestockForm({
+      storeType: activeStore,
+      brandInputs: initialBrandInputs,
       quantityAdded: '',
       unitCost: '',
-      materialBrandId: m.brands?.[0]?.id || '',
-      storeType: activeStore,
+      notes: '',
     });
     setRestockMaterial(m);
   };
@@ -1192,122 +1268,335 @@ export default function Storage() {
 
       {/* ===== Restock Dialog ===== */}
       <Dialog open={!!restockMaterial} onOpenChange={(open) => !open && setRestockMaterial(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PackagePlus className="w-5 h-5 text-green-600" />
-              {t('storage.restock', 'Restock')} {restockMaterial ? getLocName(restockMaterial) : ''}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-lg text-sm space-y-1">
-              <p className="font-semibold">{t('storage.whatIsRestock', 'What is Restock?')}</p>
-              <p>{t('storage.restockDesc', 'Add newly purchased or received inventory. Use this when you buy new stock from a supplier or receive a delivery.')}</p>
-              <p className="text-xs opacity-80 mt-1">
-                {restockForm.storeType === 'MAIN'
-                  ? t('storage.restockMainNotice', '📦 Stock will be added directly to the Main Store.')
-                  : t('storage.restockMiniNotice', '🏪 Stock will be added directly to the Mini Store.')}
-              </p>
-            </div>
-            {(() => {
-              const selectedBrand = restockMaterial?.brands?.find((b) => b.id === restockForm.materialBrandId);
-              const mainCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MAIN') : (restockMaterial ? getStock(restockMaterial, 'MAIN') : 0);
-              const miniCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MINI') : (restockMaterial ? getStock(restockMaterial, 'MINI') : 0);
+        {restockMaterial && (() => {
+          const isPcsRestock = isUnitIntegerOnly(restockMaterial.unit);
+          const hasBrands = Boolean(restockMaterial.brands && restockMaterial.brands.length > 0);
 
-              return (
-                <div className="space-y-2">
-                  <Label>{t('storage.destinationStore', 'Destination Store')}</Label>
-                  <Select
-                    value={restockForm.storeType}
-                    onValueChange={(val) => setRestockForm({ ...restockForm, storeType: val as 'MAIN' | 'MINI' })}
+          const currentStoreStock = getStock(restockMaterial, restockForm.storeType);
+          const miniStock = getStock(restockMaterial, 'MINI');
+          const mainStock = getStock(restockMaterial, 'MAIN');
+
+          const totalAdded = hasBrands
+            ? (restockMaterial.brands || []).reduce((sum, b) => {
+                const q = Number(restockForm.brandInputs[b.id]?.quantity || 0);
+                return sum + (isNaN(q) ? 0 : q);
+              }, 0)
+            : (Number(restockForm.quantityAdded) || 0);
+
+          const totalCost = hasBrands
+            ? (restockMaterial.brands || []).reduce((sum, b) => {
+                const q = Number(restockForm.brandInputs[b.id]?.quantity || 0);
+                const c = Number(restockForm.brandInputs[b.id]?.unitCost || 0);
+                return sum + ((!isNaN(q) && !isNaN(c) && q > 0 && c > 0) ? q * c : 0);
+              }, 0)
+            : ((Number(restockForm.quantityAdded) || 0) * (Number(restockForm.unitCost) || 0));
+
+          const hasFractionalRestock = isPcsRestock && (
+            hasBrands
+              ? Object.values(restockForm.brandInputs).some(
+                  (input) => input.quantity && !Number.isInteger(Number(input.quantity))
+                )
+              : Boolean(restockForm.quantityAdded && !Number.isInteger(Number(restockForm.quantityAdded)))
+          );
+
+          const isRestockValid = totalAdded > 0 && !hasFractionalRestock;
+
+          return (
+            <DialogContent className="sm:max-w-[520px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <PackagePlus className="w-5 h-5 text-amber-600" />
+                  {t('storage.restock', 'Restock')} — {restockMaterial ? getLocName(restockMaterial) : ''}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                {/* 1. Store selector cards (Main Store vs Mini Store) */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Mini Store Tab */}
+                  <button
+                    type="button"
+                    onClick={() => setRestockForm({ ...restockForm, storeType: 'MINI' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+                      restockForm.storeType === 'MINI'
+                        ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5 shadow-xs'
+                        : 'border-border bg-card hover:bg-muted/30'
+                    }`}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('storage.selectStore', 'Select Store')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MAIN">{t('storage.mainStore', 'Main Store')} ({t('common.current', 'Current')}: {mainCurrent} {formatUnit(restockMaterial?.unit)})</SelectItem>
-                      <SelectItem value="MINI">{t('storage.miniStore', 'Mini Store')} ({t('common.current', 'Current')}: {miniCurrent} {formatUnit(restockMaterial?.unit)})</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${
+                          restockForm.storeType === 'MINI' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <Store className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">
+                            {t('storage.miniStore', 'Mini Store')}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {miniStock} {formatUnit(restockMaterial.unit)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Main Store Tab */}
+                  <button
+                    type="button"
+                    onClick={() => setRestockForm({ ...restockForm, storeType: 'MAIN' })}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative overflow-hidden ${
+                      restockForm.storeType === 'MAIN'
+                        ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5 shadow-xs'
+                        : 'border-border bg-card hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${
+                          restockForm.storeType === 'MAIN' ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          <Archive className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">
+                            {t('storage.mainStore', 'Main Store')}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {mainStock} {formatUnit(restockMaterial.unit)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
                 </div>
-              );
-            })()}
-            {restockMaterial?.brands && restockMaterial.brands.length > 0 && (
-              <div className="space-y-2">
-                <Label>{t('storage.selectBrand', 'Select Brand')} <span className="text-red-500">*</span></Label>
-                <Select
-                  value={restockForm.materialBrandId || ''}
-                  onValueChange={(val) => setRestockForm({ ...restockForm, materialBrandId: val || '' })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('storage.selectBrand', 'Select Brand')}>
-                      {(val: string) => {
-                        if (!val) return <span className="text-muted-foreground">{t('storage.selectBrand', 'Select Brand')}</span>;
-                        const b = restockMaterial?.brands?.find((x) => x.id === val);
-                        return b ? formatBrandSizeLabel(b) : val;
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {restockMaterial.brands.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {formatBrandSizeLabel(b)} ({formatCurrency(b.price)}) — {t('common.current', 'Current')}: {getBrandStock(b, restockForm.storeType)} {formatUnit(restockMaterial.unit)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+                {/* 2. Metric Summary Cards */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-center">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      {t('storage.totalStoreStock', 'Total Store Stock')}
+                    </span>
+                    <span className="text-base sm:text-lg font-bold text-foreground">
+                      {currentStoreStock} {formatUnit(restockMaterial.unit)}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-center">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      {t('storage.totalAdded', 'Total Added')}
+                    </span>
+                    <span className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400">
+                      +{totalAdded} {formatUnit(restockMaterial.unit)}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-lg border border-border bg-muted/30 text-center">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      {t('storage.newTotalStock', 'New Total Stock')}
+                    </span>
+                    <span className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      {currentStoreStock + totalAdded} {formatUnit(restockMaterial.unit)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Warning Card when PCS item has decimal values */}
+                {hasFractionalRestock && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3 text-red-800 dark:text-red-300 animate-in fade-in duration-200">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                    <div className="text-xs space-y-0.5">
+                      <p className="font-bold text-sm text-red-900 dark:text-red-200">
+                        {t('alerts.error', 'Invalid Quantity')}
+                      </p>
+                      <p className="leading-relaxed text-red-700 dark:text-red-300">
+                        {t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Brands / Variants List */}
+                {hasBrands ? (
+                  <div className="space-y-2.5 max-h-[38vh] overflow-y-auto pr-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        {t('materials.brands', 'Brands')} ({restockMaterial.brands?.length || 0})
+                      </span>
+                    </div>
+
+                    {restockMaterial.brands?.map((brand) => {
+                      const curBrandStock = getBrandStock(brand, restockForm.storeType);
+                      const brandInput = restockForm.brandInputs[brand.id] || { quantity: '', unitCost: '' };
+
+                      return (
+                        <div
+                          key={brand.id}
+                          className="p-3 rounded-xl border border-border bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-sm text-foreground truncate">
+                                {formatBrandSizeLabel(brand)}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium">
+                                {formatCurrency(brand.price)}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5">
+                              {t('common.current', 'Current')}: {curBrandStock} {formatUnit(restockMaterial.unit)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-center">
+                            {/* Bought Price / Unit Cost input */}
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                                {t('storage.boughtPrice', 'Bought Price')}
+                              </span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={brandInput.unitCost}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setRestockForm({
+                                    ...restockForm,
+                                    brandInputs: {
+                                      ...restockForm.brandInputs,
+                                      [brand.id]: {
+                                        ...brandInput,
+                                        unitCost: val,
+                                      },
+                                    },
+                                  });
+                                }}
+                                placeholder={t('common.optional', 'Optional')}
+                                className="w-24 h-9 text-xs text-right font-mono"
+                              />
+                            </div>
+
+                            {/* Quantity to Add input */}
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                                {t('storage.quantityToAdd', 'Qty')}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step={getQuantityStep(restockMaterial.unit)}
+                                  value={brandInput.quantity}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (isPcsRestock && val.includes('.')) return;
+                                    setRestockForm({
+                                      ...restockForm,
+                                      brandInputs: {
+                                        ...restockForm.brandInputs,
+                                        [brand.id]: {
+                                          ...brandInput,
+                                          quantity: val,
+                                        },
+                                      },
+                                    });
+                                  }}
+                                  placeholder="0"
+                                  className="w-20 h-9 text-sm text-right font-mono"
+                                />
+                                <span className="text-xs text-muted-foreground w-7 truncate">
+                                  {formatUnit(restockMaterial.unit)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Single Unbranded Material inputs */
+                  <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-foreground">
+                          {t('storage.quantityToAdd', 'Quantity to Add')} ({formatUnit(restockMaterial.unit)}) <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step={getQuantityStep(restockMaterial.unit)}
+                          value={restockForm.quantityAdded}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (isPcsRestock && val.includes('.')) return;
+                            setRestockForm({ ...restockForm, quantityAdded: val });
+                          }}
+                          placeholder="0"
+                          className="h-10 text-sm font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-foreground">
+                          {t('storage.boughtPrice', 'Bought Price')} ({t('common.birr', 'Birr')})
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={restockForm.unitCost}
+                          onChange={(e) => setRestockForm({ ...restockForm, unitCost: e.target.value })}
+                          placeholder={t('common.optional', 'Optional')}
+                          className="h-10 text-sm font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Total Estimated Cost */}
+                {totalCost > 0 && (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs">
+                    <span className="font-medium text-muted-foreground">
+                      {t('storage.totalEstimatedCost', 'Est. Total Cost')}:
+                    </span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">
+                      {formatCurrency(totalCost)}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-            <div className="space-y-2">
-              <Label>{t('storage.quantityToAdd', 'Quantity to Add')} ({formatUnit(restockMaterial?.unit)})</Label>
-              <Input
-                type="number"
-                min={isUnitIntegerOnly(restockMaterial?.unit) ? "1" : "0.01"}
-                step={getQuantityStep(restockMaterial?.unit)}
-                value={restockForm.quantityAdded}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (isUnitIntegerOnly(restockMaterial?.unit) && val.includes('.')) return;
-                  setRestockForm({ ...restockForm, quantityAdded: val });
-                }}
-                placeholder={t('storage.placeholders.quantity', 'e.g. 50')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('storage.unitCostOptional', 'Unit Cost (Optional)')}</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={restockForm.unitCost}
-                onChange={(e) => setRestockForm({ ...restockForm, unitCost: e.target.value })}
-                placeholder={t('storage.placeholders.unitCost', 'e.g. 1500')}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRestockMaterial(null)}>{t('common.cancel', 'Cancel')}</Button>
-            {(() => {
-              const isPcs = isUnitIntegerOnly(restockMaterial?.unit);
-              const qtyNum = Number(restockForm.quantityAdded);
-              const isQtyValid = Boolean(
-                restockForm.quantityAdded &&
-                !isNaN(qtyNum) &&
-                qtyNum > 0 &&
-                (!isPcs || Number.isInteger(qtyNum))
-              );
-              return (
-                <Button 
-                  onClick={() => restockMutation.mutate()} 
-                  disabled={restockMutation.isPending || !isQtyValid || ((restockMaterial?.brands?.length ?? 0) > 0 && !restockForm.materialBrandId)}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+
+              <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-border">
+                <Button
+                  variant="outline"
+                  onClick={() => setRestockMaterial(null)}
+                  disabled={restockMutation.isPending}
+                  className="h-10 px-5 rounded-lg font-medium border-border hover:bg-muted text-foreground transition-all cursor-pointer"
                 >
-                  {restockMutation.isPending ? t('storage.restocking', 'Restocking...') : t('storage.confirmRestock', 'Confirm Restock')}
+                  {t('common.cancel', 'Cancel')}
                 </Button>
-              );
-            })()}
-          </DialogFooter>
-        </DialogContent>
+                <Button
+                  onClick={() => restockMutation.mutate()}
+                  disabled={restockMutation.isPending || !isRestockValid}
+                  className="h-10 px-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm hover:shadow-md transition-all gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {restockMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>{t('storage.restocking', 'Restocking...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <PackagePlus className="w-4 h-4" />
+                      <span>{t('storage.confirmRestock', 'Confirm Restock')}</span>
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          );
+        })()}
       </Dialog>
 
       {/* ===== Transfer Dialog ===== */}
@@ -1918,21 +2207,21 @@ export default function Storage() {
                   </div>
                 </div>
 
-                {/* 3. Warning Card when allocated exceeds current stock */}
+                {/* 3. Error Card when allocated exceeds current stock (BLOCK OVER ENTRY) */}
                 {currentAllocTotal > currentStoreStock && (
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3 text-amber-800 dark:text-amber-300 animate-in fade-in duration-200">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-3 text-red-800 dark:text-red-300 animate-in fade-in duration-200">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1">
-                      <p className="font-bold text-sm text-amber-900 dark:text-amber-200">
-                        {t('storage.warningAllocationExceedsTitle', 'Allocation Exceeds Current Stock')}
+                      <p className="font-bold text-sm text-red-900 dark:text-red-200">
+                        {t('storage.errorAllocationExceedsTitle', 'Allocation Exceeds Acquired Stock')}
                       </p>
-                      <p className="leading-relaxed opacity-90">
-                        {t('storage.warningAllocationExceedsDesc', 
-                          'The sum of brand quantities ({{totalAllocated}}) exceeds current store stock ({{totalStore}}). Saving will increase the store total to {{totalAllocated}} {{unit}} (+{{delta}} {{unit}}).',
+                      <p className="leading-relaxed opacity-90 text-red-700 dark:text-red-300">
+                        {t('storage.errorAllocationExceedsDesc', 
+                          'Total allocated quantity ({{totalAllocated}} {{unit}}) cannot exceed acquired store stock ({{totalStore}} {{unit}}). Please reduce brand quantities by {{delta}} {{unit}}.',
                           {
                             totalAllocated: currentAllocTotal,
                             totalStore: currentStoreStock,
-                            delta: currentAllocTotal - currentStoreStock,
+                            delta: Math.round((currentAllocTotal - currentStoreStock) * 100) / 100,
                             unit: formatUnit(allocateMaterial.unit),
                           }
                         )}
@@ -2059,8 +2348,8 @@ export default function Storage() {
                 </Button>
                 <Button
                   onClick={() => allocateBrandStockMutation.mutate()}
-                  disabled={allocateBrandStockMutation.isPending || hasFractionalAllocations}
-                  className="h-10 px-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm hover:shadow-md transition-all gap-2 cursor-pointer disabled:opacity-60"
+                  disabled={allocateBrandStockMutation.isPending || hasFractionalAllocations || currentAllocTotal > currentStoreStock}
+                  className="h-10 px-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm hover:shadow-md transition-all gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {allocateBrandStockMutation.isPending ? (
                     <>
