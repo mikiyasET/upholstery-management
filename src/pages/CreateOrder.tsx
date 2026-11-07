@@ -2121,7 +2121,7 @@ export default function CreateOrder() {
                                       price: s.price,
                                       standardPrice: s.standardPrice,
                                     });
-                                    setEditCartPriceInput(String(s.price));
+                                    setEditCartPriceInput(s.price > 0 ? String(s.price) : '');
                                   }}
                                   className="p-1 rounded text-muted-foreground hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 opacity-70 group-hover:opacity-100 transition-opacity"
                                   title={t('orders.adjustPrice', 'Adjust Price / Discount')}
@@ -2196,7 +2196,7 @@ export default function CreateOrder() {
                                       price: m.price,
                                       standardPrice: m.standardPrice,
                                     });
-                                    setEditCartPriceInput(String(m.price));
+                                    setEditCartPriceInput(m.price > 0 ? String(m.price) : '');
                                   }}
                                   className="p-1 rounded text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 opacity-70 group-hover:opacity-100 transition-opacity"
                                   title={t('orders.adjustPrice', 'Adjust Price / Discount')}
@@ -2840,11 +2840,13 @@ export default function CreateOrder() {
                         type="text"
                         className="w-full h-10 px-3 pr-12 text-sm font-mono font-bold bg-background border border-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all"
                         value={editCartPriceInput}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => {
-                          const val = e.target.value;
+                          let val = e.target.value;
+                          if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                           if (/^\d*\.?\d*$/.test(val)) setEditCartPriceInput(val);
                         }}
-                        placeholder="0.00"
+                        placeholder="—"
                         autoFocus
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-muted-foreground select-none pointer-events-none">

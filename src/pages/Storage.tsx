@@ -1418,10 +1418,14 @@ export default function Storage() {
                 {/* 4. Brands / Variants List */}
                 {hasBrands ? (
                   <div className="space-y-2.5 max-h-[38vh] overflow-y-auto pr-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pb-1 px-1">
                       <span className="text-xs font-bold text-foreground uppercase tracking-wider">
                         {t('materials.brands', 'Brands')} ({restockMaterial.brands?.length || 0})
                       </span>
+                      <div className="hidden sm:flex items-center gap-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        <span className="w-28 text-right">{t('storage.boughtPrice', 'Bought Price')} ({t('common.birr', 'Birr')})</span>
+                        <span className="w-32 text-right pr-7">{t('storage.quantityToAdd', 'Quantity to Add')}</span>
+                      </div>
                     </div>
 
                     {restockMaterial.brands?.map((brand) => {
@@ -1447,48 +1451,57 @@ export default function Storage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 self-end sm:self-center">
+                          <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
                             {/* Bought Price / Unit Cost input */}
-                            <div className="flex flex-col items-end">
-                              <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                            <div className="flex flex-col sm:block">
+                              <span className="text-[10px] text-muted-foreground uppercase font-medium mb-1 sm:hidden">
                                 {t('storage.boughtPrice', 'Bought Price')}
                               </span>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={brandInput.unitCost}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setRestockForm({
-                                    ...restockForm,
-                                    brandInputs: {
-                                      ...restockForm.brandInputs,
-                                      [brand.id]: {
-                                        ...brandInput,
-                                        unitCost: val,
+                              <div className="relative flex items-center">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={brandInput.unitCost}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => {
+                                    let val = e.target.value;
+                                    if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
+                                    setRestockForm({
+                                      ...restockForm,
+                                      brandInputs: {
+                                        ...restockForm.brandInputs,
+                                        [brand.id]: {
+                                          ...brandInput,
+                                          unitCost: val,
+                                        },
                                       },
-                                    },
-                                  });
-                                }}
-                                placeholder={t('common.optional', 'Optional')}
-                                className="w-24 h-9 text-xs text-right font-mono"
-                              />
+                                    });
+                                  }}
+                                  placeholder="—"
+                                  className="w-28 h-9 text-xs text-right font-mono pr-8"
+                                />
+                                <span className="absolute right-2 text-[10px] font-bold text-muted-foreground/70 pointer-events-none select-none">
+                                  ETB
+                                </span>
+                              </div>
                             </div>
 
                             {/* Quantity to Add input */}
-                            <div className="flex flex-col items-end">
-                              <span className="text-[10px] text-muted-foreground uppercase font-medium">
-                                {t('storage.quantityToAdd', 'Qty')}
+                            <div className="flex flex-col sm:block">
+                              <span className="text-[10px] text-muted-foreground uppercase font-medium mb-1 sm:hidden">
+                                {t('storage.quantityToAdd', 'Quantity to Add')}
                               </span>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1.5 w-32 justify-end">
                                 <Input
                                   type="number"
                                   min="0"
                                   step={getQuantityStep(restockMaterial.unit)}
                                   value={brandInput.quantity}
+                                  onFocus={(e) => e.target.select()}
                                   onChange={(e) => {
-                                    const val = e.target.value;
+                                    let val = e.target.value;
+                                    if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                                     if (isPcsRestock && val.includes('.')) return;
                                     setRestockForm({
                                       ...restockForm,
@@ -1501,10 +1514,10 @@ export default function Storage() {
                                       },
                                     });
                                   }}
-                                  placeholder="0"
-                                  className="w-20 h-9 text-sm text-right font-mono"
+                                  placeholder="—"
+                                  className="w-20 h-9 text-sm text-right font-mono font-bold"
                                 />
-                                <span className="text-xs text-muted-foreground w-7 truncate">
+                                <span className="text-xs text-muted-foreground w-8 truncate text-left">
                                   {formatUnit(restockMaterial.unit)}
                                 </span>
                               </div>
@@ -1517,38 +1530,60 @@ export default function Storage() {
                 ) : (
                   /* Single Unbranded Material inputs */
                   <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-foreground">
-                          {t('storage.quantityToAdd', 'Quantity to Add')} ({formatUnit(restockMaterial.unit)}) <span className="text-red-500">*</span>
-                        </Label>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold text-foreground">
+                            {t('storage.quantityToAdd', 'Quantity to Add')}
+                          </Label>
+                          <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                            {formatUnit(restockMaterial.unit)} *
+                          </span>
+                        </div>
                         <Input
                           type="number"
                           min="0"
                           step={getQuantityStep(restockMaterial.unit)}
                           value={restockForm.quantityAdded}
+                          onFocus={(e) => e.target.select()}
                           onChange={(e) => {
-                            const val = e.target.value;
+                            let val = e.target.value;
+                            if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                             if (isPcsRestock && val.includes('.')) return;
                             setRestockForm({ ...restockForm, quantityAdded: val });
                           }}
-                          placeholder="0"
-                          className="h-10 text-sm font-mono"
+                          placeholder="—"
+                          className="h-10 text-sm font-mono font-bold"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-foreground">
-                          {t('storage.boughtPrice', 'Bought Price')} ({t('common.birr', 'Birr')})
-                        </Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={restockForm.unitCost}
-                          onChange={(e) => setRestockForm({ ...restockForm, unitCost: e.target.value })}
-                          placeholder={t('common.optional', 'Optional')}
-                          className="h-10 text-sm font-mono"
-                        />
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold text-foreground">
+                            {t('storage.boughtPrice', 'Bought Price')}
+                          </Label>
+                          <span className="text-[11px] text-muted-foreground">
+                            {t('common.birr', 'Birr')} ({t('common.optional', 'Optional')})
+                          </span>
+                        </div>
+                        <div className="relative flex items-center">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={restockForm.unitCost}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => {
+                              let val = e.target.value;
+                              if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
+                              setRestockForm({ ...restockForm, unitCost: val });
+                            }}
+                            placeholder="—"
+                            className="h-10 text-sm font-mono pr-12"
+                          />
+                          <span className="absolute right-3 text-xs font-bold text-muted-foreground/70 pointer-events-none select-none">
+                            ETB
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1703,8 +1738,10 @@ export default function Storage() {
                       max={availableStock}
                       step={getQuantityStep(transferMaterial?.unit)}
                       value={transferForm.quantityTransferred}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => {
-                        const val = e.target.value;
+                        let val = e.target.value;
+                        if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                         if (isUnitIntegerOnly(transferMaterial?.unit) && val.includes('.')) return;
                         setTransferForm({ ...transferForm, quantityTransferred: val });
                       }}
@@ -1819,8 +1856,10 @@ export default function Storage() {
                 type="number"
                 step={getQuantityStep(adjustMaterial?.unit)}
                 value={adjustForm.quantityDelta}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  let val = e.target.value;
+                  if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                   if (isUnitIntegerOnly(adjustMaterial?.unit) && val.includes('.')) return;
                   setAdjustForm({ ...adjustForm, quantityDelta: val });
                 }}
@@ -1944,8 +1983,10 @@ export default function Storage() {
                 min="0"
                 step={getQuantityStep(countMaterial?.unit)}
                 value={countForm.countedQuantity}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  let val = e.target.value;
+                  if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                   if (isUnitIntegerOnly(countMaterial?.unit) && val.includes('.')) return;
                   setCountForm({ ...countForm, countedQuantity: val });
                 }}
@@ -2302,8 +2343,10 @@ export default function Storage() {
                             min="0"
                             step={getQuantityStep(allocateMaterial.unit)}
                             value={currentVal}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => {
-                              const val = e.target.value;
+                              let val = e.target.value;
+                              if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                               if (isPcsAlloc && val.includes('.')) return;
                               setAllocateForm({
                                 ...allocateForm,
@@ -2313,7 +2356,7 @@ export default function Storage() {
                                 },
                               });
                             }}
-                            placeholder="0"
+                            placeholder="—"
                             className="w-24 h-9 text-sm text-right font-mono"
                           />
                           <span className="text-xs text-muted-foreground w-8 truncate">

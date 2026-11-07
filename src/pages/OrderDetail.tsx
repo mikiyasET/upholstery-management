@@ -966,7 +966,7 @@ export default function OrderDetail() {
                                     standardPrice: stdPrice,
                                     currentPrice,
                                   });
-                                  setEditLinePriceInput(String(currentPrice));
+                                  setEditLinePriceInput(currentPrice > 0 ? String(currentPrice) : '');
                                 }} 
                                 title={t('orders.adjustPrice', 'Adjust Price / Discount')}
                                 className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
@@ -1052,7 +1052,7 @@ export default function OrderDetail() {
                                     currentPrice,
                                     quantity: qty,
                                   });
-                                  setEditLinePriceInput(String(currentPrice));
+                                  setEditLinePriceInput(currentPrice > 0 ? String(currentPrice) : '');
                                 }} 
                                 title={t('orders.adjustPrice', 'Adjust Price / Discount')}
                                 className="h-8 w-8 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
@@ -1891,8 +1891,10 @@ export default function OrderDetail() {
                 id="qty"
                 type="text"
                 value={materialQty}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  let val = e.target.value;
+                  if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                   const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
                   const isInt = isUnitIntegerOnly(mat?.unit);
                   const regex = isInt ? /^\d*$/ : /^\d*\.?\d*$/;
@@ -1900,6 +1902,7 @@ export default function OrderDetail() {
                     setMaterialQty(val);
                   }
                 }}
+                placeholder="—"
                 className="border-gray-200 dark:border-gray-800"
               />
             </div>
@@ -1927,11 +1930,13 @@ export default function OrderDetail() {
                   id="material-price"
                   type="text"
                   value={materialPriceInput}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    let val = e.target.value;
+                    if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                     if (/^\d*\.?\d*$/.test(val)) setMaterialPriceInput(val);
                   }}
-                  placeholder="0.00"
+                  placeholder="—"
                   className="font-mono font-bold border-gray-200 dark:border-gray-800"
                 />
               </div>
@@ -2221,11 +2226,13 @@ export default function OrderDetail() {
                         type="text"
                         className="font-mono font-bold pr-11"
                         value={editLinePriceInput}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => {
-                          const val = e.target.value;
+                          let val = e.target.value;
+                          if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
                           if (/^\d*\.?\d*$/.test(val)) setEditLinePriceInput(val);
                         }}
-                        placeholder="0.00"
+                        placeholder="—"
                         autoFocus
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
