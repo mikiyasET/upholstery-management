@@ -30,7 +30,7 @@ interface NavItemDef {
   icon: React.ElementType;
   activeIcon: React.ElementType;
   path: string;
-  permission?: PermissionKey;
+  permission?: PermissionKey | PermissionKey[];
   badge?: string | number;
   badgeColor?: string;
 }
@@ -142,7 +142,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           icon: Archive,
           activeIcon: Archive,
           path: "/storage",
-          permission: "storage.view",
+          permission: ["storage.view", "storage.restock", "storage.transfer", "storage.adjust", "storage.count", "storage.allocate", "storage.edit"],
         },
         {
           labelKey: "storage.stockHistory",
@@ -150,7 +150,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           icon: History,
           activeIcon: History,
           path: "/storage/history",
-          permission: "storage.view",
+          permission: ["storage.history", "storage.view"],
         },
         {
           labelKey: "storage.lowStockAlerts",
@@ -158,7 +158,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           icon: AlertTriangle,
           activeIcon: AlertTriangle,
           path: "/storage/low-stock",
-          permission: "storage.view",
+          permission: ["storage.lowStock", "storage.view"],
           badge: lowStockCount > 0 ? lowStockCount : undefined,
           badgeColor: "red",
         },
@@ -232,6 +232,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           icon: Settings,
           activeIcon: Settings,
           path: "/settings",
+          permission: "settings.view",
         },
       ],
     },
@@ -293,6 +294,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
             // Filter items by user permission
             const visibleItems = section.items.filter((item) => {
               if (!item.permission) return true;
+              if (Array.isArray(item.permission)) {
+                return item.permission.some((p) => checkPermission(user?.permissions, user?.role || "", p));
+              }
               return checkPermission(user?.permissions, user?.role || "", item.permission);
             });
 

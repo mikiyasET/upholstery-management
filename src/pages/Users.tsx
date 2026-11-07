@@ -79,8 +79,10 @@ function PermissionGrid({
       case 'catalog.materials': return t('users.permissions.groups.catalogMaterials', group.label);
       case 'catalog.services': return t('users.permissions.groups.catalogServices', group.label);
       case 'catalog.cars': return t('users.permissions.groups.catalogCars', group.label);
+      case 'assets': return t('users.permissions.groups.assets', group.label);
       case 'users': return t('users.permissions.groups.users', group.label);
       case 'reports': return t('users.permissions.groups.reports', group.label);
+      case 'settings': return t('users.permissions.groups.settings', group.label);
       default: return group.label;
     }
   };
@@ -94,8 +96,10 @@ function PermissionGrid({
       case 'catalog.materials': return t('users.permissions.groups.catalogMaterialsDesc', group.description);
       case 'catalog.services': return t('users.permissions.groups.catalogServicesDesc', group.description);
       case 'catalog.cars': return t('users.permissions.groups.catalogCarsDesc', group.description);
+      case 'assets': return t('users.permissions.groups.assetsDesc', group.description);
       case 'users': return t('users.permissions.groups.usersDesc', group.description);
       case 'reports': return t('users.permissions.groups.reportsDesc', group.description);
+      case 'settings': return t('users.permissions.groups.settingsDesc', group.description);
       default: return group.description;
     }
   };
@@ -104,12 +108,23 @@ function PermissionGrid({
     switch (key) {
       case 'orders.view': return t('users.permissions.items.ordersView', fallback);
       case 'orders.create': return t('users.permissions.items.ordersCreate', fallback);
+      case 'orders.status': return t('users.permissions.items.ordersStatus', fallback);
+      case 'orders.payment': return t('users.permissions.items.ordersPayment', fallback);
+      case 'orders.edit': return t('users.permissions.items.ordersEdit', fallback);
+      case 'orders.delete': return t('users.permissions.items.ordersDelete', fallback);
       case 'directSales.view': return t('users.permissions.items.directSalesView', fallback);
       case 'directSales.create': return t('users.permissions.items.directSalesCreate', fallback);
       case 'directSales.history': return t('users.permissions.items.directSalesHistory', fallback);
       case 'customers.view': return t('users.permissions.items.customersView', fallback);
       case 'customers.edit': return t('users.permissions.items.customersEdit', fallback);
       case 'storage.view': return t('users.permissions.items.storageView', fallback);
+      case 'storage.restock': return t('users.permissions.items.storageRestock', fallback);
+      case 'storage.transfer': return t('users.permissions.items.storageTransfer', fallback);
+      case 'storage.adjust': return t('users.permissions.items.storageAdjust', fallback);
+      case 'storage.count': return t('users.permissions.items.storageCount', fallback);
+      case 'storage.allocate': return t('users.permissions.items.storageAllocate', fallback);
+      case 'storage.history': return t('users.permissions.items.storageHistory', fallback);
+      case 'storage.lowStock': return t('users.permissions.items.storageLowStock', fallback);
       case 'storage.edit': return t('users.permissions.items.storageEdit', fallback);
       case 'catalog.materials.view': return t('users.permissions.items.catalogMaterialsView', fallback);
       case 'catalog.materials.add': return t('users.permissions.items.catalogMaterialsAdd', fallback);
@@ -123,9 +138,15 @@ function PermissionGrid({
       case 'catalog.cars.add': return t('users.permissions.items.catalogCarsAdd', fallback);
       case 'catalog.cars.edit': return t('users.permissions.items.catalogCarsEdit', fallback);
       case 'catalog.cars.remove': return t('users.permissions.items.catalogCarsRemove', fallback);
+      case 'assets.view': return t('users.permissions.items.assetsView', fallback);
+      case 'assets.add': return t('users.permissions.items.assetsAdd', fallback);
+      case 'assets.edit': return t('users.permissions.items.assetsEdit', fallback);
+      case 'assets.remove': return t('users.permissions.items.assetsRemove', fallback);
       case 'users.view': return t('users.permissions.items.usersView', fallback);
       case 'users.edit': return t('users.permissions.items.usersEdit', fallback);
       case 'reports.view': return t('users.permissions.items.reportsView', fallback);
+      case 'settings.view': return t('users.permissions.items.settingsView', fallback);
+      case 'settings.edit': return t('users.permissions.items.settingsEdit', fallback);
       default: return fallback;
     }
   };

@@ -29,7 +29,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 
 import type { ReactNode } from "react";
 import type { PermissionKey } from "./lib/permissions";
-import { usePermission } from "./lib/permissions";
+import { checkPermission } from "./lib/permissions";
 
 const PageFallback = () => (
   <Center h={400} w="100%">
@@ -54,8 +54,10 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 };
 
 /** Route guard that checks a specific permission. Redirects to / if denied. */
-const PermissionRoute = ({ permission, children }: { permission: PermissionKey; children: ReactNode }) => {
-  const allowed = usePermission(permission);
+const PermissionRoute = ({ permission, children }: { permission: PermissionKey | PermissionKey[]; children: ReactNode }) => {
+  const user = useAuthStore((s) => s.user);
+  const keys = Array.isArray(permission) ? permission : [permission];
+  const allowed = keys.some((k) => checkPermission(user?.permissions, user?.role || "", k));
   if (!allowed) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
@@ -101,7 +103,7 @@ export default function App() {
           <Route
             path="storage"
             element={
-              <PermissionRoute permission="storage.view">
+              <PermissionRoute permission={["storage.view", "storage.restock", "storage.transfer", "storage.adjust", "storage.count", "storage.allocate", "storage.edit"]}>
                 <Storage />
               </PermissionRoute>
             }
@@ -109,7 +111,7 @@ export default function App() {
           <Route
             path="storage/low-stock"
             element={
-              <PermissionRoute permission="storage.view">
+              <PermissionRoute permission={["storage.lowStock", "storage.view"]}>
                 <LowStockAlerts />
               </PermissionRoute>
             }
@@ -117,7 +119,7 @@ export default function App() {
           <Route
             path="storage/history"
             element={
-              <PermissionRoute permission="storage.view">
+              <PermissionRoute permission={["storage.history", "storage.view"]}>
                 <StockHistory />
               </PermissionRoute>
             }
@@ -125,7 +127,7 @@ export default function App() {
           <Route
             path="stock-history"
             element={
-              <PermissionRoute permission="storage.view">
+              <PermissionRoute permission={["storage.history", "storage.view"]}>
                 <StockHistory />
               </PermissionRoute>
             }
@@ -133,7 +135,7 @@ export default function App() {
           <Route
             path="orders"
             element={
-              <PermissionRoute permission="orders.view">
+              <PermissionRoute permission={["orders.view", "orders.create", "orders.status", "orders.edit"]}>
                 <Orders />
               </PermissionRoute>
             }
@@ -218,7 +220,14 @@ export default function App() {
               </PermissionRoute>
             }
           />
-          <Route path="settings" element={<Settings />} />
+          <Route
+            path="settings"
+            element={
+              <PermissionRoute permission="settings.view">
+                <Settings />
+              </PermissionRoute>
+            }
+          />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

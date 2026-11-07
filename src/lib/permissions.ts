@@ -5,12 +5,23 @@ export type PermissionKey =
   | 'dashboard.view'
   | 'orders.view'
   | 'orders.create'
+  | 'orders.status'
+  | 'orders.payment'
+  | 'orders.edit'
+  | 'orders.delete'
   | 'directSales.view'
   | 'directSales.create'
   | 'directSales.history'
   | 'customers.view'
   | 'customers.edit'
   | 'storage.view'
+  | 'storage.restock'
+  | 'storage.transfer'
+  | 'storage.adjust'
+  | 'storage.count'
+  | 'storage.allocate'
+  | 'storage.history'
+  | 'storage.lowStock'
   | 'storage.edit'
   | 'catalog.materials.view'
   | 'catalog.materials.add'
@@ -30,7 +41,9 @@ export type PermissionKey =
   | 'assets.view'
   | 'assets.add'
   | 'assets.edit'
-  | 'assets.remove';
+  | 'assets.remove'
+  | 'settings.view'
+  | 'settings.edit';
 
 /**
  * Hook: check if the current user has a given permission.
