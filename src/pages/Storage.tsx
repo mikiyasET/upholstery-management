@@ -198,7 +198,12 @@ export default function Storage() {
   const [allocateMaterial, setAllocateMaterial] = useState<Material | null>(null);
 
   // Form states with brand support
-  const [restockForm, setRestockForm] = useState({ quantityAdded: '', unitCost: '', materialBrandId: '' });
+  const [restockForm, setRestockForm] = useState<{
+    quantityAdded: string;
+    unitCost: string;
+    materialBrandId: string;
+    storeType: 'MAIN' | 'MINI';
+  }>({ quantityAdded: '', unitCost: '', materialBrandId: '', storeType: 'MAIN' });
   const [transferForm, setTransferForm] = useState({ quantityTransferred: '', notes: '', direction: 'MAIN_TO_MINI', materialBrandId: '' });
   const [adjustForm, setAdjustForm] = useState({ storeType: 'MAIN', quantityDelta: '', reason: 'DAMAGE', notes: '', materialBrandId: '' });
   const [countForm, setCountForm] = useState({ storeType: 'MAIN', countedQuantity: '', notes: '', materialBrandId: '' });
@@ -236,6 +241,7 @@ export default function Storage() {
         quantityAdded: Number(restockForm.quantityAdded),
         unitCost: restockForm.unitCost ? Number(restockForm.unitCost) : undefined,
         materialBrandId: restockForm.materialBrandId || undefined,
+        storeType: restockForm.storeType,
       });
     },
     onSuccess: () => {
@@ -243,7 +249,7 @@ export default function Storage() {
       queryClient.invalidateQueries({ queryKey: ['material-history'] });
       toast.success(t('storage.alerts.stockAdded', 'Stock added successfully'));
       setRestockMaterial(null);
-      setRestockForm({ quantityAdded: '', unitCost: '', materialBrandId: '' });
+      setRestockForm({ quantityAdded: '', unitCost: '', materialBrandId: '', storeType: 'MAIN' });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error?.message || t('storage.alerts.errorRestock', 'Error restocking material'));
@@ -463,6 +469,7 @@ export default function Storage() {
       quantityAdded: '',
       unitCost: '',
       materialBrandId: m.brands?.[0]?.id || '',
+      storeType: activeStore,
     });
     setRestockMaterial(m);
   };
@@ -1197,11 +1204,34 @@ export default function Storage() {
               <p className="font-semibold">{t('storage.whatIsRestock', 'What is Restock?')}</p>
               <p>{t('storage.restockDesc', 'Add newly purchased or received inventory. Use this when you buy new stock from a supplier or receive a delivery.')}</p>
               <p className="text-xs opacity-80 mt-1">
-                {restockMaterial?.isBulkTracked 
-                  ? t('storage.bulkTrackedInfo', '📦 This is bulk-tracked — stock goes to Main Store first, then transfer to Mini Store.') 
-                  : t('storage.notBulkTrackedInfo', '🏪 This is not bulk-tracked — stock goes directly to Mini Store.')}
+                {restockForm.storeType === 'MAIN'
+                  ? t('storage.restockMainNotice', '📦 Stock will be added directly to the Main Store.')
+                  : t('storage.restockMiniNotice', '🏪 Stock will be added directly to the Mini Store.')}
               </p>
             </div>
+            {(() => {
+              const selectedBrand = restockMaterial?.brands?.find((b) => b.id === restockForm.materialBrandId);
+              const mainCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MAIN') : (restockMaterial ? getStock(restockMaterial, 'MAIN') : 0);
+              const miniCurrent = selectedBrand ? getBrandStock(selectedBrand, 'MINI') : (restockMaterial ? getStock(restockMaterial, 'MINI') : 0);
+
+              return (
+                <div className="space-y-2">
+                  <Label>{t('storage.destinationStore', 'Destination Store')}</Label>
+                  <Select
+                    value={restockForm.storeType}
+                    onValueChange={(val) => setRestockForm({ ...restockForm, storeType: val as 'MAIN' | 'MINI' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('storage.selectStore', 'Select Store')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">{t('storage.mainStore', 'Main Store')} ({t('common.current', 'Current')}: {mainCurrent} {formatUnit(restockMaterial?.unit)})</SelectItem>
+                      <SelectItem value="MINI">{t('storage.miniStore', 'Mini Store')} ({t('common.current', 'Current')}: {miniCurrent} {formatUnit(restockMaterial?.unit)})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             {restockMaterial?.brands && restockMaterial.brands.length > 0 && (
               <div className="space-y-2">
                 <Label>{t('storage.selectBrand', 'Select Brand')} <span className="text-red-500">*</span></Label>
@@ -1221,7 +1251,7 @@ export default function Storage() {
                   <SelectContent>
                     {restockMaterial.brands.map((b) => (
                       <SelectItem key={b.id} value={b.id}>
-                        {formatBrandSizeLabel(b)} ({formatCurrency(b.price)}) — {t('common.current', 'Current')}: {getBrandStock(b, restockMaterial.isBulkTracked ? 'MAIN' : 'MINI')} {formatUnit(restockMaterial.unit)}
+                        {formatBrandSizeLabel(b)} ({formatCurrency(b.price)}) — {t('common.current', 'Current')}: {getBrandStock(b, restockForm.storeType)} {formatUnit(restockMaterial.unit)}
                       </SelectItem>
                     ))}
                   </SelectContent>
