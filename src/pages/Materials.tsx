@@ -790,7 +790,7 @@ export default function Materials() {
             setPageSize(newSize);
             setCurrentPage(1);
           }}
-          itemLabel="materials"
+          itemLabel={t('common.materials', 'materials')}
           disabled={isLoading}
         />
       </div>

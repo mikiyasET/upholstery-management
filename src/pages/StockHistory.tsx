@@ -921,7 +921,7 @@ export default function StockHistory() {
               setCurrentPage(1);
             }}
             pageSizeOptions={['10', '25', '50', '100']}
-            itemLabel={t('storage.totalMovements', 'Movements')}
+            itemLabel={t('common.movements', 'Movements')}
           />
         </div>
       </div>

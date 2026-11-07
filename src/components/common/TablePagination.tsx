@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Group, Pagination, Select, Text, Box } from "@mantine/core";
 import {
   FileText,
@@ -78,11 +79,13 @@ export function TablePagination({
   onPageSizeChange,
   pageSizeOptions = ["10", "25", "50", "100"],
   disabled = false,
-  itemLabel = "records",
+  itemLabel,
 }: TablePaginationProps) {
+  const { t, i18n } = useTranslation();
   const calculatedTotalPages = totalPages ?? Math.max(1, Math.ceil(total / pageSize));
   const startItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endItem = Math.min(page * pageSize, total);
+  const resolvedItemLabel = itemLabel || t("common.records", "records");
 
   const paginationRange = useMemo(
     () => getPaginationRange(page, calculatedTotalPages),
@@ -101,7 +104,7 @@ export function TablePagination({
                 <Inbox size={14} />
               </Box>
               <Text size="xs" c="dimmed">
-                No {itemLabel} to display
+                {t("common.noItemsToDisplay", "No {{item}} to display", { item: resolvedItemLabel })}
               </Text>
             </Group>
           ) : (
@@ -110,23 +113,43 @@ export function TablePagination({
                 <FileText size={14} />
               </Box>
 
-              <Group gap={4} align="center" wrap="nowrap">
-                <Text size="xs" fw={500} c="dimmed" visibleFrom="xs">
-                  Showing
-                </Text>
-                <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
-                  {startItem.toLocaleString()} – {endItem.toLocaleString()}
-                </Text>
-                <Text size="xs" fw={500} c="dimmed">
-                  of
-                </Text>
-                <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
-                  {total.toLocaleString()}
-                </Text>
-                <Text size="xs" fw={600} style={{ color: "var(--primary-accent, #F59E0B)" }} visibleFrom="xs">
-                  {itemLabel}
-                </Text>
-              </Group>
+              {i18n.language === 'am' ? (
+                <Group gap={4} align="center" wrap="nowrap">
+                  <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
+                    {startItem.toLocaleString()} – {endItem.toLocaleString()}
+                  </Text>
+                  <Text size="xs" fw={500} c="dimmed">
+                    {t("common.of", "ከ")}
+                  </Text>
+                  <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
+                    {total.toLocaleString()}
+                  </Text>
+                  <Text size="xs" fw={600} style={{ color: "var(--primary-accent, #F59E0B)" }} visibleFrom="xs">
+                    {resolvedItemLabel}
+                  </Text>
+                  <Text size="xs" fw={500} c="dimmed" visibleFrom="xs">
+                    {t("common.showing", "በማሳየት ላይ")}
+                  </Text>
+                </Group>
+              ) : (
+                <Group gap={4} align="center" wrap="nowrap">
+                  <Text size="xs" fw={500} c="dimmed" visibleFrom="xs">
+                    {t("common.showing", "Showing")}
+                  </Text>
+                  <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
+                    {startItem.toLocaleString()} – {endItem.toLocaleString()}
+                  </Text>
+                  <Text size="xs" fw={500} c="dimmed">
+                    {t("common.of", "of")}
+                  </Text>
+                  <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
+                    {total.toLocaleString()}
+                  </Text>
+                  <Text size="xs" fw={600} style={{ color: "var(--primary-accent, #F59E0B)" }} visibleFrom="xs">
+                    {resolvedItemLabel}
+                  </Text>
+                </Group>
+              )}
 
               <Box className="table-pagination-divider" visibleFrom="sm" />
 
@@ -134,11 +157,11 @@ export function TablePagination({
                 <Group gap={5} align="center" wrap="nowrap">
                   <Layers size={13} style={{ color: "var(--text-muted)" }} />
                   <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-                    Page{" "}
+                    {t("common.page", "Page")}{" "}
                     <Text span fw={700} style={{ color: "var(--text-main)" }}>
                       {page}
                     </Text>{" "}
-                    of{" "}
+                    {t("common.of", "of")}{" "}
                     <Text span fw={700} style={{ color: "var(--text-main)" }}>
                       {calculatedTotalPages}
                     </Text>
@@ -153,7 +176,7 @@ export function TablePagination({
           <Group gap={6} align="center" className="table-pagination-per-page-group">
             <CheckSquare size={15} style={{ color: "var(--text-muted)" }} />
             <Text size="xs" fw={500} c="dimmed" visibleFrom="xs" style={{ whiteSpace: "nowrap" }}>
-              Rows:
+              {t("common.rows", "Rows")}:
             </Text>
             <Select
               size="xs"
@@ -189,7 +212,7 @@ export function TablePagination({
             <Box visibleFrom="sm">
               <Pagination.First
                 icon={() => <ChevronsLeft size={15} />}
-                aria-label="First page"
+                aria-label={t("common.firstPage", "First page")}
                 className="table-page-btn table-page-edge-btn"
                 disabled={disabled || page <= 1 || total === 0}
                 onClick={() => onPageChange(1)}
@@ -197,7 +220,7 @@ export function TablePagination({
             </Box>
             <Pagination.Previous
               icon={() => <ChevronLeft size={15} />}
-              aria-label="Previous page"
+              aria-label={t("common.previousPage", "Previous page")}
               className="table-page-btn"
               disabled={disabled || page <= 1 || total === 0}
               onClick={() => onPageChange(Math.max(1, page - 1))}
@@ -229,7 +252,7 @@ export function TablePagination({
 
             <Pagination.Next
               icon={() => <ChevronRight size={15} />}
-              aria-label="Next page"
+              aria-label={t("common.nextPage", "Next page")}
               className="table-page-btn"
               disabled={disabled || page >= calculatedTotalPages || total === 0}
               onClick={() => onPageChange(Math.min(calculatedTotalPages, page + 1))}
@@ -237,7 +260,7 @@ export function TablePagination({
             <Box visibleFrom="sm">
               <Pagination.Last
                 icon={() => <ChevronsRight size={15} />}
-                aria-label="Last page"
+                aria-label={t("common.lastPage", "Last page")}
                 className="table-page-btn table-page-edge-btn"
                 disabled={disabled || page >= calculatedTotalPages || total === 0}
                 onClick={() => onPageChange(calculatedTotalPages)}

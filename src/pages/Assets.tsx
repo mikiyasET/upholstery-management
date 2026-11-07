@@ -757,6 +757,7 @@ export default function Assets() {
               setPageSize(size);
               setCurrentPage(1);
             }}
+            itemLabel={t('common.assets', 'assets')}
           />
         )}
       </div>

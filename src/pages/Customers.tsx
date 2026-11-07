@@ -177,7 +177,7 @@ export default function Customers() {
             setPageSize(newSize);
             setCurrentPage(1);
           }}
-          itemLabel="clients"
+          itemLabel={t('common.customers', 'customers')}
           disabled={isLoadingCustomers}
         />
       </div>

@@ -854,7 +854,7 @@ export default function CustomerDetail() {
                     setOrderPage(1);
                   }}
                   pageSizeOptions={['5', '10', '20']}
-                  itemLabel="orders"
+                  itemLabel={t('common.orders', 'orders')}
                 />
               </>
             )}

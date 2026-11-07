@@ -528,7 +528,7 @@ export default function Users() {
                 setPageSize(newSize);
                 setCurrentPage(1);
               }}
-              itemLabel="users"
+              itemLabel={t('common.usersList', 'users')}
               disabled={isLoading}
             />
           </>
