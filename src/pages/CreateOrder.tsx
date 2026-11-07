@@ -2772,7 +2772,11 @@ export default function CreateOrder() {
       </Dialog>
 
       {/* Price Adjustment Dialog for Manifest Items */}
-      <Dialog open={!!editingCartItem} onOpenChange={(open) => !open && setEditingCartItem(null)}>
+      <Dialog 
+        open={!!editingCartItem} 
+        onOpenChange={(open) => !open && setEditingCartItem(null)}
+        hasUnsavedChanges={editingCartItem ? Number(editCartPriceInput) !== editingCartItem.standardPrice : false}
+      >
         <DialogContent className="sm:max-w-[440px] p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2.5">

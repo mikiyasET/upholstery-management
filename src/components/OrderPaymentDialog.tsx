@@ -101,7 +101,11 @@ export function OrderPaymentDialog({
   ];
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      hasUnsavedChanges={Boolean(paymentForm.amount || paymentForm.referenceNumber)}
+    >
       <DialogContent className="sm:max-w-[425px] bg-card border border-border text-foreground">
         <DialogHeader>
           <DialogTitle>{t('orders.actions.addPayment')}</DialogTitle>

@@ -131,7 +131,11 @@ export function UpdateOrderStatusDialog({
       : 25;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      hasUnsavedChanges={statusForm.status !== (currentStatus || 'OPEN') || Boolean(statusForm.notes.trim())}
+    >
       <DialogContent className="sm:max-w-[490px] p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl flex flex-col max-h-[88vh]">
         {/* Header */}
         <div className="p-4 sm:p-5 pb-3 sm:pb-3.5 border-b border-border/60 bg-gradient-to-b from-muted/40 to-transparent shrink-0">

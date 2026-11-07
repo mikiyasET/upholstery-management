@@ -2152,7 +2152,11 @@ export default function OrderDetail() {
       </Dialog>
 
       {/* Adjust Line Price / Discount Dialog */}
-      <Dialog open={!!editingLine} onOpenChange={(open) => !open && setEditingLine(null)}>
+      <Dialog 
+        open={!!editingLine} 
+        onOpenChange={(open) => !open && setEditingLine(null)}
+        hasUnsavedChanges={editingLine ? Number(editLinePriceInput) !== (editingLine.standardPrice || editingLine.currentPrice) : false}
+      >
         <DialogContent className="sm:max-w-[440px] p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
           <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
