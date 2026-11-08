@@ -303,5 +303,45 @@ export function formatPaymentMethod(method: string | undefined | null, language?
   }
 }
 
+/**
+ * Safely extracts user-friendly error messages from API or runtime errors.
+ * Ensures that raw server logs, SQL queries, Prisma engine traces, or internal
+ * exception stacks are never shown to the user.
+ */
+export function getErrorMessage(err: any, fallback?: string): string {
+  const defaultFallback = fallback || i18n.t('alerts.error', 'An error occurred');
+  if (!err) return defaultFallback;
+
+  if (err.isAxiosError && !err.response) {
+    return i18n.t('alerts.noInternet', 'Network connection error. Please verify your connection.');
+  }
+
+  const rawMsg = err.response?.data?.error?.message || err.response?.data?.message || err.message;
+  if (typeof rawMsg === 'string' && rawMsg.trim()) {
+    const lower = rawMsg.toLowerCase();
+    const isLeak =
+      lower.includes('prisma') ||
+      lower.includes('libquery_engine') ||
+      lower.includes('libssl') ||
+      lower.includes('node_modules') ||
+      lower.includes('invocation') ||
+      lower.includes('error loading shared library') ||
+      lower.includes('select ') ||
+      lower.includes('insert ') ||
+      lower.includes('update ') ||
+      lower.includes('delete ') ||
+      lower.includes('request failed with status code') ||
+      rawMsg.includes(' at ') ||
+      rawMsg.includes('Error:');
+
+    if (!isLeak) {
+      return rawMsg;
+    }
+  }
+
+  return defaultFallback;
+}
+
+
 
 

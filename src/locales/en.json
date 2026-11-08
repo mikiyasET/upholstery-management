@@ -1581,7 +1581,12 @@
     "login": {
       "welcomeBack": "Welcome back!",
       "signedInAs": "Signed in as",
-      "failed": "Invalid credentials. Please verify your phone number and password."
+      "failed": "Invalid phone number or password.",
+      "invalidCredentials": "Invalid phone number or password",
+      "employeeBlocked": "Employees cannot log in to the system",
+      "authFailed": "Authentication Failed",
+      "serverErrorTitle": "Connection Error",
+      "serverError": "Unable to connect to the server. Please check your connection and try again."
     }
   }
 }

@@ -34,7 +34,7 @@ export default function Login() {
   const user = useAuthStore((s) => s.user);
   const login = useAuthStore((s) => s.login);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
@@ -75,10 +75,28 @@ export default function Login() {
       });
       navigate("/", { replace: true });
     } catch (err: any) {
-      setError(
-        err.response?.data?.error?.message ||
-          t("auth.login.failed", "Invalid credentials. Please verify your phone number and password.")
-      );
+      const status = err.response?.status;
+      const rawMsg = err.response?.data?.error?.message;
+
+      if (!err.response) {
+        setError({
+          title: t("alerts.noInternet", "Network Error"),
+          message: t("auth.login.serverError", "Unable to connect to the server. Please check your connection and try again."),
+        });
+      } else if (status === 401) {
+        const isEmployee = typeof rawMsg === 'string' && rawMsg.toLowerCase().includes('employee');
+        setError({
+          title: t("auth.login.authFailed", "Authentication Failed"),
+          message: isEmployee
+            ? t("auth.login.employeeBlocked", "Employees cannot log in to the system")
+            : t("auth.login.invalidCredentials", "Invalid phone number or password"),
+        });
+      } else {
+        setError({
+          title: t("auth.login.serverErrorTitle", "Connection Error"),
+          message: t("auth.login.serverError", "Unable to connect to the server. Please check your connection and try again."),
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -221,9 +239,9 @@ export default function Login() {
                 color="red"
                 radius="md"
                 variant="light"
-                title="Authentication Failed"
+                title={error.title}
               >
-                {error}
+                {error.message}
               </Alert>
             )}
 

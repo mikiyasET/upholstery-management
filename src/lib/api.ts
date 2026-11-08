@@ -13,6 +13,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function sanitizeServerError(msg: unknown): string {
+  if (typeof msg !== 'string') return 'An unexpected server error occurred.';
+  const lower = msg.toLowerCase();
+  if (
+    lower.includes('prisma') ||
+    lower.includes('libquery_engine') ||
+    lower.includes('libssl') ||
+    lower.includes('node_modules') ||
+    lower.includes('invocation') ||
+    lower.includes('error loading shared library') ||
+    lower.includes('select ') ||
+    lower.includes('insert ') ||
+    lower.includes('update ') ||
+    lower.includes('delete ') ||
+    lower.includes('request failed with status code') ||
+    msg.includes(' at ') ||
+    msg.includes('Error:')
+  ) {
+    return 'A server error occurred. Please try again later.';
+  }
+  return msg;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -22,8 +45,18 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Sanitize any server traces from response error objects
+    if (error.response?.data?.error?.message) {
+      error.response.data.error.message = sanitizeServerError(error.response.data.error.message);
+    }
+    if (error.response?.data?.message) {
+      error.response.data.message = sanitizeServerError(error.response.data.message);
+    }
+
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isLoginEndpoint = originalRequest?.url?.includes('/auth/login');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isLoginEndpoint) {
       originalRequest._retry = true;
       const refreshToken = useAuthStore.getState().refreshToken;
       
@@ -48,7 +81,7 @@ api.interceptors.response.use(
         useAuthStore.getState().logout();
         if (window.location.pathname !== '/login') window.location.href = '/login';
       }
-    } else if (error.response?.status === 401) {
+    } else if (error.response?.status === 401 && !isLoginEndpoint) {
        // Catch-all for missing/invalid token after retry
        useAuthStore.getState().logout();
        if (window.location.pathname !== '/login') window.location.href = '/login';
