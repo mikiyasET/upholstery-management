@@ -105,6 +105,11 @@ export function parseInputNumber(value: string): number {
 
 export function getImageUrl(relativeUrl?: string | null): string | undefined {
   if (!relativeUrl) return undefined;
+
+  // If the path is already a full remote URL (e.g. Cloudflare R2 / S3), return as-is
+  if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
+    return relativeUrl;
+  }
   
   // Clean up leading slashes just in case
   const path = relativeUrl.startsWith('/') ? relativeUrl.slice(1) : relativeUrl;
