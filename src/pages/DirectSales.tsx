@@ -85,6 +85,8 @@ export default function DirectSales() {
   const [fsrNumber, setFsrNumber] = useState('');
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showFsr, setShowFsr] = useState(false);
+  const [customerSearchFound, setCustomerSearchFound] = useState<string | null>(null);
+  const [lastAutoFilledPhone, setLastAutoFilledPhone] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [brandPickerMaterial, setBrandPickerMaterial] = useState<Material | null>(null);
@@ -146,6 +148,33 @@ export default function DirectSales() {
     },
     enabled: !!editId,
   });
+
+  useEffect(() => {
+    const cleanPhone = customerPhone.trim();
+    if (cleanPhone.length >= 4) {
+      const timer = setTimeout(async () => {
+        try {
+          const res = await api.get(`/customers/search?phone=${encodeURIComponent(cleanPhone)}`);
+          const customer = res.data;
+          if (customer && customer.name) {
+            setCustomerName(customer.name);
+            setCustomerSearchFound(customer.name);
+            if (lastAutoFilledPhone !== customer.phoneNumber) {
+              setLastAutoFilledPhone(customer.phoneNumber);
+              toast.success(`${t('orders.validation.customerFound', 'Customer found')}: ${customer.name}`);
+            }
+          } else {
+            setCustomerSearchFound(null);
+          }
+        } catch {
+          setCustomerSearchFound(null);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setCustomerSearchFound(null);
+    }
+  }, [customerPhone]);
 
   useEffect(() => {
     if (editSaleData && materials) {
@@ -478,6 +507,8 @@ export default function DirectSales() {
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
+      setCustomerSearchFound(null);
+      setLastAutoFilledPhone(null);
       setFsrNumber('');
       setShowCustomerInfo(false);
       setShowFsr(false);
@@ -490,6 +521,7 @@ export default function DirectSales() {
       }
       queryClient.invalidateQueries({ queryKey: ['materials'] });
       queryClient.invalidateQueries({ queryKey: ['direct-sales'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (err: any) => {
       setIsConfirmOpen(false);
@@ -756,6 +788,8 @@ export default function DirectSales() {
                   onClick={() => {
                     setCustomerName('');
                     setCustomerPhone('');
+                    setCustomerSearchFound(null);
+                    setLastAutoFilledPhone(null);
                   }}
                   className="text-[10px] text-muted-foreground/70 hover:text-red-500 transition-colors cursor-pointer px-1 py-0.2 rounded hover:bg-red-500/10"
                 >
@@ -816,6 +850,13 @@ export default function DirectSales() {
                 <Check className="w-3.5 h-3.5 stroke-[2.5]" />
               </button>
             </div>
+
+            {customerSearchFound && (
+              <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 pt-0.5 animate-in fade-in">
+                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                <span>{t('orders.validation.customerFound', 'Customer found')}: <strong>{customerSearchFound}</strong></span>
+              </div>
+            )}
           </div>
         )}
 

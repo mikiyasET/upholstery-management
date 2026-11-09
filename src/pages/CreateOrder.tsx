@@ -202,11 +202,13 @@ export default function CreateOrder() {
   const exteriorSelectedCount = exteriorStatuses.filter((cs: any) => selectedCarStatusIds.includes(cs.id)).length;
   const interiorSelectedCount = interiorStatuses.filter((cs: any) => selectedCarStatusIds.includes(cs.id)).length;
 
-  // Auto-Search Vehicle by Plate Number (Canvas modal & lookup untouched)
+  // Auto-Search Vehicle by Plate Number & Customer by Phone Number
   const [, setIsSearching] = useState(false);
   const [searchStatus, setSearchStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
+  const [phoneSearchStatus, setPhoneSearchStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
   const [matchingVehicles, setMatchingVehicles] = useState<any[]>([]);
   const [lastAutoFilledVehicleId, setLastAutoFilledVehicleId] = useState<string | null>(null);
+  const [lastAutoFilledPhone, setLastAutoFilledPhone] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchStatus === 'found') {
@@ -214,6 +216,13 @@ export default function CreateOrder() {
       return () => clearTimeout(timer);
     }
   }, [searchStatus]);
+
+  useEffect(() => {
+    if (phoneSearchStatus === 'found') {
+      const timer = setTimeout(() => setPhoneSearchStatus('idle'), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [phoneSearchStatus]);
 
   useEffect(() => {
     const searchStr = parsePlateNumber(plateNumber)?.serial || plateNumber;
@@ -237,6 +246,7 @@ export default function CreateOrder() {
             
             if (lastAutoFilledVehicleId !== exactMatch.id) {
               setLastAutoFilledVehicleId(exactMatch.id);
+              setLastAutoFilledPhone(exactMatch.customer.phoneNumber);
               toast.success(t('orders.validation.vehicleFound'));
             }
           } else if (vehicles.length > 1) {
@@ -259,6 +269,44 @@ export default function CreateOrder() {
       setSearchStatus('idle');
     }
   }, [plateNumber]);
+
+  useEffect(() => {
+    const cleanPhone = customerPhone.trim();
+    if (cleanPhone.length >= 4) {
+      setPhoneSearchStatus('idle');
+      const timer = setTimeout(async () => {
+        try {
+          const res = await api.get(`/customers/search?phone=${encodeURIComponent(cleanPhone)}`);
+          const customer = res.data;
+          if (customer && customer.name) {
+            setCustomerName(customer.name);
+            setPhoneSearchStatus('found');
+
+            if (customer.vehicles && customer.vehicles.length === 1) {
+              const exactVehicle = customer.vehicles[0];
+              setPlateNumber(exactVehicle.plateNumber);
+              setCarModelId(exactVehicle.carModelId);
+              setMatchingVehicles([]);
+            } else if (customer.vehicles && customer.vehicles.length > 1) {
+              setMatchingVehicles(customer.vehicles);
+            }
+
+            if (lastAutoFilledPhone !== customer.phoneNumber) {
+              setLastAutoFilledPhone(customer.phoneNumber);
+              toast.success(`${t('orders.validation.customerFound', 'Customer found')}: ${customer.name}`);
+            }
+          } else {
+            setPhoneSearchStatus('idle');
+          }
+        } catch {
+          setPhoneSearchStatus('idle');
+        }
+      }, 700);
+      return () => clearTimeout(timer);
+    } else {
+      setPhoneSearchStatus('idle');
+    }
+  }, [customerPhone]);
 
   const selectVehicle = (v: any) => {
     setCustomerName(v.customer.name);
@@ -955,10 +1003,14 @@ export default function CreateOrder() {
                 </div>
 
                 {/* Auto-detected recognition chip */}
-                {searchStatus === 'found' && (
+                {(searchStatus === 'found' || phoneSearchStatus === 'found') && (
                   <div className="flex items-center gap-1.5 p-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[10px] font-semibold animate-in fade-in slide-in-from-top-1">
                     <CheckCircle className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{t('orders.validation.vehicleFound', 'Vehicle records loaded')}</span>
+                    <span>
+                      {searchStatus === 'found' 
+                        ? t('orders.validation.vehicleFound', 'Vehicle records loaded') 
+                        : `${t('orders.validation.customerFound', 'Customer records loaded')}: ${customerName}`}
+                    </span>
                   </div>
                 )}
 

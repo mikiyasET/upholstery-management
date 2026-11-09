@@ -38,6 +38,7 @@ import {
   Plus,
   Clock,
   StickyNote,
+  Receipt,
 } from 'lucide-react';
 import { ExecutiveAddButton, TablePagination, PlateBadge, FloatingRefreshButton } from '../components/common';
 import {
@@ -58,11 +59,13 @@ export default function CustomerDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<'fleet' | 'orders' | 'profile'>('fleet');
+  const [activeTab, setActiveTab] = useState<'fleet' | 'orders' | 'directSales' | 'profile'>('fleet');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
   const [orderPage, setOrderPage] = useState(1);
   const [orderPageSize, setOrderPageSize] = useState(5);
+  const [directSalePage, setDirectSalePage] = useState(1);
+  const [directSalePageSize, setDirectSalePageSize] = useState(5);
 
   const { data: customer, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['customer', id],
@@ -74,13 +77,29 @@ export default function CustomerDetail() {
   });
 
   // Financial & KPI Computations
+  const directSalesCount = customer?.directSales?.length || 0;
+  const directSalesSpent = useMemo(() => {
+    return (customer?.directSales || []).reduce((acc: number, s: any) => {
+      const linesTotal = (s.lines || []).reduce((lAcc: number, l: any) => lAcc + (Number(l.priceAtSaleTime) * Number(l.quantity)), 0);
+      const discount = Number(s.discountAmount) || 0;
+      const tax = Number(s.taxAmount) || 0;
+      return acc + (linesTotal - discount + tax);
+    }, 0);
+  }, [customer?.directSales]);
+
   const totalSpent = useMemo(() => {
-    return (customer?.orders || []).reduce((acc: number, o: any) => acc + (Number(o.subTotal) || 0), 0);
-  }, [customer?.orders]);
+    const ordersTotal = (customer?.orders || []).reduce((acc: number, o: any) => acc + (Number(o.subTotal) || 0), 0);
+    return ordersTotal + directSalesSpent;
+  }, [customer?.orders, directSalesSpent]);
 
   const ordersCount = customer?.orders?.length || 0;
   const vehiclesCount = customer?.vehicles?.length || 0;
   const avgTicket = ordersCount > 0 ? totalSpent / ordersCount : 0;
+
+  const paginatedDirectSales = useMemo(() => {
+    return (customer?.directSales || []).slice((directSalePage - 1) * directSalePageSize, directSalePage * directSalePageSize);
+  }, [customer?.directSales, directSalePage, directSalePageSize]);
+  const directSaleTotalPages = Math.max(1, Math.ceil(directSalesCount / directSalePageSize));
 
   const completedOrders = useMemo(() => {
     return (customer?.orders || []).filter((o: any) => o.orderStatus === 'DELIVERED' || o.orderStatus === 'COMPLETED').length;
@@ -437,6 +456,33 @@ export default function CustomerDetail() {
             }}
           >
             {t('customers.detail.tabOrders', 'Service & Work Orders')}
+          </MantineButton>
+
+          <MantineButton
+            variant={activeTab === 'directSales' ? 'filled' : 'subtle'}
+            color="amber"
+            size="sm"
+            radius="md"
+            leftSection={<Receipt size={16} />}
+            rightSection={
+              <MantineBadge
+                size="xs"
+                variant={activeTab === 'directSales' ? 'white' : 'light'}
+                color="amber"
+                style={{ padding: '0 6px', fontWeight: 700 }}
+              >
+                {directSalesCount}
+              </MantineBadge>
+            }
+            onClick={() => setActiveTab('directSales')}
+            style={{
+              fontWeight: activeTab === 'directSales' ? 700 : 500,
+              height: 36,
+              fontSize: '13px',
+              fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+            }}
+          >
+            {t('directSales.directSales', 'Direct Sales')}
           </MantineButton>
 
           <MantineButton
@@ -865,6 +911,130 @@ export default function CustomerDetail() {
                   }}
                   pageSizeOptions={['5', '10', '20']}
                   itemLabel={t('common.orders', 'orders')}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: DIRECT SALES */}
+      {activeTab === 'directSales' && (
+        <div className="space-y-4">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xs">
+            {directSalesCount === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground/60 mb-3">
+                  <Receipt size={26} />
+                </div>
+                <h3 className="text-sm font-bold text-foreground">
+                  {t('directSales.noSales', 'No direct sales found')}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  {t('customers.detail.noDirectSalesDesc', 'This customer has no recorded direct over-the-counter purchases yet.')}
+                </p>
+                <MantineButton
+                  variant="light"
+                  color="amber"
+                  size="xs"
+                  radius="md"
+                  mt="md"
+                  leftSection={<Plus size={14} />}
+                  onClick={() => navigate('/direct-sales')}
+                >
+                  {t('directSales.newSale', 'New Direct Sale')}
+                </MantineButton>
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('directSales.table.saleNumber', 'Sale #')}</TableHead>
+                      <TableHead>{t('common.date', 'Date & Time')}</TableHead>
+                      <TableHead>{t('orders.fsrNumber', 'FSR #')}</TableHead>
+                      <TableHead>{t('common.items', 'Items')}</TableHead>
+                      <TableHead>{t('common.status', 'Status')}</TableHead>
+                      <TableHead className="text-right">{t('common.total', 'Total Amount')}</TableHead>
+                      <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedDirectSales.map((s: any) => {
+                      const totalLines = (s.lines || []).reduce((acc: number, l: any) => acc + (Number(l.priceAtSaleTime) * Number(l.quantity)), 0);
+                      const discount = Number(s.discountAmount) || 0;
+                      const tax = Number(s.taxAmount) || 0;
+                      const saleTotal = totalLines - discount + tax;
+
+                      return (
+                        <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="font-mono font-bold text-xs text-foreground">
+                            {s.saleNumber}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {formatAppDate(s.saleDateTime)}
+                          </TableCell>
+                          <TableCell>
+                            {s.fsrNumber ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                {s.fsrNumber}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/50 text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="font-medium text-foreground">
+                              {s.lines?.length || 0} {s.lines?.length === 1 ? 'item' : 'items'}
+                            </span>
+                            {s.lines?.length > 0 && (
+                              <span className="text-muted-foreground text-[11px] block truncate max-w-xs">
+                                {s.lines.map((l: any) => l.material?.nameEn || l.brandName || 'Item').join(', ')}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                              s.paymentStatus === 'PAID' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                            }`}>
+                              {formatStatus(s.paymentStatus)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                              {formatCurrency(saleTotal)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <MantineButton
+                              variant="subtle"
+                              color="amber"
+                              size="xs"
+                              radius="md"
+                              rightSection={<Eye size={13} />}
+                              onClick={() => navigate(`/direct-sales?editId=${s.id}`)}
+                              style={{ fontSize: '11px', height: 28, padding: '0 8px', fontWeight: 600 }}
+                            >
+                              {t('common.view', 'View')}
+                            </MantineButton>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  page={directSalePage}
+                  pageSize={directSalePageSize}
+                  total={directSalesCount}
+                  totalPages={directSaleTotalPages}
+                  onPageChange={setDirectSalePage}
+                  onPageSizeChange={(newSize) => {
+                    setDirectSalePageSize(newSize);
+                    setDirectSalePage(1);
+                  }}
+                  pageSizeOptions={['5', '10', '20']}
+                  itemLabel={t('directSales.sales', 'sales')}
                 />
               </>
             )}
