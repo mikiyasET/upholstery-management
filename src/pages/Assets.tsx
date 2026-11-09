@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
@@ -49,10 +49,11 @@ import {
   Lock,
   UploadCloud,
   X,
+  ListFilter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
-import { Badge, Box, Group, Button as MantineButton, Tooltip } from '@mantine/core';
+import { Badge, Box, Button as MantineButton, Tooltip, Select as MantineSelect } from '@mantine/core';
 
 export type AssetLog = {
   id: string;
@@ -101,7 +102,7 @@ const CATEGORY_OPTIONS = [
 const UNIT_OPTIONS = ['PCS', 'SET', 'KG', 'METER', 'BOX', 'PAIR', 'ROLL', 'LITER', 'OTHER'];
 
 export default function Assets() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   // Navigation tab: 'active' | 'trash'
@@ -112,6 +113,44 @@ export default function Assets() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const getCategoryLabel = useCallback(
+    (cat: string) => {
+      if (!cat || cat === 'all') return t('assets.filterByCategory', 'All Categories');
+      switch (cat) {
+        case 'Machines & Equipment':
+          return t('assets.categories.machines', 'Machines & Equipment');
+        case 'Power Tools':
+          return t('assets.categories.powerTools', 'Power Tools');
+        case 'Hand Tools':
+          return t('assets.categories.handTools', 'Hand Tools');
+        case 'Screws & Fasteners':
+          return t('assets.categories.fasteners', 'Screws & Fasteners');
+        case 'Electronics & Testing':
+          return t('assets.categories.electronics', 'Electronics & Testing');
+        case 'Furniture & Workshop':
+        case 'Furniture & Fixtures':
+          return t('assets.categories.furniture', 'Furniture & Workshop');
+        case 'Company Vehicles':
+        case 'Vehicles':
+          return t('assets.categories.vehicles', 'Company Vehicles');
+        case 'Other Equipment':
+        case 'Other':
+          return t('assets.categories.other', 'Other Equipment');
+        default:
+          return cat;
+      }
+    },
+    [t]
+  );
+
+  const categorySelectData = useMemo(() => [
+    { value: 'all', label: t('assets.filterByCategory', 'All Categories') },
+    ...CATEGORY_OPTIONS.map((cat) => ({
+      value: cat,
+      label: getCategoryLabel(cat),
+    })),
+  ], [t, i18n.language, getCategoryLabel]);
 
   // Modals
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -333,10 +372,11 @@ export default function Assets() {
           'assets.subtitle',
           'Track and audit company property (machines, tools, hardware) with mandatory 30-day retention.'
         )}
-        badge={`${assets.length} ${activeTab === 'trash' ? 'in Trash' : 'Active'}`}
+        hideSubtitleOnMobile
+        badge={`${assets.length} ${activeTab === 'trash' ? t('assets.deletedBadge', 'Deleted') : t('common.active', 'Active')}`}
         onRefresh={() => refetch()}
         isRefreshing={isFetching}
-        refreshTooltip="Refresh asset catalog"
+        refreshTooltip={t('assets.refreshTooltip', 'Refresh asset catalog')}
         action={
           <PermissionGate permission="assets.add">
             <ExecutiveAddButton
@@ -373,93 +413,115 @@ export default function Assets() {
           <Button
             variant="outline"
             size="sm"
-            className="border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+            className="border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 shrink-0"
             onClick={() => {
               setActiveTab('trash');
               setCurrentPage(1);
             }}
           >
             <Trash2 className="h-4 w-4 mr-1.5" />
-            {t('assets.trashBin', 'View Trash Bin')} ({trashCount})
+            {t('assets.viewTrash', 'View Deleted Assets')} ({trashCount})
           </Button>
         </div>
       )}
 
       {/* 3. Sub-Navigation Tabs & Controls */}
-      <Group justify="space-between" align="center" mb="sm" wrap="wrap" gap="md">
-        <Box
-          p={4}
-          style={{
-            backgroundColor: 'var(--surface-card, rgba(255, 255, 255, 0.04))',
-            border: '1px solid var(--surface-border, rgba(255, 255, 255, 0.08))',
-            borderRadius: 12,
-            display: 'inline-flex',
-            gap: 6,
-            boxShadow: 'var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.1))',
-            maxWidth: '100%',
-            overflowX: 'auto',
-          }}
-          className="custom-scrollbar"
-        >
-          <MantineButton
-            variant={activeTab === 'active' ? 'filled' : 'subtle'}
-            color="amber"
-            size="sm"
-            radius="md"
-            leftSection={<Boxes size={16} />}
-            onClick={() => {
-              setActiveTab('active');
-              setCurrentPage(1);
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+        <div className="overflow-x-auto no-scrollbar scrollbar-none -mx-1 px-1 sm:mx-0 sm:px-0">
+          <Box
+            p={4}
+            style={{
+              backgroundColor: 'var(--surface-card, rgba(255, 255, 255, 0.04))',
+              border: '1px solid var(--surface-border, rgba(255, 255, 255, 0.08))',
+              borderRadius: 12,
+              display: 'inline-flex',
+              gap: 6,
+              boxShadow: 'var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.1))',
             }}
+            className="flex-nowrap shrink-0"
           >
-            {t('assets.activeAssets', 'Active Assets')}
-          </MantineButton>
+            <MantineButton
+              variant={activeTab === 'active' ? 'filled' : 'subtle'}
+              color="amber"
+              size="sm"
+              radius="md"
+              leftSection={<Boxes size={16} />}
+              className="whitespace-nowrap shrink-0"
+              onClick={() => {
+                setActiveTab('active');
+                setCurrentPage(1);
+              }}
+            >
+              {t('assets.activeAssets', 'Active Assets')}
+            </MantineButton>
 
-          <MantineButton
-            variant={activeTab === 'trash' ? 'filled' : 'subtle'}
-            color={trashCount > 0 ? 'red' : 'gray'}
-            size="sm"
-            radius="md"
-            leftSection={<Trash2 size={16} />}
-            rightSection={
-              trashCount > 0 ? (
-                <Badge size="xs" variant="filled" color="red">
-                  {trashCount}
-                </Badge>
-              ) : undefined
-            }
-            onClick={() => {
-              setActiveTab('trash');
-              setCurrentPage(1);
-            }}
-          >
-            {t('assets.trashBin', 'Trash Bin (30-Day Retention)')}
-          </MantineButton>
-        </Box>
+            <MantineButton
+              variant={activeTab === 'trash' ? 'filled' : 'subtle'}
+              color={trashCount > 0 ? 'red' : 'gray'}
+              size="sm"
+              radius="md"
+              leftSection={<Trash2 size={16} />}
+              className="whitespace-nowrap shrink-0"
+              rightSection={
+                trashCount > 0 ? (
+                  <Badge size="xs" variant="filled" color="red">
+                    {trashCount}
+                  </Badge>
+                ) : undefined
+              }
+              onClick={() => {
+                setActiveTab('trash');
+                setCurrentPage(1);
+              }}
+            >
+              {t('assets.trashBin', 'Deleted Assets (30-Day Retention)')}
+            </MantineButton>
+          </Box>
+        </div>
 
         {/* Category Filter */}
-        <div className="flex items-center gap-3">
-          <Select
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <MantineSelect
+            data={categorySelectData}
             value={selectedCategory}
-            onValueChange={(val) => {
+            onChange={(val) => {
               setSelectedCategory(val || 'all');
               setCurrentPage(1);
             }}
-          >
-            <SelectTrigger className="w-[200px] h-9 text-xs">
-              <SelectValue placeholder={t('assets.filterByCategory', 'All Categories')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('assets.filterByCategory', 'All Categories')}</SelectItem>
-              {CATEGORY_OPTIONS.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            clearable={false}
+            leftSection={<ListFilter size={15} style={{ color: 'var(--text-muted)' }} />}
+            size="sm"
+            radius="md"
+            className="w-full sm:w-60"
+            styles={{
+              input: {
+                backgroundColor: 'var(--surface-bg)',
+                borderColor: 'var(--surface-border)',
+                fontSize: '13px',
+                fontWeight: 500,
+                height: 36,
+              },
+            }}
+          />
+
+          {selectedCategory !== 'all' && (
+            <MantineButton
+              variant="subtle"
+              color="gray"
+              size="xs"
+              radius="md"
+              onClick={() => {
+                setSelectedCategory('all');
+                setCurrentPage(1);
+              }}
+              leftSection={<X size={13} />}
+              className="shrink-0 h-9 font-semibold"
+            >
+              {t('common.clear', 'Reset')}
+            </MantineButton>
+          )}
         </div>
-      </Group>
+      </div>
 
       {/* 4. Trash Bin Warning Info Card (when in trash tab) */}
       {activeTab === 'trash' && (
@@ -470,9 +532,10 @@ export default function Assets() {
               {t('assets.trashAlertBanner', '30-Day Mandatory Retention Policy Active')}
             </p>
             <p className="text-xs text-muted-foreground">
-              To protect company assets against accidental or unauthorized permanent loss, items
-              moved to trash cannot be deleted instantly. The system will hold them safely for 30
-              days and auto-purge them once the period lapses. You can restore items at any time.
+              {t(
+                'assets.retentionPolicyDesc',
+                'To protect company assets against accidental or unauthorized permanent loss, items moved to deleted assets cannot be deleted instantly. The system will hold them safely for 30 days and auto-purge them once the period lapses. You can restore items at any time.'
+              )}
             </p>
           </div>
         </div>
@@ -480,7 +543,7 @@ export default function Assets() {
 
       {/* 5. Main Assets Table Card */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 items-center justify-between bg-card">
+        <div className="p-3 sm:p-4 border-b border-border flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between bg-card">
           <TableSearch
             value={search}
             onChange={(val) => {
@@ -490,9 +553,14 @@ export default function Assets() {
             placeholder={t('assets.searchPlaceholder', 'Search by name, tag, category, location...')}
             className="w-full sm:w-[440px] md:w-[500px]"
           />
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {totalItems} {activeTab === 'trash' ? 'in Trash' : 'Assets'}
-          </span>
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              {totalItems}{' '}
+              {activeTab === 'trash'
+                ? t('assets.deletedAssetsCount', 'Deleted Assets')
+                : t('assets.activeAssetsCount', 'Assets')}
+            </span>
+          </div>
         </div>
 
         <Table>
@@ -594,7 +662,7 @@ export default function Assets() {
                     <TableCell>
                       {asset.category ? (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium text-muted-foreground border border-border">
-                          {asset.category}
+                          {getCategoryLabel(asset.category)}
                         </span>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
@@ -797,12 +865,12 @@ export default function Assets() {
                   onValueChange={(val) => setFormData({ ...formData, category: val || '' })}
                 >
                   <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Select Category" />
+                    <SelectValue placeholder={t('assets.selectCategory', 'Select Category')} />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORY_OPTIONS.map((cat) => (
                       <SelectItem key={cat} value={cat}>
-                        {cat}
+                        {getCategoryLabel(cat)}
                       </SelectItem>
                     ))}
                   </SelectContent>
