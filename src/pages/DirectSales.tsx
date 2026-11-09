@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
-import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight, Receipt, X } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight, Receipt, X, Check } from 'lucide-react';
 import { ModernInput } from '../components/ui/modern-input';
 import { ModernSelect } from '../components/ui/modern-select';
 import { toast } from 'sonner';
@@ -744,110 +744,110 @@ export default function DirectSales() {
 
         {/* Customer Info Collapsible Drawer */}
         {showCustomerInfo && (
-          <div className="p-3 border-b border-border/60 bg-muted/30 dark:bg-zinc-900/60 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="p-2.5 border-b border-border/60 bg-muted/30 dark:bg-zinc-900/60 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 leading-none">
                 <User className="w-3 h-3 text-amber-500" />
                 <span>{t('common.customerDetails', 'Customer Details')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {(customerName || customerPhone) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCustomerName('');
-                      setCustomerPhone('');
-                    }}
-                    className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
-                  >
-                    {t('common.clear', 'Clear')}
-                  </button>
-                )}
+              </span>
+              {(customerName || customerPhone) && (
                 <button
                   type="button"
-                  onClick={() => setShowCustomerInfo(false)}
-                  className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                  onClick={() => {
+                    setCustomerName('');
+                    setCustomerPhone('');
+                  }}
+                  className="text-[10px] text-muted-foreground/70 hover:text-red-500 transition-colors cursor-pointer px-1 py-0.2 rounded hover:bg-red-500/10"
                 >
-                  {t('common.done', 'Done')}
+                  {t('common.clear', 'Clear')}
                 </button>
-              </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
-                  {t('common.name', 'Name')}
-                </label>
-                <div className="relative flex items-center">
-                  <User className="w-3 h-3 absolute left-2 text-muted-foreground/50 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={e => setCustomerName(e.target.value)}
-                    placeholder={t("customers.table.customer", "John Doe")}
-                    className="w-full h-7 bg-background border border-input rounded pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-medium"
-                    autoFocus
-                  />
+            <div className="flex items-end gap-1.5">
+              <div className="grid grid-cols-2 gap-2 flex-1">
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
+                    {t('common.name', 'Name')}
+                  </label>
+                  <div className="relative flex items-center">
+                    <User className="w-3 h-3 absolute left-2 text-muted-foreground/50 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={e => setCustomerName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') setShowCustomerInfo(false);
+                      }}
+                      placeholder={t("customers.table.customer", "John Doe")}
+                      className="w-full h-7 bg-background border border-input rounded pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-medium"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
+                    {t('common.phone', 'Phone')}
+                  </label>
+                  <div className="relative flex items-center">
+                    <Phone className="w-3 h-3 absolute left-2 text-muted-foreground/50 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={customerPhone}
+                      onChange={e => setCustomerPhone(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') setShowCustomerInfo(false);
+                      }}
+                      placeholder="0911..."
+                      className="w-full h-7 bg-background border border-input rounded pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
-                  {t('common.phone', 'Phone')}
-                </label>
-                <div className="relative flex items-center">
-                  <Phone className="w-3 h-3 absolute left-2 text-muted-foreground/50 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={customerPhone}
-                    onChange={e => setCustomerPhone(e.target.value)}
-                    placeholder="0911..."
-                    className="w-full h-7 bg-background border border-input rounded pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
-                  />
-                </div>
-              </div>
+              {/* Confirm check button */}
+              <button
+                type="button"
+                onClick={() => setShowCustomerInfo(false)}
+                className="h-7 w-7 rounded bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
+                title="Done (Enter)"
+              >
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              </button>
             </div>
           </div>
         )}
 
         {/* FSR Number Collapsible Drawer */}
         {showFsr && (
-          <div className="p-3 border-b border-border/60 bg-muted/30 dark:bg-zinc-900/60 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="p-2.5 border-b border-border/60 bg-muted/30 dark:bg-zinc-900/60 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1 leading-none">
                 <Receipt className="w-3 h-3 text-blue-500" />
                 <span>{t('orders.fsrNumber', 'FSR Number')}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {fsrNumber && (
-                  <button
-                    type="button"
-                    onClick={() => setFsrNumber('')}
-                    className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
-                  >
-                    {t('common.clear', 'Clear')}
-                  </button>
-                )}
+              </span>
+              {fsrNumber && (
                 <button
                   type="button"
-                  onClick={() => setShowFsr(false)}
-                  className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                  onClick={() => setFsrNumber('')}
+                  className="text-[10px] text-muted-foreground/70 hover:text-red-500 transition-colors cursor-pointer px-1 py-0.2 rounded hover:bg-red-500/10"
                 >
-                  {t('common.done', 'Done')}
+                  {t('common.clear', 'Clear')}
                 </button>
-              </div>
+              )}
             </div>
 
-            <div>
-              <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
-                {t('orders.fsrAuditReference', 'Paper Receipt Ref')}
-              </label>
-              <div className="relative flex items-center">
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1 flex items-center">
                 <Receipt className="w-3 h-3 absolute left-2 text-blue-500 pointer-events-none" />
                 <input
                   type="text"
                   value={fsrNumber}
                   onChange={e => setFsrNumber(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') setShowFsr(false);
+                  }}
                   placeholder="e.g. FSR-00123"
                   className="w-full h-7 bg-background border border-blue-500/40 rounded pl-6 pr-6 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40 transition-all font-mono font-bold uppercase tracking-wider"
                   autoFocus
@@ -856,13 +856,21 @@ export default function DirectSales() {
                   <button
                     type="button"
                     onClick={() => setFsrNumber('')}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground p-0.5 rounded"
                     title={t('common.clear', 'Clear')}
                   >
                     <X className="w-2.5 h-2.5" />
                   </button>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowFsr(false)}
+                className="h-7 w-7 rounded bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
+                title="Done (Enter)"
+              >
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              </button>
             </div>
           </div>
         )}
