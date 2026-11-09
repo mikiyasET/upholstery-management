@@ -42,9 +42,3 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 npm run build
 npm run preview
 ```
-
-### Docker
-```bash
-docker build -t yonatan-upholstery-web .
-docker run -p 8080:80 yonatan-upholstery-web
-```
