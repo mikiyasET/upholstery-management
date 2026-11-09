@@ -1507,21 +1507,17 @@
   },
   "settings": {
     "title": "ቅንብሮች",
-    "subtitle": "የወርክሾፑን መገለጫ፣ የንግድ መረጃ፣ የቁጥር ቅደም ተከተሎች እና የደህንነት ቁጥጥሮችን ያስተዳድሩ።",
+    "subtitle": "የወርክሾፑን መገለጫ፣ የንግድ መረጃ እና የደህንነት ቁጥጥሮችን ያስተዳድሩ።",
     "refreshTooltip": "ቅንብሮችን አድስ",
     "savedTitle": "ቅንብሮች ተቀምጠዋል",
     "savedMessage": "የወርክሾፑ መገለጫ እና ማስተካከያዎች በተሳካ ሁኔታ ተሻሽለዋል።",
     "refreshedTitle": "ቅንብሮች ታድሰዋል",
     "refreshedMessage": "የሲስተም ቅንብሮች ወደ አሁናዊ ሁኔታቸው ተመልሰዋል።",
-    "sequencesSavedTitle": "ቅደም ተከተሎች ተቀምጠዋል",
-    "sequencesSavedMessage": "የቁጥር ቅደም ተከተል ቆጣሪዎች በተሳካ ሁኔታ ተሻሽለዋል።",
     "securityUpdatedTitle": "የደህንነት ቅንብሮች ተሻሽለዋል",
     "securityUpdatedMessage": "የይለፍ ቃል እና የደህንነት ማስተካከያዎች ተረጋግጠዋል።",
     "kpi": {
       "workshopEntity": "የወርክሾፕ ማንነት",
       "tin": "ቲን ቁጥር",
-      "numberSequences": "የቁጥር ቅደም ተከተሎች",
-      "formatsActive": "3 ቅርጸቶች ንቁ ናቸው",
       "dualStores": "ሁለቱ የስቶር ማዕከላት",
       "activeHubs": "2 ንቁ መጋዘኖች",
       "miniPlusMain": "ሚኒ ስቶር + ዋና መጋዘን",
@@ -1531,7 +1527,6 @@
     },
     "tabs": {
       "profile": "የወርክሾፑ መገለጫ",
-      "sequences": "የቁጥር ቅደም ተከተሎች",
       "security": "ደህንነት እና የይለፍ ቃላት"
     },
     "profile": {
@@ -1548,25 +1543,17 @@
       "address": "የወርክሾፑ አድራሻ እና የሚገኝበት ቦታ",
       "saveButton": "የወርክሾፕ መገለጫ መዝግብ"
     },
-    "sequences": {
-      "title": "ራስ-ሰር የቁጥር ቅደም ተከተሎች",
-      "subtitle": "ለደረሰኞች፣ ለስራ ትዕዛዞች እና ለቀጥታ ሽያጮች የቁጥር ቅደም ተከተል ቅርጸት ያዘጋጁ።",
-      "workOrders": "የስራ ትዕዛዞች",
-      "formatOrder": "ቅርጸት፡ ቅድመ-ቅጥያ + ዓመት + ተከታታይ ቁጥር",
-      "directSales": "ቀጥታ የቆጣሪ ሽያጭ (POS)",
-      "formatPos": "ቅርጸት፡ ቅድመ-ቅጥያ + ተከታታይ ቁጥር",
-      "cashReceipts": "የገንዘብ መቀበያ ደረሰኞች",
-      "prefix": "ቅድመ-ቅጥያ",
-      "nextNumber": "ቀጣይ ቁጥር",
-      "saveButton": "ቅደም ተከተሎችን አሻሽል"
-    },
     "security": {
       "title": "የመለያ ደህንነት እና የይለፍ ቃል",
       "subtitle": "የመለያዎን ሚስጥራዊ መረጃዎች ያሻሽሉ እና የደህንነት ቅንብሮችን ያስተዳድሩ።",
       "currentPassword": "የአሁኑ የይለፍ ቃል",
       "newPassword": "አዲስ የይለፍ ቃል",
       "confirmPassword": "አዲሱን የይለፍ ቃል አረጋግጥ",
-      "saveButton": "የደህንነት ለውጦችን መዝግብ"
+      "saveButton": "የደህንነት ለውጦችን መዝግብ",
+      "passwordsDoNotMatch": "አዲሶቹ የይለፍ ቃሎች አይመሳሰሉም",
+      "fillAllFields": "እባክዎ ሁሉንም የይለፍ ቃል ሳጥኖች ይሙሉ",
+      "passwordTooShort": "አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት/ቁጥሮች መሆን አለበት",
+      "passwordChangedSuccess": "የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል"
     }
   },
   "network": {

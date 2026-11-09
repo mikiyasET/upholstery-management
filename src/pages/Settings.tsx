@@ -1,24 +1,24 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
   Group,
   Title,
   Text,
-  Badge,
   Tabs,
   TextInput,
+  PasswordInput,
   SimpleGrid,
-  Paper,
   Grid,
   Stack,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useTranslation } from "react-i18next";
+import api from "../lib/api";
 import {
   Building2,
   Shield,
-  QrCode,
   Save,
   Store,
   Phone,
@@ -30,7 +30,14 @@ import { PageHeader } from "../components/common/PageHeader";
 
 export default function Settings() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string | null>("profile");
+
+  // Account Security State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Workshop Profile State
   const [profile, setProfile] = useState({
@@ -46,19 +53,8 @@ export default function Settings() {
     cbeAccount: "1000123456789",
   });
 
-  // Number Sequences State
-  const [sequences, setSequences] = useState({
-    orderPrefix: "WO-",
-    orderNextNumber: "0043",
-    posPrefix: "DS-",
-    posNextNumber: "0190",
-    receiptPrefix: "REC-",
-    receiptNextNumber: "0312",
-  });
-
   const tabs = [
     { key: "profile", label: t("settings.tabs.profile", "Workshop Identity"), icon: Building2 },
-    { key: "sequences", label: t("settings.tabs.sequences", "Number Sequences"), icon: QrCode },
     { key: "security", label: t("settings.tabs.security", "Security & Passwords"), icon: Shield },
   ];
 
@@ -77,7 +73,7 @@ export default function Settings() {
         title={t("settings.title", "Settings")}
         subtitle={t(
           "settings.subtitle",
-          "Manage workshop identity, business profile, number sequences, and security controls."
+          "Manage workshop identity, business profile, and security controls."
         )}
         onRefresh={() => {
           notifications.show({
@@ -108,7 +104,7 @@ export default function Settings() {
       />
 
       {/* 2. Top Metric KPI Summary Cards */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="xl">
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="xl">
         <Box className="premium-card" p="md">
           <Group justify="space-between" align="flex-start">
             <Box style={{ flex: 1, minWidth: 0 }}>
@@ -137,38 +133,6 @@ export default function Settings() {
               }}
             >
               <Building2 size={20} />
-            </Box>
-          </Group>
-        </Box>
-
-        <Box className="premium-card" p="md">
-          <Group justify="space-between" align="flex-start">
-            <Box>
-              <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.05em" }}>
-                {t("settings.kpi.numberSequences", "Number Sequences")}
-              </Text>
-              <Text fw={700} size="1.25rem" lh={1.2} mt={4}>
-                {t("settings.kpi.formatsActive", "3 Formats Active")}
-              </Text>
-              <Text size="xs" c="dimmed" mt={4}>
-                {sequences.orderPrefix}, {sequences.posPrefix}, {sequences.receiptPrefix}
-              </Text>
-            </Box>
-            <Box
-              className="stat-icon-wrapper"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                background: "rgba(59, 130, 246, 0.12)",
-                color: "#3b82f6",
-              }}
-            >
-              <QrCode size={20} />
             </Box>
           </Group>
         </Box>
@@ -411,168 +375,7 @@ export default function Settings() {
           </Box>
         </Tabs.Panel>
 
-        {/* TAB 2: NUMBER SEQUENCES */}
-        <Tabs.Panel value="sequences" className="animate-in fade-in duration-200">
-          <Box className="premium-card" p="xl" style={{ borderRadius: 16 }}>
-            <Group justify="space-between" align="flex-start" mb="lg">
-              <Group gap="sm">
-                <Box
-                  className="stat-icon-wrapper"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    background: "rgba(59, 130, 246, 0.12)",
-                    color: "#3b82f6",
-                  }}
-                >
-                  <QrCode size={20} />
-                </Box>
-                <Box>
-                  <Title order={3} size="h4" fw={700}>
-                    {t("settings.sequences.title", "Automated Number Sequences")}
-                  </Title>
-                  <Text size="xs" c="dimmed">
-                    {t(
-                      "settings.sequences.subtitle",
-                      "Configure serial numbering format and auto-increment codes for invoices, work orders, and direct sales."
-                    )}
-                  </Text>
-                </Box>
-              </Group>
-            </Group>
-
-            <Grid gap="lg">
-              <Grid.Col span={{ base: 12, md: 4 }}>
-                <Paper
-                  p="lg"
-                  radius="md"
-                  withBorder
-                  style={{
-                    backgroundColor: "var(--surface-card, rgba(255, 255, 255, 0.02))",
-                    borderColor: "var(--surface-border, rgba(255, 255, 255, 0.08))",
-                  }}
-                >
-                  <Group justify="space-between" mb="xs">
-                    <Text fw={700} size="sm">
-                      {t("settings.sequences.workOrders", "Work Orders")}
-                    </Text>
-                    <Badge color="amber" variant="light" size="sm">
-                      {sequences.orderPrefix}2026-{sequences.orderNextNumber}
-                    </Badge>
-                  </Group>
-                  <Text size="xs" c="dimmed" mb="md">
-                    {t("settings.sequences.formatOrder", "Format: Prefix + Year + Serial")}
-                  </Text>
-                  <TextInput
-                    label={t("settings.sequences.prefix", "Prefix")}
-                    value={sequences.orderPrefix}
-                    onChange={(e) => setSequences({ ...sequences, orderPrefix: e.target.value })}
-                    mb="xs"
-                  />
-                  <TextInput
-                    label={t("settings.sequences.nextNumber", "Next Number")}
-                    value={sequences.orderNextNumber}
-                    onChange={(e) => setSequences({ ...sequences, orderNextNumber: e.target.value })}
-                  />
-                </Paper>
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, md: 4 }}>
-                <Paper
-                  p="lg"
-                  radius="md"
-                  withBorder
-                  style={{
-                    backgroundColor: "var(--surface-card, rgba(255, 255, 255, 0.02))",
-                    borderColor: "var(--surface-border, rgba(255, 255, 255, 0.08))",
-                  }}
-                >
-                  <Group justify="space-between" mb="xs">
-                    <Text fw={700} size="sm">
-                      {t("settings.sequences.directSales", "Direct Sales POS")}
-                    </Text>
-                    <Badge color="blue" variant="light" size="sm">
-                      {sequences.posPrefix}{sequences.posNextNumber}
-                    </Badge>
-                  </Group>
-                  <Text size="xs" c="dimmed" mb="md">
-                    {t("settings.sequences.formatPos", "Format: Prefix + Serial")}
-                  </Text>
-                  <TextInput
-                    label={t("settings.sequences.prefix", "Prefix")}
-                    value={sequences.posPrefix}
-                    onChange={(e) => setSequences({ ...sequences, posPrefix: e.target.value })}
-                    mb="xs"
-                  />
-                  <TextInput
-                    label={t("settings.sequences.nextNumber", "Next Number")}
-                    value={sequences.posNextNumber}
-                    onChange={(e) => setSequences({ ...sequences, posNextNumber: e.target.value })}
-                  />
-                </Paper>
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, md: 4 }}>
-                <Paper
-                  p="lg"
-                  radius="md"
-                  withBorder
-                  style={{
-                    backgroundColor: "var(--surface-card, rgba(255, 255, 255, 0.02))",
-                    borderColor: "var(--surface-border, rgba(255, 255, 255, 0.08))",
-                  }}
-                >
-                  <Group justify="space-between" mb="xs">
-                    <Text fw={700} size="sm">
-                      {t("settings.sequences.cashReceipts", "Cash Receipts")}
-                    </Text>
-                    <Badge color="green" variant="light" size="sm">
-                      {sequences.receiptPrefix}{sequences.receiptNextNumber}
-                    </Badge>
-                  </Group>
-                  <Text size="xs" c="dimmed" mb="md">
-                    {t("settings.sequences.formatPos", "Format: Prefix + Serial")}
-                  </Text>
-                  <TextInput
-                    label={t("settings.sequences.prefix", "Prefix")}
-                    value={sequences.receiptPrefix}
-                    onChange={(e) => setSequences({ ...sequences, receiptPrefix: e.target.value })}
-                    mb="xs"
-                  />
-                  <TextInput
-                    label={t("settings.sequences.nextNumber", "Next Number")}
-                    value={sequences.receiptNextNumber}
-                    onChange={(e) => setSequences({ ...sequences, receiptNextNumber: e.target.value })}
-                  />
-                </Paper>
-              </Grid.Col>
-            </Grid>
-
-            <Group justify="flex-end" mt="xl">
-              <Button
-                variant="gradient"
-                gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-                leftSection={<Save size={16} />}
-                onClick={() => {
-                  notifications.show({
-                    title: t("settings.sequencesSavedTitle", "Sequences Saved"),
-                    message: t("settings.sequencesSavedMessage", "Number sequence counters updated successfully."),
-                    color: "green",
-                  });
-                }}
-              >
-                {t("settings.sequences.saveButton", "Update Sequences")}
-              </Button>
-            </Group>
-          </Box>
-        </Tabs.Panel>
-
-        {/* TAB 3: SECURITY & PASSWORDS */}
+        {/* TAB 2: SECURITY & PASSWORDS */}
         <Tabs.Panel value="security" className="animate-in fade-in duration-200">
           <Box className="premium-card" p="xl" style={{ maxWidth: 650, borderRadius: 16 }}>
             <Group justify="space-between" align="flex-start" mb="lg">
@@ -605,35 +408,93 @@ export default function Settings() {
             </Group>
 
             <Stack gap="md">
-              <TextInput
+              <PasswordInput
                 label={t("settings.security.currentPassword", "Current Password")}
-                type="password"
                 placeholder="••••••••"
                 leftSection={<Lock size={16} />}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.currentTarget.value)}
               />
-              <TextInput
+              <PasswordInput
                 label={t("settings.security.newPassword", "New Password")}
-                type="password"
                 placeholder="••••••••"
                 leftSection={<Lock size={16} />}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.currentTarget.value)}
               />
-              <TextInput
+              <PasswordInput
                 label={t("settings.security.confirmPassword", "Confirm New Password")}
-                type="password"
                 placeholder="••••••••"
                 leftSection={<Lock size={16} />}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.currentTarget.value)}
               />
 
               <Group justify="flex-end" mt="md">
                 <Button
                   variant="gradient"
                   gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-                  onClick={() => {
-                    notifications.show({
-                      title: t("settings.securityUpdatedTitle", "Security Settings Updated"),
-                      message: t("settings.securityUpdatedMessage", "Password and security settings verified."),
-                      color: "green",
-                    });
+                  loading={isChangingPassword}
+                  onClick={async () => {
+                    if (!currentPassword || !newPassword || !confirmPassword) {
+                      notifications.show({
+                        title: t("common.error", "Error"),
+                        message: t("settings.security.fillAllFields", "Please fill in all password fields"),
+                        color: "red",
+                      });
+                      return;
+                    }
+
+                    if (newPassword.length < 6) {
+                      notifications.show({
+                        title: t("common.error", "Error"),
+                        message: t("settings.security.passwordTooShort", "New password must be at least 6 characters"),
+                        color: "red",
+                      });
+                      return;
+                    }
+
+                    if (newPassword !== confirmPassword) {
+                      notifications.show({
+                        title: t("common.error", "Error"),
+                        message: t("settings.security.passwordsDoNotMatch", "New passwords do not match"),
+                        color: "red",
+                      });
+                      return;
+                    }
+
+                    setIsChangingPassword(true);
+                    try {
+                      await api.post("/auth/change-password", {
+                        currentPassword,
+                        newPassword,
+                      });
+
+                      // Clear fields
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+
+                      notifications.show({
+                        title: t("settings.securityUpdatedTitle", "Security Settings Updated"),
+                        message: t("settings.security.passwordChangedSuccess", "Password has been successfully changed"),
+                        color: "green",
+                      });
+
+                      // Navigate to dashboard
+                      navigate("/");
+                    } catch (err: any) {
+                      const errorMsg =
+                        err.response?.data?.error?.message ||
+                        t("common.errorOccurred", "An error occurred while updating your password. Please try again.");
+                      notifications.show({
+                        title: t("common.error", "Error"),
+                        message: errorMsg,
+                        color: "red",
+                      });
+                    } finally {
+                      setIsChangingPassword(false);
+                    }
                   }}
                 >
                   {t("settings.security.saveButton", "Save Security Changes")}

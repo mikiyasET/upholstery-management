@@ -1507,21 +1507,17 @@
   },
   "settings": {
     "title": "Settings",
-    "subtitle": "Manage workshop identity, business profile, number sequences, and security controls.",
+    "subtitle": "Manage workshop identity, business profile, and security controls.",
     "refreshTooltip": "Refresh settings",
     "savedTitle": "Settings Saved",
     "savedMessage": "Workshop identity and profile settings have been successfully updated.",
     "refreshedTitle": "Settings Refreshed",
     "refreshedMessage": "System preferences reloaded to current state.",
-    "sequencesSavedTitle": "Sequences Saved",
-    "sequencesSavedMessage": "Number sequence counters updated successfully.",
     "securityUpdatedTitle": "Security Settings Updated",
     "securityUpdatedMessage": "Password and security settings verified.",
     "kpi": {
       "workshopEntity": "Workshop Entity",
       "tin": "TIN",
-      "numberSequences": "Number Sequences",
-      "formatsActive": "3 Formats Active",
       "dualStores": "Dual Storage Stores",
       "activeHubs": "2 Active Hubs",
       "miniPlusMain": "Mini Floor + Main Warehouse",
@@ -1531,7 +1527,6 @@
     },
     "tabs": {
       "profile": "Workshop Identity",
-      "sequences": "Number Sequences",
       "security": "Security & Passwords"
     },
     "profile": {
@@ -1548,25 +1543,17 @@
       "address": "Physical Location & Workshop Address",
       "saveButton": "Save Workshop Profile"
     },
-    "sequences": {
-      "title": "Automated Number Sequences",
-      "subtitle": "Configure serial numbering format and auto-increment codes for invoices, work orders, and direct sales.",
-      "workOrders": "Work Orders",
-      "formatOrder": "Format: Prefix + Year + Serial",
-      "directSales": "Direct Sales POS",
-      "formatPos": "Format: Prefix + Serial",
-      "cashReceipts": "Cash Receipts",
-      "prefix": "Prefix",
-      "nextNumber": "Next Number",
-      "saveButton": "Update Sequences"
-    },
     "security": {
       "title": "Account Security & Password",
       "subtitle": "Update your account credentials and manage security preferences.",
       "currentPassword": "Current Password",
       "newPassword": "New Password",
       "confirmPassword": "Confirm New Password",
-      "saveButton": "Save Security Changes"
+      "saveButton": "Save Security Changes",
+      "passwordsDoNotMatch": "New passwords do not match",
+      "fillAllFields": "Please fill in all password fields",
+      "passwordTooShort": "New password must be at least 6 characters",
+      "passwordChangedSuccess": "Password has been successfully changed"
     }
   },
   "network": {

@@ -348,7 +348,13 @@ export default function Storage() {
   });
 
   const getStoreId = (material: Material, type: 'MAIN' | 'MINI') => {
-    return material.materialStocks?.find(s => s.store.type === type)?.storeId;
+    const direct = material.materialStocks?.find(s => s.store.type === type)?.storeId;
+    if (direct) return direct;
+    for (const m of (materials || [])) {
+      const found = m.materialStocks?.find(s => s.store.type === type)?.storeId;
+      if (found) return found;
+    }
+    return undefined;
   };
 
   const adjustMutation = useMutation({
