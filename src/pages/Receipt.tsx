@@ -136,6 +136,11 @@ export default function Receipt() {
                 <div className="text-lg font-extrabold font-mono text-gray-900">
                   #{order.orderNumber}
                 </div>
+                {order.fsrNumber && (
+                  <div className="inline-block bg-blue-50 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-bold text-blue-700 font-mono my-0.5">
+                    FSR #: {order.fsrNumber}
+                  </div>
+                )}
                 <div className="text-xs text-gray-500">
                   {formattedDate}
                 </div>
@@ -423,6 +428,11 @@ export default function Receipt() {
               <div className="font-mono text-xs font-bold text-gray-700 tracking-wider">
                 {order.orderNumber}
               </div>
+              {order.fsrNumber && (
+                <div className="font-mono text-[11px] font-semibold text-gray-600 mt-0.5">
+                  FSR AUDIT REF: {order.fsrNumber}
+                </div>
+              )}
               <div className="text-[10px] text-gray-400 mt-1">
                 {t('receipt.footer', 'Official Work Order Invoice • Yonatan Car Decoration & Upholstery')}
               </div>

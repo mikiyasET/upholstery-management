@@ -1,24 +1,59 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
-import { Calendar, FileText, Printer, Eye, Search, X, CircleDollarSign } from 'lucide-react';
+import { Calendar, FileText, Printer, Eye, Search, X, CircleDollarSign, Receipt, Pencil, Plus } from 'lucide-react';
 import { formatCurrency, formatStatus, formatPaymentMethod, formatAppDate } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 import { ActionIcon, Tooltip, Box, TextInput, Select, Button as MantineButton, Badge } from '@mantine/core';
+import { ModernInput } from '../components/ui/modern-input';
+import { toast } from 'sonner';
 
 export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('ALL');
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // FSR Modal State & Mutation
+  const [isFsrModalOpen, setIsFsrModalOpen] = useState(false);
+  const [fsrSaleTarget, setFsrSaleTarget] = useState<any | null>(null);
+  const [fsrInputValue, setFsrInputValue] = useState('');
+
+  const updateFsrMutation = useMutation({
+    mutationFn: async ({ id, newFsr }: { id: string; newFsr: string }) => {
+      const res = await api.patch(`/direct-sales/${id}/fsr-number`, { fsrNumber: newFsr.trim() || null });
+      return res.data;
+    },
+    onSuccess: (updatedSale) => {
+      queryClient.invalidateQueries({ queryKey: ['direct-sales'] });
+      if (selectedSale?.id === updatedSale.id) {
+        queryClient.invalidateQueries({ queryKey: ['direct-sale', updatedSale.id] });
+        setSelectedSale((prev: any) => prev ? { ...prev, fsrNumber: updatedSale.fsrNumber } : null);
+      }
+      toast.success(t('orders.detail.fsrUpdated', 'FSR Number updated successfully'));
+      setIsFsrModalOpen(false);
+      setFsrSaleTarget(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || t('alerts.error', 'Error updating FSR Number'));
+    },
+  });
+
+  const handleOpenFsrDialog = (sale: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setFsrSaleTarget(sale);
+    setFsrInputValue(sale.fsrNumber || '');
+    setIsFsrModalOpen(true);
+  };
 
   const getLocName = (item: any) =>
     i18n?.language === 'am' && item?.nameAm ? item.nameAm : (item?.nameEn || t('common.unknown', 'Unknown Item'));
@@ -48,6 +83,7 @@ export default function DirectSalesHistory() {
     const matchesSearch =
       !searchTerm ||
       (s.saleNumber && s.saleNumber.toLowerCase().includes(searchTerm.toLowerCase())) || 
+      (s.fsrNumber && s.fsrNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (s.customerName && s.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (s.customerPhone && s.customerPhone.includes(searchTerm)) ||
       (s.createdBy?.name && s.createdBy.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -214,9 +250,17 @@ export default function DirectSalesHistory() {
                     onClick={() => handleRowClick(sale)}
                   >
                     <td className="px-6 py-4 font-medium text-foreground whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-bold text-foreground">
+                      <div className="flex items-center gap-2 font-bold text-foreground">
                         <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                        {sale.saleNumber}
+                        <span>{sale.saleNumber}</span>
+                        {sale.fsrNumber && (
+                          <span 
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 tracking-wide font-mono"
+                            title={`Fiscal Sales Receipt / Paper Audit FSR #: ${sale.fsrNumber}`}
+                          >
+                            FSR: {sale.fsrNumber}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -263,6 +307,17 @@ export default function DirectSalesHistory() {
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
+                        <Tooltip label={sale.fsrNumber ? t('orders.detail.editFsr', 'Edit FSR #') : t('orders.detail.addFsr', 'Add FSR #')} withArrow>
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            size="sm"
+                            onClick={(e) => handleOpenFsrDialog(sale, e)}
+                          >
+                            <Receipt size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+
                         <Tooltip label="View Details" withArrow>
                           <ActionIcon
                             variant="subtle"
@@ -312,8 +367,33 @@ export default function DirectSalesHistory() {
       <Dialog open={!!selectedSale} onOpenChange={(open) => !open && setSelectedSale(null)}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between pr-4">
-              <span>{t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}</span>
+            <DialogTitle className="flex items-center justify-between pr-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span>{t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}</span>
+                {fullSaleDetails?.fsrNumber ? (
+                  <button 
+                    type="button"
+                    onClick={(e) => handleOpenFsrDialog(fullSaleDetails, e)} 
+                    className="group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 transition-all cursor-pointer shadow-xs"
+                    title={t('orders.detail.editFsr', 'Edit FSR #')}
+                  >
+                    <Receipt className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <span className="font-mono">FSR: {fullSaleDetails.fsrNumber}</span>
+                    <Pencil className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => handleOpenFsrDialog(fullSaleDetails || selectedSale, e)}
+                    className="group inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/70 border border-border/80 hover:border-foreground/20 transition-all cursor-pointer"
+                    title={t('orders.fsrAuditReference', 'Add Fiscal Sales Receipt paper audit number')}
+                  >
+                    <Plus className="w-3 h-3 text-muted-foreground group-hover:text-foreground shrink-0" />
+                    <Receipt className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-foreground shrink-0" />
+                    <span>{t('orders.detail.addFsr', 'Add FSR #')}</span>
+                  </button>
+                )}
+              </div>
               <span className="text-sm font-normal text-muted-foreground">
                 {selectedSale && formatAppDate(selectedSale.saleDateTime, true)}
               </span>
@@ -433,6 +513,86 @@ export default function DirectSalesHistory() {
                 {t('directSales.editSale', 'Edit Sale / Add Payment')}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* FSR Update Modal */}
+      <Dialog open={isFsrModalOpen} onOpenChange={setIsFsrModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-blue-500" />
+              <span>{t('orders.updateFsr', 'Update FSR Number')}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {t('orders.fsrAuditReference', 'Fiscal Sales Receipt (FSR) paper audit reference number.')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {t('orders.fsrNumber', 'FSR Number')}
+              </label>
+              <ModernInput
+                icon={Receipt}
+                inputSize="default"
+                placeholder={t('orders.create.fsrPlaceholder', 'e.g. FSR-00123')}
+                value={fsrInputValue}
+                onChange={(e) => setFsrInputValue(e.target.value)}
+                className="font-mono tracking-wider font-semibold uppercase"
+                autoFocus
+              />
+            </div>
+            {fsrSaleTarget?.fsrNumber && (
+              <p className="text-xs text-muted-foreground flex items-center justify-between">
+                <span>{t('orders.detail.currentFsr', 'Current')}: <span className="font-mono font-semibold text-foreground">{fsrSaleTarget.fsrNumber}</span></span>
+                <button
+                  type="button"
+                  onClick={() => setFsrInputValue('')}
+                  className="text-red-500 hover:underline text-xs"
+                >
+                  {t('common.clear', 'Clear')}
+                </button>
+              </p>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsFsrModalOpen(false)}
+              disabled={updateFsrMutation.isPending}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            {fsrSaleTarget?.fsrNumber && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  if (fsrSaleTarget) {
+                    updateFsrMutation.mutate({ id: fsrSaleTarget.id, newFsr: '' });
+                  }
+                }}
+                disabled={updateFsrMutation.isPending}
+                className="mr-auto"
+              >
+                {t('common.remove', 'Remove')}
+              </Button>
+            )}
+            <Button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => {
+                if (fsrSaleTarget) {
+                  updateFsrMutation.mutate({ id: fsrSaleTarget.id, newFsr: fsrInputValue });
+                }
+              }}
+              disabled={updateFsrMutation.isPending}
+            >
+              {updateFsrMutation.isPending ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

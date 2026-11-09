@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
-import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight, Receipt, X } from 'lucide-react';
 import { ModernInput } from '../components/ui/modern-input';
 import { ModernSelect } from '../components/ui/modern-select';
 import { toast } from 'sonner';
@@ -82,6 +82,9 @@ export default function DirectSales() {
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [fsrNumber, setFsrNumber] = useState('');
+  const [showCustomerInfo, setShowCustomerInfo] = useState(false);
+  const [showFsr, setShowFsr] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [brandPickerMaterial, setBrandPickerMaterial] = useState<Material | null>(null);
@@ -146,8 +149,14 @@ export default function DirectSales() {
 
   useEffect(() => {
     if (editSaleData && materials) {
-      setCustomerName(editSaleData.customerName || '');
-      setCustomerPhone(editSaleData.customerPhone || '');
+      const cName = editSaleData.customerName || '';
+      const cPhone = editSaleData.customerPhone || '';
+      const fsr = editSaleData.fsrNumber || '';
+      setCustomerName(cName);
+      setCustomerPhone(cPhone);
+      setFsrNumber(fsr);
+      if (cName || cPhone) setShowCustomerInfo(true);
+      if (fsr) setShowFsr(true);
       setTaxEnabled(Number(editSaleData.taxAmount) > 0);
 
       // Reconstruct cart
@@ -437,6 +446,7 @@ export default function DirectSales() {
       const payload = {
         customerName: customerName || undefined,
         customerPhone: customerPhone || undefined,
+        fsrNumber: fsrNumber.trim() || undefined,
         items: cart.map(item => ({
           materialId: item.material.id,
           materialBrandId: item.brand?.id,
@@ -468,6 +478,9 @@ export default function DirectSales() {
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
+      setFsrNumber('');
+      setShowCustomerInfo(false);
+      setShowFsr(false);
       setPayments([{ id: Date.now(), method: 'CASH', amount: '', referenceNumber: '' }]);
       setTaxEnabled(true);
       if (editId) {
@@ -617,7 +630,7 @@ export default function DirectSales() {
                   {/* Out of stock overlay (z-30 ensures it displays over image & stock pill) */}
                   {isOutOfStock && (
                     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/10 pointer-events-none">
-                      <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg transform -rotate-12">
+                      <div className="bg-zinc-600/75 dark:bg-zinc-600/75 backdrop-blur-xs text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md transform -rotate-12 border border-white/10 select-none">
                         {t('common.outOfStock', 'Out of Stock')}
                       </div>
                     </div>
@@ -662,38 +675,205 @@ export default function DirectSales() {
           <span className="bg-white/20 px-2 py-0.5 rounded text-sm font-semibold">{cart.length} {t('common.items', 'items')}</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="space-y-4 bg-muted/10 p-3.5 rounded-xl border border-border/50">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground/80 mb-2">
-              <User className="w-4 h-4 text-amber-500" />
-              {t('common.customerDetails', 'Customer Details')}
-              <span className="text-[10px] font-medium text-muted-foreground ml-auto bg-muted px-2 py-0.5 rounded-full uppercase tracking-wider">{t('common.optional', 'Optional')}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <ModernInput
-                inputSize="sm"
-                icon={User}
-                placeholder={t("customers.table.customer", "John Doe")}
-                value={customerName}
-                onChange={e => setCustomerName(e.target.value)}
-              />
-              <ModernInput
-                inputSize="sm"
-                icon={Phone}
-                placeholder={t("customers.table.phone", "0911...")}
-                value={customerPhone}
-                onChange={e => setCustomerPhone(e.target.value)}
-              />
-            </div>
+        {/* Pinned Sub-Header Bar: Customer & FSR Metadata */}
+        <div className="px-3.5 py-1.5 border-b border-border/60 bg-muted/25 dark:bg-zinc-900/40 flex items-center justify-between text-xs gap-2 select-none">
+          {/* Left: Current Client & FSR summary badge */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <User className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+            <span 
+              onClick={() => setShowCustomerInfo(prev => !prev)}
+              className={`truncate text-xs font-medium cursor-pointer hover:underline ${
+                customerName || customerPhone ? 'text-foreground font-semibold' : 'text-muted-foreground'
+              }`}
+              title={customerName ? `${customerName} ${customerPhone ? `(${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
+            >
+              {customerName ? `${customerName}${customerPhone ? ` (${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
+            </span>
+
+            {fsrNumber && (
+              <span 
+                onClick={() => setShowFsr(prev => !prev)}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0 cursor-pointer hover:bg-blue-500/20"
+                title={`FSR: ${fsrNumber}`}
+              >
+                <Receipt className="w-2.5 h-2.5" />
+                <span>{fsrNumber}</span>
+              </span>
+            )}
           </div>
 
-          <div className="border-t pt-4">
-            {cart.length === 0 ? (
-              <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
-                <ShoppingCart className="w-12 h-12 mb-2 opacity-20" />
-                <p>{t('directSales.cartEmpty', 'Cart is empty')}</p>
+          {/* Right: Plain-Text Micro Action Links */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowCustomerInfo(prev => !prev)}
+              className={`inline-flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer py-0.5 px-1.5 rounded ${
+                showCustomerInfo 
+                  ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 font-semibold' 
+                  : 'text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-muted'
+              }`}
+            >
+              <User className="w-3 h-3" />
+              <span>
+                {showCustomerInfo 
+                  ? t('common.close', 'Close') 
+                  : (customerName || customerPhone ? t('common.edit', 'Edit') : t('directSales.btnCustomer', '+ Customer'))}
+              </span>
+            </button>
+
+            <span className="text-muted-foreground/30 text-xs">•</span>
+
+            <button
+              type="button"
+              onClick={() => setShowFsr(prev => !prev)}
+              className={`inline-flex items-center gap-1 text-[11px] font-medium transition-colors cursor-pointer py-0.5 px-1.5 rounded ${
+                showFsr 
+                  ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10 font-semibold' 
+                  : 'text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-muted'
+              }`}
+            >
+              <Receipt className="w-3 h-3" />
+              <span>
+                {showFsr 
+                  ? t('common.close', 'Close') 
+                  : (fsrNumber ? t('common.edit', 'Edit') : t('directSales.btnFsr', '+ FSR'))}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Customer Info Collapsible Drawer */}
+        {showCustomerInfo && (
+          <div className="p-3 border-b border-border/60 bg-muted/30 dark:bg-zinc-900/60 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <User className="w-3 h-3 text-amber-500" />
+                <span>{t('common.customerDetails', 'Customer Details')}</span>
               </div>
-            ) : (
+              <div className="flex items-center gap-2">
+                {(customerName || customerPhone) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomerName('');
+                      setCustomerPhone('');
+                    }}
+                    className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    {t('common.clear', 'Clear')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerInfo(false)}
+                  className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                >
+                  {t('common.done', 'Done')}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
+                  {t('common.name', 'Name')}
+                </label>
+                <div className="relative flex items-center">
+                  <User className="w-3 h-3 absolute left-2 text-muted-foreground/50 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={e => setCustomerName(e.target.value)}
+                    placeholder={t("customers.table.customer", "John Doe")}
+                    className="w-full h-7 bg-background border border-input rounded pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-medium"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
+                  {t('common.phone', 'Phone')}
+                </label>
+                <div className="relative flex items-center">
+                  <Phone className="w-3 h-3 absolute left-2 text-muted-foreground/50 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={customerPhone}
+                    onChange={e => setCustomerPhone(e.target.value)}
+                    placeholder="0911..."
+                    className="w-full h-7 bg-background border border-input rounded pl-6 pr-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FSR Number Collapsible Drawer */}
+        {showFsr && (
+          <div className="p-3 border-b border-border/60 bg-muted/30 dark:bg-zinc-900/60 space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <Receipt className="w-3 h-3 text-blue-500" />
+                <span>{t('orders.fsrNumber', 'FSR Number')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {fsrNumber && (
+                  <button
+                    type="button"
+                    onClick={() => setFsrNumber('')}
+                    className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    {t('common.clear', 'Clear')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowFsr(false)}
+                  className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  {t('common.done', 'Done')}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block mb-0.5">
+                {t('orders.fsrAuditReference', 'Paper Receipt Ref')}
+              </label>
+              <div className="relative flex items-center">
+                <Receipt className="w-3 h-3 absolute left-2 text-blue-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={fsrNumber}
+                  onChange={e => setFsrNumber(e.target.value)}
+                  placeholder="e.g. FSR-00123"
+                  className="w-full h-7 bg-background border border-blue-500/40 rounded pl-6 pr-6 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40 transition-all font-mono font-bold uppercase tracking-wider"
+                  autoFocus
+                />
+                {fsrNumber && (
+                  <button
+                    type="button"
+                    onClick={() => setFsrNumber('')}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                    title={t('common.clear', 'Clear')}
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {cart.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
+              <ShoppingCart className="w-12 h-12 mb-2 opacity-20" />
+              <p>{t('directSales.cartEmpty', 'Cart is empty')}</p>
+            </div>
+          ) : (
               <div className="space-y-3">
                 {cart.map(item => (
                   <div key={item.key} className="flex justify-between items-start text-sm">
@@ -758,7 +938,6 @@ export default function DirectSales() {
                 ))}
               </div>
             )}
-          </div>
         </div>
 
         <div className="p-3 border-t bg-muted/10 flex flex-col gap-3">
@@ -893,12 +1072,20 @@ export default function DirectSales() {
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-sm text-foreground">
-            {/* Customer info */}
-            <div className="bg-muted/40 p-3 rounded-lg border border-border flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">{t('orders.table.customer', 'Customer')}:</span>
-              <span className="font-semibold text-foreground">
-                {customerName ? `${customerName} ${customerPhone ? `(${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
-              </span>
+            {/* Customer & FSR info */}
+            <div className="bg-muted/40 p-3 rounded-lg border border-border flex flex-col gap-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground font-medium">{t('orders.table.customer', 'Customer')}:</span>
+                <span className="font-semibold text-foreground">
+                  {customerName ? `${customerName} ${customerPhone ? `(${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
+                </span>
+              </div>
+              {fsrNumber && (
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                  <span className="text-muted-foreground font-medium">{t('orders.fsrNumber', 'FSR Number')}:</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{fsrNumber.trim()}</span>
+                </div>
+              )}
             </div>
 
             {/* Items summary */}
@@ -1004,8 +1191,8 @@ export default function DirectSales() {
               <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
             </div>
 
-            {/* Customer */}
-            {(completedSale?.customerName || completedSale?.customerPhone) && (
+            {/* Customer & FSR */}
+            {(completedSale?.customerName || completedSale?.customerPhone || completedSale?.fsrNumber) && (
               <div className="bg-muted/30 p-2.5 rounded-lg border border-border text-xs space-y-1">
                 {completedSale.customerName && (
                   <div className="flex justify-between">
@@ -1017,6 +1204,12 @@ export default function DirectSales() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('common.phone', 'Phone')}:</span>
                     <span className="font-medium text-foreground">{completedSale.customerPhone}</span>
+                  </div>
+                )}
+                {completedSale.fsrNumber && (
+                  <div className="flex justify-between pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground">{t('orders.fsrNumber', 'FSR Number')}:</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{completedSale.fsrNumber}</span>
                   </div>
                 )}
               </div>

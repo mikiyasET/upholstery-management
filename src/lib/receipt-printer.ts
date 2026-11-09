@@ -268,6 +268,13 @@ export const printDirectSaleReceipt = (saleData: any) => {
               <div style="font-size: 16px; font-weight: 800; font-family: ui-monospace, monospace; color: #111827;">
                 #${saleData.saleNumber}
               </div>
+              ${saleData.fsrNumber ? `
+                <div style="display: inline-block; background: #eff6ff; border: 1px solid #bfdbfe; padding: 2px 8px; border-radius: 4px; margin-top: 3px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #1e40af; font-family: ui-monospace, monospace;">
+                    FSR #: ${saleData.fsrNumber}
+                  </span>
+                </div>
+              ` : ''}
               <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">
                 ${formattedDate}
               </div>
@@ -384,6 +391,7 @@ export const printDirectSaleReceipt = (saleData: any) => {
               ${barcodeSvg}
             </div>
             <div style="font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: #374151; letter-spacing: 0.1em;">${saleData.saleNumber}</div>
+            ${saleData.fsrNumber ? `<div style="font-family: ui-monospace, monospace; font-size: 11px; font-weight: 600; color: #4b5563; margin-top: 2px;">FSR AUDIT REF: ${saleData.fsrNumber}</div>` : ''}
             <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
               ${i18n.t('receipt.posFooter', 'Authorized POS Document • Yonatan Car Decoration & Upholstery')}
             </div>
