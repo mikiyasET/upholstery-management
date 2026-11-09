@@ -536,51 +536,38 @@ export default function DirectSales() {
                       : 'cursor-pointer hover:border-amber-500 hover:shadow-md transition-all'
                   }`}
                 >
-                  {isOutOfStock && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10">
-                      <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg transform -rotate-12">
-                        {t('common.outOfStock', 'OUT OF STOCK')}
-                      </div>
-                    </div>
-                  )}
-                  {!isOutOfStock && needsAllocation && (
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigateToStorageAllocation(m);
-                      }}
-                      className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/90 dark:bg-zinc-950/92 backdrop-blur-xs p-2 text-center cursor-pointer transition-all hover:bg-background/95 dark:hover:bg-zinc-950/96 group/alloc border border-amber-500/40 rounded-lg select-none"
-                    >
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold tracking-tight whitespace-nowrap shadow-2xs">
-                        <AlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-500" />
-                        <span>{t('storage.needsAllocation', 'Needs Allocation')}</span>
-                      </span>
-
-                      <span className="text-[10px] text-muted-foreground font-medium mt-1.5 whitespace-nowrap">
-                        <span className="font-bold text-amber-600 dark:text-amber-400">{unallocated} {m.unit || ''}</span> {t('storage.unallocatedStock', 'unallocated')}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 group-hover/alloc:underline mt-1 whitespace-nowrap">
-                        <span>{t('storage.allocateInStock', 'Allocate in Stock')}</span>
-                        <ArrowRight className="w-2.5 h-2.5 shrink-0 group-hover/alloc:translate-x-0.5 transition-transform" />
-                      </span>
-                    </div>
-                  )}
                   {m.imageUrl ? (
                     <>
                       <div className="flex-1 overflow-hidden bg-muted relative flex items-center justify-center">
-                        {/* Blurred background filler */}
-                        <LazyImage
-                          src={m.imageUrl}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover blur-md scale-110"
-                        />
-                        {/* Crisp foreground image */}
-                        <LazyImage
-                          src={m.imageUrl}
-                          alt={getLocName(m)}
-                          className={`w-full h-full object-contain relative z-10 ${!isOutOfStock && 'group-hover:scale-105'} transition-transform duration-200`}
-                        />
+                        {isOutOfStock ? (
+                          /* On out of stock, fill the entire space with the material image as cover */
+                          <LazyImage
+                            src={m.imageUrl}
+                            alt={getLocName(m)}
+                            wrapperClassName="w-full h-full"
+                            imgClassName="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            {/* Blurred background of the same image covering unfilled space (subtle blur) */}
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                              <LazyImage
+                                src={m.imageUrl}
+                                alt=""
+                                fallback={<div className="w-full h-full bg-muted" />}
+                                wrapperClassName="w-full h-full bg-transparent dark:bg-transparent"
+                                imgClassName="w-full h-full object-cover blur-[1px] scale-[1.02] opacity-80 dark:opacity-70"
+                              />
+                            </div>
+                            {/* Crisp foreground image cleanly contained */}
+                            <LazyImage
+                              src={m.imageUrl}
+                              alt={getLocName(m)}
+                              wrapperClassName="w-full h-full bg-transparent dark:bg-transparent flex items-center justify-center relative z-10"
+                              imgClassName="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                            />
+                          </>
+                        )}
                         <div className="absolute top-1 right-1 z-20 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium backdrop-blur-sm shadow-sm">
                           {t('common.stock', 'Stock')}: {stock}
                         </div>
@@ -631,6 +618,39 @@ export default function DirectSales() {
                           </span>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Out of stock overlay (z-30 ensures it displays over image & stock pill) */}
+                  {isOutOfStock && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/10 pointer-events-none">
+                      <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg transform -rotate-12">
+                        {t('common.outOfStock', 'Out of Stock')}
+                      </div>
+                    </div>
+                  )}
+
+                  {!isOutOfStock && needsAllocation && (
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigateToStorageAllocation(m);
+                      }}
+                      className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/90 dark:bg-zinc-950/92 backdrop-blur-xs p-2 text-center cursor-pointer transition-all hover:bg-background/95 dark:hover:bg-zinc-950/96 group/alloc border border-amber-500/40 rounded-lg select-none"
+                    >
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold tracking-tight whitespace-nowrap shadow-2xs">
+                        <AlertTriangle className="w-2.5 h-2.5 shrink-0 text-amber-500" />
+                        <span>{t('storage.needsAllocation', 'Needs Allocation')}</span>
+                      </span>
+
+                      <span className="text-[10px] text-muted-foreground font-medium mt-1.5 whitespace-nowrap">
+                        <span className="font-bold text-amber-600 dark:text-amber-400">{unallocated} {m.unit || ''}</span> {t('storage.unallocatedStock', 'unallocated')}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 group-hover/alloc:underline mt-1 whitespace-nowrap">
+                        <span>{t('storage.allocateInStock', 'Allocate in Stock')}</span>
+                        <ArrowRight className="w-2.5 h-2.5 shrink-0 group-hover/alloc:translate-x-0.5 transition-transform" />
+                      </span>
                     </div>
                   )}
                 </div>

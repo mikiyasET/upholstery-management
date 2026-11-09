@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { Pencil, Trash2, Search, X } from 'lucide-react';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
@@ -308,7 +308,8 @@ export default function Cars() {
                       <LazyImage
                         src={brand.logoUrl}
                         alt={brand.name}
-                        className="h-9 w-9 rounded object-contain bg-white border border-border p-0.5 shrink-0 pointer-events-none select-none"
+                        wrapperClassName="h-9 w-9 rounded-md overflow-hidden border border-border shrink-0 pointer-events-none select-none bg-white dark:bg-white"
+                        imgClassName="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="h-9 w-9 bg-secondary/80 rounded-md flex items-center justify-center text-[10px] font-bold text-secondary-foreground shrink-0">
@@ -401,19 +402,15 @@ export default function Cars() {
                       <X className="h-4 w-4" />
                     </Button>
                     <PermissionGate permission="catalog.cars.add">
-                      <Button 
-                        size="sm" 
-                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
+                      <ExecutiveAddButton 
+                        label={t('cars.addModel', 'Add Model')}
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
                           setModelFile(null);
                           setIsModelDialogOpen(true);
                         }}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> 
-                        <span className="hidden sm:inline">{t('cars.addModel', 'Add Model')}</span>
-                      </Button>
+                      />
                     </PermissionGate>
                   </div>
                 </CardHeader>
@@ -421,7 +418,12 @@ export default function Cars() {
                 <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3 pt-3 px-4 border-b border-border bg-muted/10 min-h-[57px]">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground truncate">
                     {selectedBrand.logoUrl && (
-                      <LazyImage src={selectedBrand.logoUrl} alt="" className="h-7 w-7 object-contain bg-muted rounded p-0.5 border border-border shrink-0" />
+                      <LazyImage
+                        src={selectedBrand.logoUrl}
+                        alt=""
+                        wrapperClassName="h-7 w-7 rounded-md overflow-hidden border border-border shrink-0 bg-white dark:bg-white"
+                        imgClassName="w-full h-full object-cover"
+                      />
                     )}
                     <span className="truncate">{t('cars.brandModels', '{{brand}} Models', { brand: selectedBrand.name })}</span>
                     <span className="text-xs font-normal text-muted-foreground ml-1">({filteredModels.length})</span>
@@ -437,19 +439,15 @@ export default function Cars() {
                       <Search className="h-4 w-4" />
                     </Button>
                     <PermissionGate permission="catalog.cars.add">
-                      <Button 
-                        size="sm" 
-                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
+                      <ExecutiveAddButton 
+                        label={t('cars.addModel', 'Add Model')}
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
                           setModelFile(null);
                           setIsModelDialogOpen(true);
                         }}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> 
-                        <span className="hidden sm:inline">{t('cars.addModel', 'Add Model')}</span>
-                      </Button>
+                      />
                     </PermissionGate>
                   </div>
                 </CardHeader>
@@ -468,7 +466,8 @@ export default function Cars() {
                             <LazyImage 
                               src={model.imageUrl} 
                               alt={model.name} 
-                              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              wrapperClassName="w-full h-full"
+                              imgClassName="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => setPreviewImage(model.imageUrl ? getImageUrl(model.imageUrl)! : null)}
                             />
                           </div>
