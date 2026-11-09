@@ -23,7 +23,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
-import { Edit2, Trash2, ImageOff, Plus, Tag, ChevronUp, Copy, Check } from 'lucide-react';
+import { Edit2, Trash2, ImageOff, Plus, Tag, ChevronUp, Copy, Check, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 
@@ -333,6 +333,7 @@ export default function Materials() {
   const [showAddBrandInput, setShowAddBrandInput] = useState(false);
   const [sizesOnlyList, setSizesOnlyList] = useState<BrandSizeItem[]>([]);
   const [showSizeOnlyInput, setShowSizeOnlyInput] = useState(false);
+  const [editingPriceKey, setEditingPriceKey] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
 
   const { data: materials, isLoading, refetch, isFetching } = useQuery<Material[]>({
@@ -373,6 +374,26 @@ export default function Materials() {
     setBrandGroups(prev => prev.map((g, idx) => {
       if (idx !== groupIndex) return g;
       return { ...g, basePrice: formatInputNumber(priceStr) };
+    }));
+  };
+
+  const handleUpdateBrandVariantPrice = (groupIndex: number, sizeIndex: number, priceStr: string) => {
+    setBrandGroups(prev => prev.map((g, idx) => {
+      if (idx !== groupIndex) return g;
+      return {
+        ...g,
+        sizes: g.sizes.map((s, sIdx) => {
+          if (sIdx !== sizeIndex) return s;
+          return { ...s, price: formatInputNumber(priceStr) };
+        }),
+      };
+    }));
+  };
+
+  const handleUpdateVariantOnlyPrice = (sizeIndex: number, priceStr: string) => {
+    setSizesOnlyList(prev => prev.map((s, idx) => {
+      if (idx !== sizeIndex) return s;
+      return { ...s, price: formatInputNumber(priceStr) };
     }));
   };
 
@@ -596,6 +617,7 @@ export default function Materials() {
     setNewBrandName('');
     setShowAddBrandInput(false);
     setShowSizeOnlyInput(false);
+    setEditingPriceKey(null);
     setFile(null);
     setIsDialogOpen(true);
   };
@@ -608,6 +630,7 @@ export default function Materials() {
     setSizesOnlyList([]);
     setShowAddBrandInput(false);
     setShowSizeOnlyInput(false);
+    setEditingPriceKey(null);
   };
 
   // Filtering
@@ -1029,23 +1052,60 @@ export default function Materials() {
                                 onAdd={(v) => handleAddVariantToBrand(gIdx, v)}
                               />
 
-                              {/* Right side: Base price input & Delete button on the same line */}
+                              {/* Right side: Base price & Delete button on the same line */}
                               <div className="flex items-center gap-1.5 ml-auto shrink-0">
-                                <div className="relative flex items-center">
-                                  <Input
-                                    className="h-8 w-24 sm:w-28 text-xs font-mono font-semibold bg-background pr-8 pl-2 py-1 rounded-md border-input"
-                                    placeholder="0.00"
-                                    value={group.basePrice}
-                                    onChange={(e) => handleUpdateBrandBasePrice(gIdx, e.target.value)}
-                                  />
-                                  <span className="absolute right-2 text-[10px] font-bold text-muted-foreground/80 pointer-events-none select-none">
-                                    ETB
-                                  </span>
-                                </div>
+                                {editingPriceKey === `brand-base-${gIdx}` ? (
+                                  <>
+                                    <div className="relative flex items-center">
+                                      <Input
+                                        autoFocus
+                                        className="h-7 w-20 sm:w-24 text-xs font-mono font-semibold bg-background pr-7 pl-2 py-0.5 rounded-md border-input"
+                                        placeholder="0.00"
+                                        value={group.basePrice}
+                                        onChange={(e) => handleUpdateBrandBasePrice(gIdx, e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            setEditingPriceKey(null);
+                                          }
+                                        }}
+                                        onBlur={() => setEditingPriceKey(null)}
+                                      />
+                                      <span className="absolute right-1.5 text-[9px] font-bold text-muted-foreground/80 pointer-events-none select-none">
+                                        ETB
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setEditingPriceKey(null);
+                                      }}
+                                      className="h-7 w-7 flex items-center justify-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 rounded transition-colors cursor-pointer"
+                                      title="Done"
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300">
+                                      {formatCurrency(parseInputNumber(group.basePrice))}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingPriceKey(`brand-base-${gIdx}`)}
+                                      className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded transition-colors cursor-pointer"
+                                      title={t('common.edit', 'Edit Price')}
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  </>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveBrandGroup(gIdx)}
-                                  className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0 cursor-pointer"
+                                  className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors shrink-0 cursor-pointer"
                                   title={t('materials.deleteBrand', 'Delete Brand')}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1097,17 +1157,62 @@ export default function Materials() {
                                         {[s.size, s.color, s.type].filter(Boolean).join(' • ') || '—'}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300">
-                                        {formatCurrency(parseInputNumber(s.price))}
-                                      </span>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {editingPriceKey === `brand-variant-${gIdx}-${sIdx}` ? (
+                                        <>
+                                          <div className="relative flex items-center">
+                                            <Input
+                                              autoFocus
+                                              className="h-7 w-20 sm:w-24 text-xs font-mono font-semibold bg-background pr-7 pl-2 py-0.5 rounded-md border-input"
+                                              placeholder="0.00"
+                                              value={s.price}
+                                              onChange={(e) => handleUpdateBrandVariantPrice(gIdx, sIdx, e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                  e.preventDefault();
+                                                  setEditingPriceKey(null);
+                                                }
+                                              }}
+                                              onBlur={() => setEditingPriceKey(null)}
+                                            />
+                                            <span className="absolute right-1.5 text-[9px] font-bold text-muted-foreground/80 pointer-events-none select-none">
+                                              ETB
+                                            </span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                              e.preventDefault();
+                                              setEditingPriceKey(null);
+                                            }}
+                                            className="h-7 w-7 flex items-center justify-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 rounded transition-colors cursor-pointer"
+                                            title="Done"
+                                          >
+                                            <Check className="w-3.5 h-3.5" />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300">
+                                            {formatCurrency(parseInputNumber(s.price))}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditingPriceKey(`brand-variant-${gIdx}-${sIdx}`)}
+                                            className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded transition-colors cursor-pointer"
+                                            title={t('common.edit', 'Edit Price')}
+                                          >
+                                            <Pencil className="w-3 h-3" />
+                                          </button>
+                                        </>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveSizeFromBrand(gIdx, sIdx)}
-                                        className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors cursor-pointer"
+                                        className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors cursor-pointer"
                                         title="Remove variant"
                                       >
-                                        <Trash2 className="w-3 h-3" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
                                   </div>
@@ -1161,17 +1266,62 @@ export default function Materials() {
                               {[s.size, s.color, s.type].filter(Boolean).join(' • ') || '—'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
-                              {formatCurrency(parseInputNumber(s.price))}
-                            </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {editingPriceKey === `variant-only-${idx}` ? (
+                              <>
+                                <div className="relative flex items-center">
+                                  <Input
+                                    autoFocus
+                                    className="h-7 w-20 sm:w-24 text-xs font-mono font-semibold bg-background pr-7 pl-2 py-0.5 rounded-md border-input"
+                                    placeholder="0.00"
+                                    value={s.price}
+                                    onChange={(e) => handleUpdateVariantOnlyPrice(idx, e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        setEditingPriceKey(null);
+                                      }
+                                    }}
+                                    onBlur={() => setEditingPriceKey(null)}
+                                  />
+                                  <span className="absolute right-1.5 text-[9px] font-bold text-muted-foreground/80 pointer-events-none select-none">
+                                    ETB
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setEditingPriceKey(null);
+                                  }}
+                                  className="h-7 w-7 flex items-center justify-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 rounded transition-colors cursor-pointer"
+                                  title="Done"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300">
+                                  {formatCurrency(parseInputNumber(s.price))}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPriceKey(`variant-only-${idx}`)}
+                                  className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-amber-600 hover:bg-amber-500/10 rounded transition-colors cursor-pointer"
+                                  title={t('common.edit', 'Edit Price')}
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleRemoveSizeOnly(idx)}
-                              className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors cursor-pointer"
+                              className="h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors cursor-pointer"
                               title="Remove"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>

@@ -573,14 +573,7 @@ export default function DirectSales() {
                         </div>
                       </div>
                       <div className="p-2.5 border-t border-border bg-card">
-                        <div className="flex items-center gap-1.5">
-                          {m.itemCode && (
-                            <span className="font-mono text-[10px] font-semibold text-muted-foreground shrink-0">
-                              [{m.itemCode}]
-                            </span>
-                          )}
-                          <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
-                        </div>
+                        <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
                         <div className="flex items-center justify-between gap-1 mt-0.5">
                           <div className="font-bold text-amber-500 text-xs">
                             {m.brands && m.brands.length > 0 
@@ -603,7 +596,7 @@ export default function DirectSales() {
                       </div>
                       <ImageOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
                       <h4 className="font-semibold text-foreground text-sm text-center line-clamp-2">
-                        {m.itemCode ? `[${m.itemCode}] ` : ''}{getLocName(m)}
+                        {getLocName(m)}
                       </h4>
                       <div className="flex items-center justify-between gap-1 mt-1.5 w-full px-1">
                         <div className="font-bold text-amber-500 text-xs">

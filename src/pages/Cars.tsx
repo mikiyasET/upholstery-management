@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Pencil, Trash2, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
@@ -402,15 +402,19 @@ export default function Cars() {
                       <X className="h-4 w-4" />
                     </Button>
                     <PermissionGate permission="catalog.cars.add">
-                      <ExecutiveAddButton 
-                        label={t('cars.addModel', 'Add Model')}
+                      <Button 
+                        size="sm" 
+                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
                           setModelFile(null);
                           setIsModelDialogOpen(true);
                         }}
-                      />
+                      >
+                        <Plus className="h-3.5 w-3.5" /> 
+                        <span className="hidden sm:inline">{t('cars.addModel', 'Add Model')}</span>
+                      </Button>
                     </PermissionGate>
                   </div>
                 </CardHeader>
@@ -439,15 +443,19 @@ export default function Cars() {
                       <Search className="h-4 w-4" />
                     </Button>
                     <PermissionGate permission="catalog.cars.add">
-                      <ExecutiveAddButton 
-                        label={t('cars.addModel', 'Add Model')}
+                      <Button 
+                        size="sm" 
+                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
                           setModelFile(null);
                           setIsModelDialogOpen(true);
                         }}
-                      />
+                      >
+                        <Plus className="h-3.5 w-3.5" /> 
+                        <span className="hidden sm:inline">{t('cars.addModel', 'Add Model')}</span>
+                      </Button>
                     </PermissionGate>
                   </div>
                 </CardHeader>
