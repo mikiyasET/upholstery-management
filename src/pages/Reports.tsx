@@ -465,6 +465,7 @@ export default function Reports() {
       <PageHeader
         title={t('reports.title', 'Reports & Analytics')}
         subtitle={t('reports.subtitle', 'Real-time financial performance, workload distribution, and store valuations')}
+        hideSubtitleOnMobile
         onRefresh={() => {
           queryClient.invalidateQueries({ queryKey: ['reports'] });
         }}
@@ -472,83 +473,92 @@ export default function Reports() {
       />
 
       {/* 2. Executive Timeframe Switcher Tabs (Low-profile Luxury Pill Bar) */}
-      <Box
-        className="premium-card"
-        style={{
-          padding: '6px 12px',
-        }}
-      >
-        <Group justify="space-between" align="center" wrap="wrap" gap="xs">
-          <Tabs
-            value={datePreset}
-            onChange={(v) => v && setDatePreset(v as DatePreset)}
-            variant="pills"
-            radius="md"
-          >
-            <Tabs.List style={{ gap: 4, flexWrap: 'wrap' }}>
-              <Tabs.Tab
-                value="today"
-                leftSection={<Clock size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.today', 'Today')}
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="yesterday"
-                leftSection={<History size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.yesterday', 'Yesterday')}
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="week"
-                leftSection={<Calendar size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.week', 'Last 7 Days')}
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="month"
-                leftSection={<CalendarRange size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.month', 'This Month')}
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="year"
-                leftSection={<BarChart3 size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.year', 'This Year')}
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="all"
-                leftSection={<Archive size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.all', 'All Time')}
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="custom"
-                leftSection={<CalendarClock size={13} />}
-                style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
-              >
-                {t('reports.timeframe.custom', 'Custom Range')}
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs>
+      <Box className="premium-card p-2 sm:p-2.5">
+        <Tabs
+          value={datePreset}
+          onChange={(v) => v && setDatePreset(v as DatePreset)}
+          variant="pills"
+          radius="md"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+            <div className="overflow-x-auto no-scrollbar scrollbar-none -mx-0.5 px-0.5 min-w-0 flex-1">
+              <Tabs.List style={{ gap: 4, flexWrap: 'nowrap' }} className="flex-nowrap">
+                <Tabs.Tab
+                  value="today"
+                  leftSection={<Clock size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.today', 'Today')}
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="yesterday"
+                  leftSection={<History size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.yesterday', 'Yesterday')}
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="week"
+                  leftSection={<Calendar size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.week', 'Last 7 Days')}
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="month"
+                  leftSection={<CalendarRange size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.month', 'This Month')}
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="year"
+                  leftSection={<BarChart3 size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.year', 'This Year')}
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="all"
+                  leftSection={<Archive size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.all', 'All Time')}
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="custom"
+                  leftSection={<CalendarClock size={13} />}
+                  className="whitespace-nowrap shrink-0"
+                  style={{ height: 30, padding: '0 10px', fontSize: '12px' }}
+                >
+                  {t('reports.timeframe.custom', 'Custom Range')}
+                </Tabs.Tab>
+              </Tabs.List>
+            </div>
 
-          <Badge
-            size="md"
-            radius="md"
-            variant="light"
-            color="amber"
-            leftSection={<CalendarDays size={13} />}
-            style={{ fontWeight: 600, textTransform: 'none', fontSize: '0.78rem', height: 26 }}
-          >
-            {getPeriodDisplay()}
-          </Badge>
-        </Group>
+            <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-[var(--surface-border-subtle)]">
+              <span className="text-[11px] font-medium text-muted-foreground sm:hidden">
+                {t('reports.kpi.forPeriod', 'Selected Period')}:
+              </span>
+              <Badge
+                size="md"
+                radius="md"
+                variant="light"
+                color="amber"
+                leftSection={<CalendarDays size={13} />}
+                style={{ fontWeight: 600, textTransform: 'none', fontSize: '0.78rem', height: 26 }}
+              >
+                {getPeriodDisplay()}
+              </Badge>
+            </div>
+          </div>
+        </Tabs>
 
         {/* Custom Range Expansion Panel */}
         {datePreset === 'custom' && (
@@ -557,14 +567,15 @@ export default function Reports() {
             pt="xs"
             className="animate-in fade-in duration-200"
             style={{
-              borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.08))',
+              borderTop: '1px solid var(--surface-border-subtle)',
             }}
           >
-            <Group justify="space-between" align="center" wrap="wrap" gap="xs">
-              <Group gap="sm" align="center" wrap="wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
                 <SegmentedControl
                   size="xs"
                   radius="md"
+                  className="w-full sm:w-auto shrink-0"
                   value={isSingleDayMode ? 'single' : 'range'}
                   onChange={(val) => {
                     const isSingle = val === 'single';
@@ -578,11 +589,11 @@ export default function Reports() {
                 />
 
                 {isSingleDayMode ? (
-                  <Group gap={6} align="center">
-                    <Text size="xs" fw={600} c="dimmed">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Text size="xs" fw={600} c="dimmed" className="shrink-0">
                       {t('reports.timeframe.selectSingleDay', 'Date')}:
                     </Text>
-                    <div style={{ width: 165 }}>
+                    <div className="flex-1 sm:w-44">
                       <AppDatePicker
                         value={customStart ? parseISO(customStart) : null}
                         onChange={(_d, str) => {
@@ -595,43 +606,47 @@ export default function Reports() {
                         size="small"
                       />
                     </div>
-                  </Group>
+                  </div>
                 ) : (
-                  <Group gap={6} align="center" wrap="wrap">
-                    <Text size="xs" fw={600} c="dimmed">
-                      {t('reports.timeframe.from', 'From')}:
-                    </Text>
-                    <div style={{ width: 165 }}>
-                      <AppDatePicker
-                        value={customStart ? parseISO(customStart) : null}
-                        onChange={(_d, str) => {
-                          if (str) setCustomStart(str);
-                        }}
-                        clearable={false}
-                        size="small"
-                      />
+                  <div className="grid grid-cols-1 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
+                      <Text size="xs" fw={600} c="dimmed" className="shrink-0 w-10 sm:w-auto">
+                        {t('reports.timeframe.from', 'From')}:
+                      </Text>
+                      <div className="flex-1 sm:w-40">
+                        <AppDatePicker
+                          value={customStart ? parseISO(customStart) : null}
+                          onChange={(_d, str) => {
+                            if (str) setCustomStart(str);
+                          }}
+                          clearable={false}
+                          size="small"
+                        />
+                      </div>
                     </div>
-                    <Text size="xs" fw={600} c="dimmed">
-                      {t('reports.timeframe.to', 'To')}:
-                    </Text>
-                    <div style={{ width: 165 }}>
-                      <AppDatePicker
-                        value={customEnd ? parseISO(customEnd) : null}
-                        onChange={(_d, str) => {
-                          if (str) setCustomEnd(str);
-                        }}
-                        clearable={false}
-                        size="small"
-                      />
+                    <div className="flex items-center gap-2">
+                      <Text size="xs" fw={600} c="dimmed" className="shrink-0 w-10 sm:w-auto">
+                        {t('reports.timeframe.to', 'To')}:
+                      </Text>
+                      <div className="flex-1 sm:w-40">
+                        <AppDatePicker
+                          value={customEnd ? parseISO(customEnd) : null}
+                          onChange={(_d, str) => {
+                            if (str) setCustomEnd(str);
+                          }}
+                          clearable={false}
+                          size="small"
+                        />
+                      </div>
                     </div>
-                  </Group>
+                  </div>
                 )}
-              </Group>
+              </div>
 
-              <Text size="11px" c="dimmed">
+              <Text size="11px" c="dimmed" className="hidden lg:block shrink-0">
                 {t('reports.timeframe.rangeAutoApplied', 'Range applied automatically to all charts')}
               </Text>
-            </Group>
+            </div>
           </Box>
         )}
       </Box>
@@ -666,7 +681,7 @@ export default function Reports() {
               <DollarSign size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle)' }}>
             <Group gap={4}>
               <span className="pulse-dot" style={{ backgroundColor: '#f59e0b', width: 5, height: 5 }} />
               <Text size="11px" fw={600} style={{ color: 'var(--primary-accent)' }}>
@@ -707,7 +722,7 @@ export default function Reports() {
               <Archive size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle)' }}>
             <Text size="11px" fw={600} style={{ color: '#3b82f6' }}>
               {t('reports.kpi.dualStorageHubs', 'Dual Storage Hubs')}
             </Text>
@@ -748,7 +763,7 @@ export default function Reports() {
               <Wrench size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle)" }}>
             <Text size="11px" fw={600} style={{ color: "#a855f7" }} truncate>
               {getLocName(topServices?.[0]) || t("reports.kpi.noRecords", "No records")}
             </Text>
@@ -789,7 +804,7 @@ export default function Reports() {
               <User size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: "1px solid var(--surface-border-subtle)" }}>
             <Text size="11px" fw={600} style={{ color: "#10b981" }}>
               {t("reports.kpi.workshopOperations", "Workshop operations")}
             </Text>
@@ -802,37 +817,64 @@ export default function Reports() {
 
       {/* 4. Section Switcher Tabs (Unified Analytics Hub) */}
       <Tabs value={activeSection} onChange={setActiveSection} variant="pills" radius="md">
-        <Tabs.List style={{ gap: 4, flexWrap: "wrap" }} mb="md">
-          <Tabs.Tab value="all" leftSection={<BarChart3 size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
-            {t("reports.sections.all", "All Reports & Charts")}
-          </Tabs.Tab>
-          <Tabs.Tab value="revenue" leftSection={<DollarSign size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
-            {t("reports.sections.revenue", "Revenue Trend")}
-          </Tabs.Tab>
-          <Tabs.Tab value="services" leftSection={<Wrench size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
-            {t("reports.sections.services", "Top Services & Items")}
-          </Tabs.Tab>
-          <Tabs.Tab value="staff" leftSection={<User size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
-            {t("reports.sections.staff", "Staff Workload")}
-          </Tabs.Tab>
-          <Tabs.Tab value="inventory" leftSection={<Store size={15} />} style={{ height: 30, padding: "0 10px", fontSize: "12px" }}>
-            {t("reports.sections.inventory", "Store Valuations")}
-          </Tabs.Tab>
-        </Tabs.List>
+        <div className="overflow-x-auto no-scrollbar scrollbar-none -mx-1 px-1 sm:mx-0 sm:px-0 mb-3 sm:mb-4">
+          <Tabs.List style={{ gap: 6, flexWrap: "nowrap" }} className="flex-nowrap">
+            <Tabs.Tab
+              value="all"
+              leftSection={<BarChart3 size={15} />}
+              className="whitespace-nowrap shrink-0"
+              style={{ height: 32, padding: "0 12px", fontSize: "12px" }}
+            >
+              {t("reports.sections.all", "All Reports & Charts")}
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="revenue"
+              leftSection={<DollarSign size={15} />}
+              className="whitespace-nowrap shrink-0"
+              style={{ height: 32, padding: "0 12px", fontSize: "12px" }}
+            >
+              {t("reports.sections.revenue", "Revenue Trend")}
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="services"
+              leftSection={<Wrench size={15} />}
+              className="whitespace-nowrap shrink-0"
+              style={{ height: 32, padding: "0 12px", fontSize: "12px" }}
+            >
+              {t("reports.sections.services", "Top Services & Items")}
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="staff"
+              leftSection={<User size={15} />}
+              className="whitespace-nowrap shrink-0"
+              style={{ height: 32, padding: "0 12px", fontSize: "12px" }}
+            >
+              {t("reports.sections.staff", "Staff Workload")}
+            </Tabs.Tab>
+            <Tabs.Tab
+              value="inventory"
+              leftSection={<Store size={15} />}
+              className="whitespace-nowrap shrink-0"
+              style={{ height: 32, padding: "0 12px", fontSize: "12px" }}
+            >
+              {t("reports.sections.inventory", "Store Valuations")}
+            </Tabs.Tab>
+          </Tabs.List>
+        </div>
 
         {/* SECTION 1: REVENUE TREND & FINANCIAL BREAKDOWN (Full-width) */}
         {(activeSection === 'all' || activeSection === 'revenue') && (
-          <Box className="premium-card p-6 mb-6">
+          <Box className="premium-card p-4 sm:p-6 mb-4 sm:mb-6">
             <Group justify="space-between" align="flex-start" mb="md" wrap="wrap" gap="sm">
               <Box>
                 <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
                   {t('reports.charts.revenueTrend', 'Revenue Trend & Breakdown')}
                 </Title>
-                <Text size="xs" c="dimmed" mt={2}>
+                <Text size="xs" c="dimmed" mt={2} className="hidden sm:block">
                   {t('reports.charts.revenueTrendSubtitle', 'Combined work orders and counter point-of-sale collections over time')}
                 </Text>
               </Box>
-              <Group gap="xs" wrap="wrap">
+              <Group gap="xs" wrap="wrap" className="w-full sm:w-auto">
                 <Badge variant="light" color="amber" size="sm" radius="md">
                   {t('reports.chart.orders', 'Orders')}: {formatCurrency(totalOrderRevenue, i18n.language as any)}
                 </Badge>
@@ -884,7 +926,7 @@ export default function Reports() {
                 </Text>
               </Box>
             ) : (
-              <Box style={{ position: 'relative', width: '100%' }}>
+              <Box style={{ position: 'relative', width: '100%', overflowX: 'auto' }} className="no-scrollbar">
                 <StackedBarChart
                   h={265}
                   data={chartData}
@@ -903,7 +945,7 @@ export default function Reports() {
             <Box
               my="lg"
               style={{
-                borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.08))',
+                borderTop: '1px solid var(--surface-border-subtle)',
               }}
             />
 
@@ -914,8 +956,8 @@ export default function Reports() {
                 p="md"
                 className="rounded-xl flex flex-col justify-between"
                 style={{
-                  backgroundColor: 'var(--mantine-color-dark-7, rgba(255, 255, 255, 0.02))',
-                  border: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))',
+                  backgroundColor: 'var(--surface-bg)',
+                  border: '1px solid var(--surface-border)',
                 }}
               >
                 <div>
@@ -950,8 +992,8 @@ export default function Reports() {
                 p="md"
                 className="rounded-xl flex flex-col justify-between"
                 style={{
-                  backgroundColor: 'var(--mantine-color-dark-7, rgba(255, 255, 255, 0.02))',
-                  border: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))',
+                  backgroundColor: 'var(--surface-bg)',
+                  border: '1px solid var(--surface-border)',
                 }}
               >
                 <div>
@@ -990,8 +1032,8 @@ export default function Reports() {
                 p="md"
                 className="rounded-xl flex flex-col justify-between"
                 style={{
-                  backgroundColor: 'var(--mantine-color-dark-7, rgba(255, 255, 255, 0.02))',
-                  border: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))',
+                  backgroundColor: 'var(--surface-bg)',
+                  border: '1px solid var(--surface-border)',
                 }}
               >
                 <div>
@@ -1012,7 +1054,7 @@ export default function Reports() {
 
                   <Stack gap="xs">
                     {/* Daily Average Run-Rate */}
-                    <Box p="xs" className="rounded-lg bg-muted/30">
+                    <Box p="xs" className="rounded-lg bg-card border border-border/60">
                       <Group justify="space-between" align="center">
                         <Text size="xs" c="dimmed">
                           {t('reports.charts.dailyAverage', 'Avg Daily Revenue')}:
@@ -1027,7 +1069,7 @@ export default function Reports() {
                     </Box>
 
                     {/* Peak Day */}
-                    <Box p="xs" className="rounded-lg bg-muted/30">
+                    <Box p="xs" className="rounded-lg bg-card border border-border/60">
                       <Group justify="space-between" align="center">
                         <Text size="xs" c="dimmed">
                           {t('reports.charts.peakDay', 'Peak Day')}:
@@ -1044,7 +1086,7 @@ export default function Reports() {
                     </Box>
 
                     {/* Dominant Stream */}
-                    <Box p="xs" className="rounded-lg bg-muted/30">
+                    <Box p="xs" className="rounded-lg bg-card border border-border/60">
                       <Group justify="space-between" align="center">
                         <Text size="xs" c="dimmed">
                           {t('reports.charts.leadStream', 'Lead Stream')}:
@@ -1060,7 +1102,7 @@ export default function Reports() {
                   </Stack>
                 </div>
 
-                <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+                <Group justify="space-between" align="center" mt="sm" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle)' }}>
                   <Text size="10px" c="dimmed">
                     {t('reports.charts.activeDaysCount', 'Active Days: {{active}} / {{total}}', { active: performanceStats.activeDaysCount, total: chartData.length })}
                   </Text>
@@ -1072,7 +1114,7 @@ export default function Reports() {
             </SimpleGrid>
 
             {/* Footer Strip */}
-            <Group justify="space-between" align="center" mt="md" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+            <Group justify="space-between" align="center" mt="md" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle)' }}>
               <Group gap={6} align="center">
                 <span className="pulse-dot" style={{ backgroundColor: '#f59e0b', width: 6, height: 6 }} />
                 <Text size="11px" fw={600} style={{ color: 'var(--primary-accent)' }}>
@@ -1088,9 +1130,9 @@ export default function Reports() {
 
         {/* SECTION 2: TOP SERVICES & STAFF WORKLOAD */}
         {activeSection === 'all' && (
-          <div className="grid gap-6 md:grid-cols-2 mb-6">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 mb-4 sm:mb-6">
             {/* Top Performers */}
-            <Box className="premium-card p-6">
+            <Box className="premium-card p-4 sm:p-6">
               <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }} mb="xs">
                 {t('reports.top.title', 'Top Services & Items')}
               </Title>
@@ -1160,7 +1202,7 @@ export default function Reports() {
             </Box>
 
             {/* Staff Workload */}
-            <Box className="premium-card p-6">
+            <Box className="premium-card p-4 sm:p-6">
               <Group justify="space-between" align="flex-start" mb="md">
                 <Box>
                   <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
@@ -1233,7 +1275,7 @@ export default function Reports() {
 
         {/* Tab-specific Views */}
         {activeSection === 'services' && (
-          <Box className="premium-card p-6 mb-6">
+          <Box className="premium-card p-4 sm:p-6 mb-4 sm:mb-6">
             <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }} mb="xs">
               {t('reports.top.title', 'Top Services & Items')}
             </Title>
@@ -1304,7 +1346,7 @@ export default function Reports() {
         )}
 
         {activeSection === 'staff' && (
-          <Box className="premium-card p-6 mb-6">
+          <Box className="premium-card p-4 sm:p-6 mb-4 sm:mb-6">
             <Group justify="space-between" align="flex-start" mb="md">
               <Box>
                 <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>
@@ -1376,7 +1418,7 @@ export default function Reports() {
 
         {/* SECTION 3: STORE VALUATIONS */}
         {(activeSection === 'all' || activeSection === 'inventory') && (
-          <Box className="premium-card p-6 mb-6">
+          <Box className="premium-card p-4 sm:p-6 mb-4 sm:mb-6">
             <Group justify="space-between" align="flex-start" mb="md">
               <Box>
                 <Title order={4} style={{ letterSpacing: '-0.01em', fontWeight: 700 }}>

@@ -108,7 +108,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
       style={{ overflow: "hidden" }}
     >
       {/* Left: Mobile Toggle & Brand Logo */}
-      <Group gap="sm" align="center" wrap="nowrap" style={{ flexShrink: 0, minWidth: 0 }}>
+      <Group gap="xs" align="center" wrap="nowrap" style={{ flexShrink: 0, minWidth: 0 }}>
         <Burger
           opened={mobileOpened}
           onClick={toggleMobile}
@@ -121,7 +121,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
       </Group>
 
       {/* Right: Quick Actions, Language, Dark Mode & User Profile */}
-      <Group gap="xs" align="center" wrap="nowrap">
+      <Group gap="xs" className="gap-1.5 sm:gap-2" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
         {/* Quick Action Button */}
         {(canCreateOrder || canCreateDirectSale) && (
           <Menu shadow="md" width={190} position="bottom-end">
@@ -130,10 +130,12 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
                 size="xs"
                 variant="gradient"
                 gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-                leftSection={<Plus size={16} />}
+                leftSection={<Plus size={16} className="shrink-0" />}
                 style={{ fontWeight: 600 }}
+                className="px-2 sm:px-3 h-8 sm:h-[30px] [&_[data-position=left]]:mr-0 sm:[&_[data-position=left]]:mr-1.5"
+                aria-label={t("common.new", "New Action")}
               >
-                {t("common.new", "New Action")}
+                <span className="hidden sm:inline">{t("common.new", "New Action")}</span>
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
@@ -171,8 +173,9 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
             radius="md"
             onClick={toggleLanguage}
             aria-label="Toggle language"
+            className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
           >
-            <Languages size={18} />
+            <Languages size={17} />
           </ActionIcon>
         </Tooltip>
 
@@ -184,11 +187,12 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
             radius="md"
             onClick={toggleTheme}
             aria-label="Toggle theme"
+            className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
           >
             {isDark ? (
-              <Sun size={18} color="var(--primary-accent)" />
+              <Sun size={17} color="var(--primary-accent)" />
             ) : (
-              <Moon size={18} />
+              <Moon size={17} />
             )}
           </ActionIcon>
         </Tooltip>
@@ -197,10 +201,10 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
         <Menu shadow="md" width={240} position="bottom-end" transitionProps={{ transition: "pop-top-right", duration: 150 }}>
           <Menu.Target>
             <UnstyledButton
-              className="exec-profile-capsule"
+              className="exec-profile-capsule p-0.5 sm:py-1 sm:pl-1.5 sm:pr-3"
               aria-label="User profile menu"
             >
-              <Box className="exec-avatar-wrapper">
+              <Box className="exec-avatar-wrapper w-8 h-8 sm:w-[34px] sm:h-[34px] text-xs sm:text-[13px]">
                 {initials}
                 <span className="exec-online-pip" />
               </Box>
@@ -213,7 +217,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
                   {user?.role || "Admin"}
                 </span>
               </Box>
-              <ChevronDown size={15} className="exec-chevron" />
+              <ChevronDown size={15} className="exec-chevron hidden sm:block" />
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown

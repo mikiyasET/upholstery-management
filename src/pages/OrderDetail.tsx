@@ -47,9 +47,9 @@ import { toast } from 'sonner';
 import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
 import { printOrderReceipt } from '../lib/receipt-printer';
-import { PlateBadge } from '../components/common';
+import { PlateBadge, FloatingRefreshButton } from '../components/common';
 import { PermissionGate } from '../components/PermissionGate';
-import { ActionIcon, Tooltip, Button as MantineButton } from '@mantine/core';
+import { ActionIcon, Tooltip, Button as MantineButton, Box } from '@mantine/core';
 
 const getPaymentMethodInfo = (method: string) => {
   switch (method) {
@@ -463,19 +463,21 @@ export default function OrderDetail() {
 
           {/* Right: Action Toolbar strictly right-aligned */}
           <div className="flex items-center gap-2 flex-wrap shrink-0 justify-end">
-            <Tooltip label={t('common.refresh', 'Refresh order')} withArrow>
-              <ActionIcon
-                variant="default"
-                size="lg"
-                radius="md"
-                loading={isFetching}
-                onClick={() => refetch()}
-                aria-label="Refresh order"
-                style={{ height: 34, width: 34 }}
-              >
-                <RotateCw size={16} />
-              </ActionIcon>
-            </Tooltip>
+            <Box visibleFrom="sm">
+              <Tooltip label={t('common.refresh', 'Refresh order')} withArrow>
+                <ActionIcon
+                  variant="default"
+                  size="lg"
+                  radius="md"
+                  loading={isFetching}
+                  onClick={() => refetch()}
+                  aria-label="Refresh order"
+                  style={{ height: 34, width: 34 }}
+                >
+                  <RotateCw size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Box>
 
             <Tooltip label={t('orders.actions.printReceipt', 'Print Receipt')} withArrow>
               <ActionIcon
@@ -528,6 +530,13 @@ export default function OrderDetail() {
             </MantineButton>
           </div>
         </div>
+
+        {/* Floating Refresh Button for Mobile (< sm) */}
+        <FloatingRefreshButton
+          onRefresh={() => refetch()}
+          isRefreshing={isFetching}
+          tooltip={t('common.refresh', 'Refresh order')}
+        />
 
         {/* Structured 5-Column Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-border/60 bg-muted/10">

@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '../components/DataTable';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
+import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
@@ -709,13 +710,10 @@ export default function Storage() {
             backgroundColor: "var(--surface-card, rgba(255, 255, 255, 0.04))",
             border: "1px solid var(--surface-border, rgba(255, 255, 255, 0.08))",
             borderRadius: 12,
-            display: "inline-flex",
             gap: 6,
             boxShadow: "var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.1))",
-            maxWidth: "100%",
-            overflowX: "auto",
           }}
-          className="custom-scrollbar"
+          className="custom-scrollbar w-full sm:w-auto flex sm:inline-flex items-center overflow-x-auto"
         >
           <MantineButton
             variant={activeStore === 'MINI' ? 'filled' : 'subtle'}
@@ -737,6 +735,7 @@ export default function Storage() {
               setActiveStore('MINI');
               setCurrentPage(1);
             }}
+            className="flex-1 sm:flex-initial justify-center"
             style={{
               fontWeight: activeStore === 'MINI' ? 700 : 500,
               height: 36,
@@ -744,7 +743,8 @@ export default function Storage() {
               fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
             }}
           >
-            {t('storage.miniStore', 'Mini Store')}
+            <span className="hidden sm:inline">{t('storage.miniStore', 'Mini Store')}</span>
+            <span className="inline sm:hidden">{t('storage.miniShort', 'Mini')}</span>
           </MantineButton>
 
           <MantineButton
@@ -767,6 +767,7 @@ export default function Storage() {
               setActiveStore('MAIN');
               setCurrentPage(1);
             }}
+            className="flex-1 sm:flex-initial justify-center"
             style={{
               fontWeight: activeStore === 'MAIN' ? 700 : 500,
               height: 36,
@@ -774,10 +775,13 @@ export default function Storage() {
               fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
             }}
           >
-            {t('storage.mainStore', 'Main Store')}
+            <span className="hidden sm:inline">{t('storage.mainStore', 'Main Store')}</span>
+            <span className="inline sm:hidden">{t('storage.mainShort', 'Main')}</span>
           </MantineButton>
 
           <MantineButton
+            visibleFrom="sm"
+            className="hidden sm:inline-flex"
             variant={showLowStockOnly ? 'filled' : 'subtle'}
             color="red"
             size="sm"
@@ -809,6 +813,8 @@ export default function Storage() {
           </MantineButton>
 
           <MantineButton
+            visibleFrom="sm"
+            className="hidden sm:inline-flex"
             variant="subtle"
             color="gray"
             size="sm"
@@ -828,7 +834,7 @@ export default function Storage() {
         </Box>
 
         {/* Live Search Input on the Same Row */}
-        <Group gap="xs" align="center" style={{ flex: '1 1 240px', maxWidth: 340, minWidth: 200 }}>
+        <div className="w-full sm:w-auto flex items-center gap-2 flex-1 sm:max-w-[340px]">
           <TextInput
             placeholder={t('storage.searchPlaceholder', 'Search inventory by name, code...')}
             leftSection={<Search size={16} style={{ color: 'var(--text-muted)' }} />}
@@ -846,7 +852,7 @@ export default function Storage() {
             }}
             radius="md"
             size="sm"
-            style={{ flex: 1 }}
+            className="flex-1 w-full"
             styles={{
               input: {
                 height: 36,
@@ -872,7 +878,7 @@ export default function Storage() {
               <X size={16} />
             </ActionIcon>
           )}
-        </Group>
+        </div>
       </Group>
 
       {/* 3. Storage Data Table Card */}
@@ -909,7 +915,7 @@ export default function Storage() {
                             className="w-9 h-9 shrink-0 bg-secondary/50 rounded-md flex items-center justify-center overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity"
                             onClick={() => setPreviewImage(getImageUrl(m.imageUrl) || null)}
                           >
-                            <img src={getImageUrl(m.imageUrl)} alt={getLocName(m)} className="w-full h-full object-cover" />
+                            <LazyImage src={m.imageUrl} alt={getLocName(m)} className="w-full h-full object-cover" />
                           </div>
                         ) : (
                           <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center">

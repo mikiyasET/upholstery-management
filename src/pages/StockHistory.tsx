@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  Group,
   Badge,
   ActionIcon,
   Tooltip,
@@ -11,6 +10,7 @@ import {
   TextInput,
   SegmentedControl,
   SimpleGrid,
+  Button as MantineButton,
 } from '@mantine/core';
 import {
   History,
@@ -26,7 +26,6 @@ import {
   Copy,
   Check,
   Eye,
-  FileText,
   DollarSign,
   RotateCcw,
   SlidersHorizontal,
@@ -442,31 +441,50 @@ export default function StockHistory() {
         title={t('storage.stockHistoryTitle', 'Stock Movement History')}
         subtitle={t('storage.stockHistorySubtitle', 'Complete timeline of stock restocks, transfers, adjustments, audits, and sales deductions.')}
         badge={total ? `${total} Movements` : undefined}
-        backTo="/storage"
+        hideSubtitleOnMobile
+        hideBadgeOnMobile
         onRefresh={() => refetch()}
         isRefreshing={isFetching}
         refreshTooltip={t('common.refresh', 'Refresh')}
         action={
-          <Group gap="xs">
-            <Button
-              variant="outline"
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto [&_button]:!w-full sm:[&_button]:!w-auto">
+            <MantineButton
+              variant="light"
+              color="amber"
               size="sm"
+              radius="md"
+              leftSection={<Store size={15} />}
               onClick={() => navigate('/storage')}
-              className="header-btn-secondary h-9 text-xs"
+              className="!w-full sm:!w-auto justify-center font-semibold transition-all duration-200"
+              style={{
+                height: 36,
+                fontSize: '13px',
+                fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                backgroundColor: 'rgba(245, 158, 11, 0.10)',
+              }}
             >
-              <Store className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
-              <span>{t('storage.title', 'Dual Storage')}</span>
-            </Button>
-            <Button
-              variant="outline"
+              {t('storage.title', 'Storage & Inventory')}
+            </MantineButton>
+            <MantineButton
+              variant="light"
+              color="blue"
               size="sm"
+              radius="md"
+              leftSection={<ShoppingBag size={15} />}
               onClick={() => navigate('/direct-sales/history')}
-              className="header-btn-secondary h-9 text-xs"
+              className="!w-full sm:!w-auto justify-center font-semibold transition-all duration-200"
+              style={{
+                height: 36,
+                fontSize: '13px',
+                fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+                border: '1px solid rgba(59, 130, 246, 0.35)',
+                backgroundColor: 'rgba(59, 130, 246, 0.10)',
+              }}
             >
-              <FileText className="w-3.5 h-3.5 mr-1 text-muted-foreground" />
-              <span>{t('directSales.history', 'Sales History')}</span>
-            </Button>
-          </Group>
+              {t('directSales.history', 'Direct Sales History')}
+            </MantineButton>
+          </div>
         }
       />
 

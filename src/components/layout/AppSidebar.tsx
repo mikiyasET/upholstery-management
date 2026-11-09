@@ -16,6 +16,7 @@ import {
   FileText,
   Settings,
   History,
+  ArrowUpRight,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { checkPermission, type PermissionKey } from "../../lib/permissions";
@@ -23,6 +24,8 @@ import { useAuthStore } from "../../store/authStore";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../lib/api";
 import { BrandLogo } from "../common";
+import logoWhite from "../../assets/logo-white.svg";
+import logoBlack from "../../assets/logo-black.svg";
 
 interface NavItemDef {
   labelKey: string;
@@ -271,6 +274,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       >
         <BrandLogo
           size="md"
+          showTextOnMobile={true}
           onClick={() => {
             navigate("/");
             onNavigate?.();
@@ -373,6 +377,89 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           })}
         </Stack>
       </ScrollArea>
+
+      {/* CodeAbay Attribution Footer (Always Visible at Bottom) */}
+      <Box
+        px="sm"
+        py="xs"
+        style={{
+          borderTop: "1px solid var(--surface-border)",
+          backgroundColor: "var(--sidebar-bg)",
+          flexShrink: 0,
+        }}
+      >
+        <a
+          href="https://codeabay.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            textDecoration: "none",
+            color: "inherit",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "5px 8px",
+            borderRadius: 8,
+            transition: "all 0.15s ease",
+          }}
+          className="hover:bg-accent/60 transition-colors group"
+          title="CodeAbay - Software Development Solutions"
+        >
+          <Group gap="xs" wrap="nowrap" align="center" style={{ minWidth: 0 }}>
+            {/* CodeAbay Logo Mark (Theme Aware) */}
+            <Box
+              style={{
+                width: 26,
+                height: 22,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <img
+                src={logoBlack}
+                alt="CodeAbay Logo"
+                className="dark:hidden w-full h-full object-contain"
+              />
+              <img
+                src={logoWhite}
+                alt="CodeAbay Logo"
+                className="hidden dark:block w-full h-full object-contain"
+              />
+            </Box>
+
+            <Box style={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
+              <Text
+                size="9px"
+                fw={700}
+                c="dimmed"
+                tt="uppercase"
+                style={{ letterSpacing: "0.06em", lineHeight: 1.1 }}
+              >
+                {t("common.builtBy", "Built by")}
+              </Text>
+              <Text
+                size="xs"
+                fw={700}
+                style={{
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.2,
+                  color: "var(--text-main)",
+                }}
+                className="group-hover:text-primary transition-colors"
+              >
+                CodeAbay
+              </Text>
+            </Box>
+          </Group>
+
+          <ArrowUpRight
+            size={13}
+            className="text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0"
+          />
+        </a>
+      </Box>
     </Box>
   );
 }

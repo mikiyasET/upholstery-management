@@ -14,6 +14,7 @@ import {
 } from '../components/DataTable';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
+import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
 import { Button } from '../components/ui/button';
 import {
@@ -544,8 +545,8 @@ export default function Assets() {
                     {/* Thumbnail Image */}
                     <TableCell>
                       {asset.imageUrl ? (
-                        <img
-                          src={getImageUrl(asset.imageUrl)}
+                        <LazyImage
+                          src={asset.imageUrl}
                           alt={asset.nameEn}
                           className="h-11 w-11 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border border-border"
                           onClick={() => setPreviewImage(getImageUrl(asset.imageUrl)!)}

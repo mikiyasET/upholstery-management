@@ -39,6 +39,7 @@ import {
   TableSearch,
 } from '../components/DataTable';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
 import { Button } from '../components/ui/button';
 import {
@@ -478,13 +479,13 @@ export default function Services() {
         isRefreshing={isFetching}
         refreshTooltip="Refresh services"
         action={
-          <div className="flex items-center gap-2">
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 [&>*]:!w-full sm:[&>*]:!w-auto [&_button]:!w-full sm:[&_button]:!w-auto">
             <PermissionGate permission="catalog.services.edit">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsManageGroupsOpen(true)}
-                className="h-9 px-3 rounded-xl border border-border bg-card hover:bg-muted font-semibold text-xs flex items-center gap-1.5 shadow-2xs"
+                className="!w-full sm:!w-auto h-9 px-3 rounded-xl border border-border bg-card hover:bg-muted font-semibold text-xs flex items-center justify-center gap-1.5 shadow-2xs"
               >
                 <Settings2 className="w-3.5 h-3.5 text-primary" />
                 <span>{t('services.manageTypes', 'Manage Types')}</span>
@@ -494,6 +495,7 @@ export default function Services() {
               <ExecutiveAddButton
                 label={t('services.newService', 'New Service')}
                 onClick={() => handleOpenServiceDialog()}
+                className="!w-full sm:!w-auto justify-center"
               />
             </PermissionGate>
           </div>
@@ -674,8 +676,8 @@ export default function Services() {
                           }}
                         >
                           {service.imageUrl ? (
-                            <img
-                              src={getImageUrl(service.imageUrl)}
+                            <LazyImage
+                              src={service.imageUrl}
                               alt={getLocName(service)}
                               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                             />
@@ -823,8 +825,8 @@ export default function Services() {
                     }}
                   >
                     {service.imageUrl ? (
-                      <img
-                        src={getImageUrl(service.imageUrl)}
+                      <LazyImage
+                        src={service.imageUrl}
                         alt={getLocName(service)}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -971,8 +973,8 @@ export default function Services() {
                   title={activeDetailService.imageUrl ? t('common.view', 'View Image') : undefined}
                 >
                   {activeDetailService.imageUrl ? (
-                    <img
-                      src={getImageUrl(activeDetailService.imageUrl)}
+                    <LazyImage
+                      src={activeDetailService.imageUrl}
                       alt={getLocName(activeDetailService)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
@@ -1350,8 +1352,8 @@ export default function Services() {
                         className="w-full h-full object-cover"
                       />
                     ) : editingService?.imageUrl ? (
-                      <img
-                        src={getImageUrl(editingService.imageUrl)}
+                      <LazyImage
+                        src={editingService.imageUrl}
                         alt="Current"
                         className="w-full h-full object-cover"
                       />

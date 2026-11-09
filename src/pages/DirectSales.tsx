@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
@@ -8,12 +9,13 @@ import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, Fil
 import { ModernInput } from '../components/ui/modern-input';
 import { ModernSelect } from '../components/ui/modern-select';
 import { toast } from 'sonner';
-import { formatCurrency, getImageUrl, formatPaymentMethod, isUnitIntegerOnly, getMaterialUnallocatedStock, formatBrandSizeLabel, formatAppDate } from '../lib/utils';
+import { formatCurrency, formatPaymentMethod, isUnitIntegerOnly, getMaterialUnallocatedStock, formatBrandSizeLabel, formatAppDate } from '../lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Printer, History } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PermissionGate } from '../components/PermissionGate';
+import { LazyImage } from '../components/common/LazyImage';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 type MaterialBrandStock = {
@@ -568,14 +570,14 @@ export default function DirectSales() {
                     <>
                       <div className="flex-1 overflow-hidden bg-muted relative flex items-center justify-center">
                         {/* Blurred background filler */}
-                        <img
-                          src={getImageUrl(m.imageUrl)!}
+                        <LazyImage
+                          src={m.imageUrl}
                           alt=""
                           className="absolute inset-0 w-full h-full object-cover blur-md scale-110"
                         />
                         {/* Crisp foreground image */}
-                        <img
-                          src={getImageUrl(m.imageUrl)!}
+                        <LazyImage
+                          src={m.imageUrl}
                           alt={getLocName(m)}
                           className={`w-full h-full object-contain relative z-10 ${!isOutOfStock && 'group-hover:scale-105'} transition-transform duration-200`}
                         />
@@ -1077,22 +1079,46 @@ export default function DirectSales() {
         </DialogContent>
       </Dialog>
 
-      {/* Mobile Floating Cart Button */}
-      {cart.length > 0 && (
-        <a 
-          href="#cart-section"
-          className={`md:hidden fixed bottom-6 right-6 z-50 bg-amber-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all ${isBouncing ? 'scale-125 duration-100 ease-out' : 'scale-100 duration-300 ease-in hover:bg-amber-700 hover:scale-105'}`}
+      {/* Mobile Sticky Floating Cart Button (Portaled to document.body so it stays strictly sticky on scroll) */}
+      {cart.length > 0 && typeof document !== 'undefined' && createPortal(
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById("cart-section");
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+          aria-label={t("directSales.viewCart", "View Cart")}
+          className={`md:hidden fixed z-[999] pointer-events-auto rounded-full text-white flex items-center justify-center transition-all cursor-pointer ${
+            isBouncing
+              ? 'scale-115 duration-100 ease-out'
+              : 'scale-100 duration-200 ease-in active:scale-95'
+          }`}
+          style={{
+            position: "fixed",
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 22px)",
+            right: "18px",
+            width: "52px",
+            height: "52px",
+            zIndex: 999,
+            background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
+            boxShadow: "0 8px 24px rgba(217, 119, 6, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25)",
+            border: "1px solid rgba(254, 243, 199, 0.35)",
+            touchAction: "manipulation",
+          }}
         >
-          <ShoppingCart className="w-6 h-6" />
+          <ShoppingCart className="w-6 h-6 text-white" />
           {/* Unique Items Count */}
-          <span className="absolute -top-2 -right-2 bg-rose-500 text-white text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full border-[3px] border-background shadow-sm">
+          <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[11px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-zinc-900 shadow-md">
             {cart.length}
           </span>
           {/* Total Quantity Count */}
-          <span className="absolute -top-2 -left-3 bg-emerald-500 text-white text-[10px] font-bold px-1.5 h-6 flex items-center justify-center rounded-full border-[3px] border-background shadow-sm">
+          <span className="absolute -top-1.5 -left-2 bg-emerald-500 text-white text-[10px] font-bold px-1.5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-zinc-900 shadow-md">
             x{totalItems}
           </span>
-        </a>
+        </button>,
+        document.body
       )}
 
       {/* Brand Selection Modal */}

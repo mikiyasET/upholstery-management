@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
-import { formatAppDate, getImageUrl, formatCurrency, formatStatus } from '../lib/utils';
+import { formatAppDate, formatCurrency, formatStatus } from '../lib/utils';
 import { formatPlateNumber } from '../utils/plate';
+import { LazyImage } from '../components/common/LazyImage';
 import { useTranslation } from 'react-i18next';
 import {
   Box,
@@ -38,7 +39,7 @@ import {
   Clock,
   StickyNote,
 } from 'lucide-react';
-import { ExecutiveAddButton, TablePagination, PlateBadge } from '../components/common';
+import { ExecutiveAddButton, TablePagination, PlateBadge, FloatingRefreshButton } from '../components/common';
 import {
   Table,
   TableBody,
@@ -254,19 +255,21 @@ export default function CustomerDetail() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2.5 self-end lg:self-center">
-            <Tooltip label={t('common.refresh', 'Refresh')} withArrow>
-              <ActionIcon
-                variant="subtle"
-                color="amber"
-                size="lg"
-                radius="md"
-                loading={isFetching}
-                onClick={() => refetch()}
-                aria-label="Refresh"
-              >
-                <RotateCw size={17} />
-              </ActionIcon>
-            </Tooltip>
+            <Box visibleFrom="sm">
+              <Tooltip label={t('common.refresh', 'Refresh')} withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color="amber"
+                  size="lg"
+                  radius="md"
+                  loading={isFetching}
+                  onClick={() => refetch()}
+                  aria-label="Refresh"
+                >
+                  <RotateCw size={17} />
+                </ActionIcon>
+              </Tooltip>
+            </Box>
 
             <ExecutiveAddButton
               label={t('dashboard.newOrder', 'New Order')}
@@ -275,6 +278,13 @@ export default function CustomerDetail() {
           </div>
         </div>
       </div>
+
+      {/* Floating Refresh Button for Mobile (< sm) */}
+      <FloatingRefreshButton
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+        tooltip={t('common.refresh', 'Refresh')}
+      />
 
       {/* 3. Executive KPI Metric Cards Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
@@ -517,8 +527,8 @@ export default function CustomerDetail() {
                     {/* Top Image & Plate Banner */}
                     <div className="w-full aspect-[16/9] bg-muted/40 relative overflow-hidden border-b border-border/60">
                       {v.carModel?.imageUrl ? (
-                        <img
-                          src={getImageUrl(v.carModel.imageUrl)}
+                        <LazyImage
+                          src={v.carModel.imageUrl}
                           alt={`${v.carModel?.brand?.name || ''} ${v.carModel?.name || ''}`}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />

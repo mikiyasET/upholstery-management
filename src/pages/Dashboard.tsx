@@ -41,11 +41,11 @@ import {
   RotateCw,
   Eye,
   Printer,
-  DollarSign,
   Phone,
+  ArrowRightLeft,
 } from "lucide-react";
 import { printOrderReceipt } from "../lib/receipt-printer";
-import { ExecutiveAddButton, TablePagination, PlateBadge } from "../components/common";
+import { ExecutiveAddButton, TablePagination, PlateBadge, FloatingRefreshButton } from "../components/common";
 import { DailyRevenueChart } from "../components/dashboard/DailyRevenueChart";
 
 export default function Dashboard() {
@@ -144,74 +144,80 @@ export default function Dashboard() {
   const paginatedInv = lowStockMaterials.slice((invPage - 1) * invPageSize, invPage * invPageSize);
 
   return (
-    <Stack gap="xl" pb="xl" className="animate-in fade-in duration-300">
+    <Stack gap="lg" pb="xl" className="animate-in fade-in duration-300">
       {/* 1. Executive Hero Header (Exporter-Docs style) */}
-      <Box mb="xs">
-        <Group justify="space-between" align="flex-end" wrap="wrap" gap="md">
-          <Box>
-            <Group gap="xs" align="center" mb={4}>
-              <Title order={2} style={{ letterSpacing: "-0.02em", fontWeight: 800 }}>
+      <Box mb="xs" className="w-full">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 mb-1 min-w-0">
+              <Title
+                order={3}
+                className="!text-[15px] sm:!text-xl lg:!text-2xl font-extrabold tracking-tight truncate m-0"
+                style={{
+                  letterSpacing: "-0.02em",
+                  fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+                }}
+              >
                 {t("dashboard.welcome", "Welcome back")}, {user?.name || t("dashboard.operationsTeam", "Operations Team")}
               </Title>
-              <span style={{ fontSize: "1.4rem" }}>🚗</span>
-            </Group>
-            <Group gap="sm" mt={4} wrap="wrap" align="center">
-              <Group gap={4} align="center">
-                <Calendar size={13} style={{ color: "var(--primary-accent)" }} />
-                <Text size="xs" fw={600} style={{ color: "var(--text-main)" }}>
-                  {formatDashboardBannerDate(new Date(), i18n.language)}
-                </Text>
-              </Group>
-              <Text size="xs" c="dimmed" style={{ opacity: 0.4 }}>
-                •
-              </Text>
-              <Group gap={6} align="center">
+              <span className="text-base sm:text-xl shrink-0" role="img" aria-label="car">🚗</span>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-[11px] sm:text-xs text-muted-foreground mt-0.5">
+              <div className="flex items-center gap-1.5 font-semibold" style={{ color: "var(--text-main)" }}>
+                <Calendar size={12} style={{ color: "var(--primary-accent)" }} className="shrink-0" />
+                <span>{formatDashboardBannerDate(new Date(), i18n.language)}</span>
+              </div>
+
+              <span className="hidden sm:inline opacity-40">•</span>
+
+              <div className="flex items-center gap-1.5 text-muted-foreground">
                 <span
-                  className="pulse-dot"
+                  className="pulse-dot shrink-0"
                   style={{
                     backgroundColor: "var(--status-success, #10b981)",
-                    width: 6,
-                    height: 6,
+                    width: 5,
+                    height: 5,
                     borderRadius: "50%",
                     display: "inline-block",
                   }}
                 />
-                <Text size="xs" c="dimmed">
-                  {t("dashboard.liveSystem", "Live Workshop & POS System")}
-                </Text>
-              </Group>
-            </Group>
-          </Box>
+                <span className="truncate">{t("dashboard.liveSystem", "Live Workshop & POS System")}</span>
+              </div>
+            </div>
+          </div>
 
           {/* Quick Action Toolbar on the Right */}
-          <Group gap="xs" wrap="wrap" align="center">
-            <Tooltip label={t("dashboard.refresh", "Refresh dashboard")} withArrow>
-              <ActionIcon
-                variant="subtle"
-                color="amber"
-                size="lg"
-                radius="md"
-                loading={isRefreshing}
-                onClick={handleRefresh}
-                aria-label={t("dashboard.refresh", "Refresh dashboard")}
-              >
-                <RotateCw size={18} />
-              </ActionIcon>
-            </Tooltip>
+          <div className="flex items-center gap-2 w-full lg:w-auto pt-1 lg:pt-0">
+            <Box visibleFrom="sm">
+              <Tooltip label={t("dashboard.refresh", "Refresh dashboard")} withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  color="amber"
+                  size="lg"
+                  radius="md"
+                  loading={isRefreshing}
+                  onClick={handleRefresh}
+                  aria-label={t("dashboard.refresh", "Refresh dashboard")}
+                  className="shrink-0"
+                >
+                  <RotateCw size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Box>
 
             {canCreateDirectSale && (
               <Button
                 variant="default"
                 radius="md"
-                leftSection={<ShoppingBag size={16} />}
+                leftSection={<ShoppingBag size={15} className="shrink-0" />}
                 onClick={() => navigate("/direct-sales")}
+                className="flex-1 lg:flex-initial h-9 text-xs sm:text-sm font-semibold whitespace-nowrap"
                 style={{
-                  height: 36,
-                  fontWeight: 600,
                   fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
                 }}
               >
-                {t("dashboard.directSale", "Direct Sale POS")}
+                <span className="truncate">{t("dashboard.directSale", "Direct Sale POS")}</span>
               </Button>
             )}
 
@@ -219,11 +225,19 @@ export default function Dashboard() {
               <ExecutiveAddButton
                 label={t("dashboard.newOrder", "New Work Order")}
                 to="/orders/new"
+                className="flex-1 lg:flex-initial h-9 text-xs sm:text-sm whitespace-nowrap"
               />
             )}
-          </Group>
-        </Group>
+          </div>
+        </div>
       </Box>
+
+      {/* Floating Refresh Button for Mobile (< sm) */}
+      <FloatingRefreshButton
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+        tooltip={t("dashboard.refresh", "Refresh dashboard")}
+      />
 
       {/* 2. Top Metric KPI Summary Cards */}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
@@ -255,7 +269,7 @@ export default function Dashboard() {
               <Car size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="wrap" gap="xs" style={{ borderTop: "1px solid var(--surface-border-subtle)" }}>
             <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
               <span className="pulse-dot" style={{ backgroundColor: "#f59e0b", width: 5, height: 5 }} />
               <Text size="11px" fw={600} style={{ color: "var(--primary-accent)", whiteSpace: "nowrap" }}>
@@ -296,7 +310,7 @@ export default function Dashboard() {
               <ShoppingBag size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="wrap" gap="xs" style={{ borderTop: "1px solid var(--surface-border-subtle)" }}>
             <Text size="11px" fw={600} style={{ color: "#3b82f6", whiteSpace: "nowrap", flexShrink: 0 }}>
               {formatCurrency(directSalesTotalRevenue, i18n.language as any)}
             </Text>
@@ -307,7 +321,11 @@ export default function Dashboard() {
         </Box>
 
         {/* Low Stock Alerts */}
-        <Box className="premium-card" p="md">
+        <Box 
+          className="premium-card cursor-pointer hover:border-rose-500/40 hover:shadow-md transition-all" 
+          p="md"
+          onClick={() => navigate('/storage/low-stock')}
+        >
           <Group justify="space-between" align="flex-start">
             <Box>
               <Text size="xs" fw={700} c="dimmed" tt="uppercase" style={{ letterSpacing: "0.05em" }}>
@@ -343,7 +361,7 @@ export default function Dashboard() {
               <AlertTriangle size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="wrap" gap="xs" style={{ borderTop: "1px solid var(--surface-border-subtle)" }}>
             <Text
               size="11px"
               fw={600}
@@ -389,7 +407,7 @@ export default function Dashboard() {
               <CheckCheck size={20} />
             </Box>
           </Group>
-          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="nowrap" style={{ borderTop: "1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))" }}>
+          <Group justify="space-between" align="center" mt="sm" pt="xs" wrap="wrap" gap="xs" style={{ borderTop: "1px solid var(--surface-border-subtle)" }}>
             <Text size="11px" fw={600} style={{ color: "#10b981", whiteSpace: "nowrap", flexShrink: 0 }}>
               {t("dashboard.handedOver", "100% Handed over")}
             </Text>
@@ -406,20 +424,49 @@ export default function Dashboard() {
       )}
 
       {/* 4. Multi-View Operations Hub with Tabs */}
-      <Box className="premium-card" p="md">
+      <Box className="premium-card overflow-hidden" p={{ base: "xs", sm: "md" }} style={{ minWidth: 0, maxWidth: "100%" }}>
         <Tabs value={activeTab} onChange={setActiveTab} variant="pills" radius="md">
-          <Group justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
-            <Tabs.List style={{ gap: 8 }}>
-              <Tabs.Tab value="bay" leftSection={<Wrench size={16} />}>
-                {t("dashboard.tabs.bay", "Workshop Bay Jobs")} ({activeOrders.length})
-              </Tabs.Tab>
-              <Tabs.Tab value="sales" leftSection={<ShoppingBag size={16} />}>
-                {t("dashboard.tabs.sales", "Direct POS Sales")} ({directSales.length})
-              </Tabs.Tab>
-              <Tabs.Tab value="stock" leftSection={<Archive size={16} />}>
-                {t("dashboard.tabs.stock", "Stock Alerts")} ({lowStockMaterials.length})
-              </Tabs.Tab>
-            </Tabs.List>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 mb-3 sm:mb-4">
+            <div className="overflow-x-auto no-scrollbar scrollbar-none -mx-1 px-1 sm:mx-0 sm:px-0">
+              <Tabs.List style={{ gap: 6, flexWrap: "nowrap" }} className="flex-nowrap">
+                <Tabs.Tab
+                  value="bay"
+                  leftSection={<Wrench size={15} />}
+                  className="text-xs sm:text-sm whitespace-nowrap shrink-0"
+                >
+                  <span>{t("dashboard.tabs.bay", "Workshop Bay Jobs")}</span>
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                    {activeOrders.length}
+                  </span>
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="sales"
+                  leftSection={<ShoppingBag size={15} />}
+                  className="text-xs sm:text-sm whitespace-nowrap shrink-0"
+                >
+                  <span>{t("dashboard.tabs.sales", "Direct POS Sales")}</span>
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                    {directSales.length}
+                  </span>
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="stock"
+                  leftSection={<Archive size={15} />}
+                  className="text-xs sm:text-sm whitespace-nowrap shrink-0"
+                >
+                  <span>{t("dashboard.tabs.stock", "Stock Alerts")}</span>
+                  <span
+                    className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      lowStockMaterials.length > 0
+                        ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                        : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {lowStockMaterials.length}
+                  </span>
+                </Tabs.Tab>
+              </Tabs.List>
+            </div>
 
             <Button
               component={Link}
@@ -428,10 +475,11 @@ export default function Dashboard() {
               color="amber"
               size="xs"
               rightSection={<ArrowRight size={14} />}
+              className="self-end sm:self-auto shrink-0"
             >
               {t("dashboard.viewAll", "View all records")}
             </Button>
-          </Group>
+          </div>
 
           {/* TAB 1: WORKSHOP BAY JOBS */}
           <Tabs.Panel value="bay">
@@ -452,15 +500,15 @@ export default function Dashboard() {
               </Box>
             ) : (
               <>
-                <Table.ScrollContainer minWidth={600}>
+                <Table.ScrollContainer minWidth={580} className="w-full">
                   <Table verticalSpacing="sm" highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>{t("dashboard.table.orderNumber", "Order #")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.plateVehicle", "Plate / Vehicle")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.customer", "Customer")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.status", "Status")}</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>{t("dashboard.table.actions", "Actions")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.orderNumber", "Order #")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.plateVehicle", "Plate / Vehicle")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.customer", "Customer")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.status", "Status")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap" style={{ textAlign: "right" }}>{t("dashboard.table.actions", "Actions")}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -469,7 +517,7 @@ export default function Dashboard() {
 
                         return (
                           <Table.Tr key={order.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/orders/${order.id}`)}>
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Text fw={700} size="sm" style={{ color: "var(--primary-accent)" }}>
                                 {order.orderNumber}
                               </Text>
@@ -478,14 +526,14 @@ export default function Dashboard() {
                               </Text>
                             </Table.Td>
 
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <PlateBadge plate={order.vehicle?.plateNumber} size="xs" />
                               <Text size="11px" c="dimmed" mt={1}>
                                 {vehicleModel || t("dashboard.table.vehicle", "Vehicle")}
                               </Text>
                             </Table.Td>
 
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Text size="sm" fw={600}>
                                 {order.customer?.name || t("dashboard.table.walkIn", "Walk-in")}
                               </Text>
@@ -499,7 +547,7 @@ export default function Dashboard() {
                               )}
                             </Table.Td>
 
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Badge
                                 color={
                                   (order.status || order.orderStatus) === "IN_PROGRESS"
@@ -515,7 +563,7 @@ export default function Dashboard() {
                               </Badge>
                             </Table.Td>
 
-                            <Table.Td style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                            <Table.Td className="whitespace-nowrap" style={{ textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                               <Group gap={6} justify="flex-end" wrap="nowrap">
                                 <Tooltip label={t("dashboard.tooltips.viewOrder", "View Order Detail")} withArrow>
                                   <ActionIcon
@@ -574,47 +622,47 @@ export default function Dashboard() {
               </Box>
             ) : (
               <>
-                <Table.ScrollContainer minWidth={600}>
+                <Table.ScrollContainer minWidth={580} className="w-full">
                   <Table verticalSpacing="sm" highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>{t("dashboard.table.transactionNumber", "Transaction #")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.dateTime", "Date & Time")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.customer", "Customer")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.totalAmount", "Total Amount")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.paymentMethod", "Payment Method")}</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>{t("dashboard.table.actions", "Actions")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.transactionNumber", "Transaction #")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.dateTime", "Date & Time")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.customer", "Customer")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.totalAmount", "Total Amount")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.paymentMethod", "Payment Method")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap" style={{ textAlign: "right" }}>{t("dashboard.table.actions", "Actions")}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
                       {paginatedSales.map((sale: any) => (
                         <Table.Tr key={sale.id}>
-                          <Table.Td>
+                          <Table.Td className="whitespace-nowrap">
                             <Text fw={700} size="sm" style={{ color: "var(--primary-accent)" }}>
                               {sale.invoiceNumber || sale.id?.slice(0, 8)}
                             </Text>
                           </Table.Td>
-                          <Table.Td>
+                          <Table.Td className="whitespace-nowrap">
                             <Text size="xs">
                               {formatShortDate(sale.createdAt || sale.date || sale.saleDateTime, true, i18n.language)}
                             </Text>
                           </Table.Td>
-                          <Table.Td>
+                          <Table.Td className="whitespace-nowrap">
                             <Text size="sm" fw={500}>
                               {sale.customerName || sale.customer?.name || t("dashboard.table.walkInRetailClient", "Walk-in Retail Client")}
                             </Text>
                           </Table.Td>
-                          <Table.Td>
+                          <Table.Td className="whitespace-nowrap">
                             <Text fw={700} size="sm">
                               {formatCurrency(sale.totalPrice || sale.netTotal || 0, i18n.language as any)}
                             </Text>
                           </Table.Td>
-                          <Table.Td>
+                          <Table.Td className="whitespace-nowrap">
                             <Badge variant="light" color="blue" size="sm">
                               {formatPaymentMethod(sale.paymentMethod || "CASH", i18n.language as any)}
                             </Badge>
                           </Table.Td>
-                          <Table.Td style={{ textAlign: "right" }}>
+                          <Table.Td className="whitespace-nowrap" style={{ textAlign: "right" }}>
                             <Group gap={6} justify="flex-end" wrap="nowrap">
                               <Tooltip label={t("dashboard.tooltips.viewHistory", "View History")} withArrow>
                                 <ActionIcon
@@ -664,15 +712,15 @@ export default function Dashboard() {
               </Box>
             ) : (
               <>
-                <Table.ScrollContainer minWidth={600}>
+                <Table.ScrollContainer minWidth={560} className="w-full">
                   <Table verticalSpacing="sm" highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>{t("dashboard.table.material", "Material")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.miniStore", "Mini Store (Floor)")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.mainWarehouse", "Main Warehouse")}</Table.Th>
-                        <Table.Th>{t("dashboard.table.threshold", "Threshold")}</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>{t("dashboard.table.action", "Action")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.material", "Material")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.miniStore", "Mini Store (Floor)")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.mainWarehouse", "Main Warehouse")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap">{t("dashboard.table.threshold", "Threshold")}</Table.Th>
+                        <Table.Th className="whitespace-nowrap" style={{ textAlign: "right" }}>{t("dashboard.table.action", "Action")}</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -685,7 +733,7 @@ export default function Dashboard() {
 
                         return (
                           <Table.Tr key={mat.id}>
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Text fw={600} size="sm">
                                 {getLocName(mat)}
                               </Text>
@@ -693,27 +741,27 @@ export default function Dashboard() {
                                 {t("dashboard.table.unit", "Unit")}: {formatUnit(mat.unit || "Meter", i18n.language as any)}
                               </Text>
                             </Table.Td>
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Badge color={miniQty <= threshold ? "red" : "gray"} variant="light">
                                 {miniQty} {formatUnit(mat.unit, i18n.language as any)}
                               </Badge>
                             </Table.Td>
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Text size="sm" fw={600}>
                                 {mainQty} {formatUnit(mat.unit, i18n.language as any)}
                               </Text>
                             </Table.Td>
-                            <Table.Td>
+                            <Table.Td className="whitespace-nowrap">
                               <Text size="xs" c="dimmed">
                                 {threshold} {formatUnit(mat.unit, i18n.language as any)}
                               </Text>
                             </Table.Td>
-                            <Table.Td style={{ textAlign: "right" }}>
+                            <Table.Td className="whitespace-nowrap" style={{ textAlign: "right" }}>
                               <Button
                                 size="xs"
                                 variant="light"
                                 color="amber"
-                                leftSection={<DollarSign size={14} />}
+                                leftSection={<ArrowRightLeft size={14} />}
                                 onClick={() => navigate("/storage")}
                               >
                                 {t("dashboard.transfer", "Transfer")}

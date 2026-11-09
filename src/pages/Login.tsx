@@ -140,7 +140,7 @@ export default function Login() {
 
         {/* Top Header in Left Column */}
         <Box style={{ position: "relative", zIndex: 10 }}>
-          <BrandLogo size="lg" />
+          <BrandLogo size="lg" showTextOnMobile={true} />
         </Box>
 
         {/* Hero Narrative */}

@@ -12,6 +12,8 @@ import {
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, RotateCw, Plus } from "lucide-react";
+import { FloatingRefreshButton } from "./FloatingRefreshButton";
+import { cn } from "../../lib/utils";
 import { type ReactNode } from "react";
 
 export interface BreadcrumbItem {
@@ -66,7 +68,7 @@ export function ExecutiveAddButton({
       leftSection={icon !== undefined ? icon : <Plus size={18} />}
       disabled={disabled}
       loading={loading}
-      className={className}
+      className={cn("!w-full sm:!w-auto justify-center", className)}
       onClick={to ? () => navigate(to) : onClick}
       style={{
         boxShadow: disabled ? "none" : "0 2px 10px rgba(245, 158, 11, 0.25)",
@@ -88,6 +90,9 @@ export interface PageHeaderProps {
   badge?: ReactNode;
   badgeColor?: string;
   backTo?: string;
+  hideBackOnMobile?: boolean;
+  hideSubtitleOnMobile?: boolean;
+  hideBadgeOnMobile?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   refreshTooltip?: string;
@@ -97,6 +102,7 @@ export interface PageHeaderProps {
   secondaryAction?: ReactNode;
   breadcrumbs?: BreadcrumbItem[];
   extraHeaderContent?: ReactNode;
+  hasOtherFloatingButton?: boolean;
 }
 
 export function PageHeader({
@@ -105,6 +111,9 @@ export function PageHeader({
   badge,
   badgeColor = "amber",
   backTo,
+  hideBackOnMobile = false,
+  hideSubtitleOnMobile = false,
+  hideBadgeOnMobile = false,
   onRefresh,
   isRefreshing = false,
   refreshTooltip = "Refresh data",
@@ -114,6 +123,7 @@ export function PageHeader({
   secondaryAction,
   breadcrumbs,
   extraHeaderContent,
+  hasOtherFloatingButton = false,
 }: PageHeaderProps) {
   const navigate = useNavigate();
   const effectiveAction = action || primaryAction;
@@ -160,9 +170,9 @@ export function PageHeader({
       )}
 
       {/* Main Header Row */}
-      <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 w-full">
         {/* Left: Back button + Title & Subtitle */}
-        <Group gap="sm" align="flex-start" wrap="nowrap" style={{ minWidth: 0, flex: "1 1 auto" }}>
+        <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto flex-1">
           {backTo && (
             <ActionIcon
               variant="subtle"
@@ -171,7 +181,7 @@ export function PageHeader({
               radius="md"
               onClick={() => navigate(backTo)}
               title="Go back"
-              style={{ flexShrink: 0, marginTop: 2 }}
+              className={cn("shrink-0 mt-0.5", hideBackOnMobile && "!hidden sm:!inline-flex")}
             >
               <ArrowLeft size={20} />
             </ActionIcon>
@@ -180,7 +190,11 @@ export function PageHeader({
           <Box style={{ minWidth: 0, flex: 1 }}>
             <Group gap="xs" align="center" wrap="wrap">
               {typeof title === "string" ? (
-                <Title order={2} style={{ letterSpacing: "-0.02em", fontWeight: 800 }}>
+                <Title
+                  order={2}
+                  className="!text-xl sm:!text-2xl font-extrabold tracking-tight"
+                  style={{ letterSpacing: "-0.02em", fontWeight: 800 }}
+                >
                   {title}
                 </Title>
               ) : (
@@ -192,6 +206,7 @@ export function PageHeader({
                   variant="light"
                   color={badgeColor}
                   size="sm"
+                  className={cn(hideBadgeOnMobile && "!hidden sm:!inline-flex")}
                   style={{ textTransform: "none", fontWeight: 600 }}
                 >
                   {badge}
@@ -200,50 +215,70 @@ export function PageHeader({
             </Group>
 
             {subtitle && (
-              <Text size="sm" c="dimmed" mt={3} style={{ maxWidth: 840 }}>
+              <Text
+                size="sm"
+                c="dimmed"
+                mt={3}
+                className={cn("text-xs sm:text-sm", hideSubtitleOnMobile && "!hidden sm:!block")}
+                style={{ maxWidth: 840 }}
+              >
                 {subtitle}
               </Text>
             )}
 
             {extraHeaderContent && <Box mt="xs">{extraHeaderContent}</Box>}
           </Box>
-        </Group>
+        </div>
 
         {/* Right: Refresh Toolbar & Add CTA Button Side by Side (Exporter-Docs Style) */}
-        <Group gap="sm" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
-          {onRefresh && (
-            <Tooltip label={refreshTooltip} withArrow>
-              <ActionIcon
-                variant="subtle"
-                color="amber"
-                size="lg"
-                radius="md"
-                loading={isRefreshing}
-                onClick={onRefresh}
-                aria-label={refreshTooltip}
-                style={{ height: 36, width: 36 }}
-              >
-                <RotateCw size={18} />
-              </ActionIcon>
-            </Tooltip>
-          )}
+        {(effectiveAction || addButton || secondaryAction || onRefresh) && (
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 [&>*]:!w-full sm:[&>*]:!w-auto [&_button]:!w-full sm:[&_button]:!w-auto">
+            {onRefresh && (
+              <Box visibleFrom={hasOtherFloatingButton ? undefined : "sm"} className="!w-auto">
+                <Tooltip label={refreshTooltip} withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    color="amber"
+                    size="lg"
+                    radius="md"
+                    loading={isRefreshing}
+                    onClick={onRefresh}
+                    aria-label={refreshTooltip}
+                    style={{ height: 36, width: 36 }}
+                  >
+                    <RotateCw size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </Box>
+            )}
 
-          {secondaryAction}
+            {secondaryAction}
 
-          {addButton && (
-            <ExecutiveAddButton
-              label={addButton.label}
-              onClick={addButton.onClick}
-              to={addButton.to}
-              icon={addButton.icon}
-              disabled={addButton.disabled}
-              loading={addButton.loading}
-            />
-          )}
+            {addButton && (
+              <ExecutiveAddButton
+                label={addButton.label}
+                onClick={addButton.onClick}
+                to={addButton.to}
+                icon={addButton.icon}
+                disabled={addButton.disabled}
+                loading={addButton.loading}
+              />
+            )}
 
-          {effectiveAction}
-        </Group>
-      </Group>
+            {effectiveAction}
+          </div>
+        )}
+      </div>
+
+      {/* Floating Refresh Button for Mobile (< sm) */}
+      {onRefresh && (
+        <FloatingRefreshButton
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          tooltip={refreshTooltip}
+          hasOtherFloatingButton={hasOtherFloatingButton}
+        />
+      )}
     </Box>
   );
 }

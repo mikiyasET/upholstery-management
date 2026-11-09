@@ -3,19 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
-import { Calendar, FileText, Printer, Eye } from 'lucide-react';
-import { TableSearch } from '../components/DataTable';
+import { Calendar, FileText, Printer, Eye, Search, X, CircleDollarSign } from 'lucide-react';
 import { formatCurrency, formatStatus, formatPaymentMethod, formatAppDate } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
-import { ActionIcon, Tooltip } from '@mantine/core';
+import { ActionIcon, Tooltip, Box, TextInput, Select, Button as MantineButton, Badge } from '@mantine/core';
 
 export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('ALL');
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -44,11 +44,19 @@ export default function DirectSalesHistory() {
     enabled: !!selectedSale?.id,
   });
 
-  const filteredSales = sales.filter((s: any) => 
-    (s.saleNumber && s.saleNumber.toLowerCase().includes(searchTerm.toLowerCase())) || 
-    (s.customerName && s.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (s.customerPhone && s.customerPhone.includes(searchTerm))
-  );
+  const filteredSales = sales.filter((s: any) => {
+    const matchesSearch =
+      !searchTerm ||
+      (s.saleNumber && s.saleNumber.toLowerCase().includes(searchTerm.toLowerCase())) || 
+      (s.customerName && s.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.customerPhone && s.customerPhone.includes(searchTerm)) ||
+      (s.createdBy?.name && s.createdBy.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesPayment =
+      paymentFilter === 'ALL' || s.paymentStatus === paymentFilter;
+
+    return matchesSearch && matchesPayment;
+  });
 
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
   const paginatedSales = filteredSales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -59,8 +67,7 @@ export default function DirectSalesHistory() {
       <PageHeader
         title={t('directSales.history', 'Direct Sales History')}
         subtitle={t('directSales.historySubtitle', 'View past walk-in sales and reprint receipts.')}
-        badge={sales ? `${sales.length} Sales` : undefined}
-        backTo="/direct-sales"
+        badge={sales ? `${sales.length} ${t('common.sales', 'Sales')}` : undefined}
         onRefresh={() => refetch()}
         isRefreshing={isFetching}
         refreshTooltip="Refresh sales history"
@@ -72,33 +79,110 @@ export default function DirectSalesHistory() {
         }
       />
 
-      {/* 2. Search & Filter Bar */}
-      <div className="bg-card p-3 rounded-xl border border-border shadow-sm flex items-center justify-between">
-        <TableSearch 
-          placeholder={t('directSales.searchHistoryPlaceholder', 'Search by receipt # or customer...')} 
-          className="w-full sm:w-[480px]"
-          value={searchTerm}
-          onChange={(val) => {
-            setSearchTerm(val);
-            setCurrentPage(1);
-          }}
-        />
-      </div>
+      {/* 2. Executive Control & Filter Bar */}
+      <Box className="premium-card overflow-hidden" p={{ base: "xs", sm: "md" }} style={{ minWidth: 0, maxWidth: "100%" }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+          {/* Live Search Input */}
+          <TextInput
+            placeholder={t('directSales.searchHistoryPlaceholder', 'Search by receipt #, customer, phone, cashier...')}
+            leftSection={<Search size={16} style={{ color: 'var(--text-muted)' }} />}
+            rightSection={
+              searchTerm ? (
+                <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => { setSearchTerm(''); setCurrentPage(1); }} title={t('common.clear', 'Clear search')}>
+                  <X size={14} />
+                </ActionIcon>
+              ) : null
+            }
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.currentTarget.value);
+              setCurrentPage(1);
+            }}
+            className="flex-1 w-full"
+            radius="md"
+            size="sm"
+            styles={{
+              input: {
+                backgroundColor: 'var(--surface-bg)',
+                borderColor: 'var(--surface-border)',
+                fontSize: '13px',
+              },
+            }}
+          />
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            {/* Payment Status Quick Filter */}
+            <Select
+              placeholder={t('orders.filter.allPayments', 'All Payments')}
+              data={[
+                { value: 'ALL', label: t('orders.payment.all', 'All Payments') },
+                { value: 'PAID', label: t('orders.payment.paid', 'Fully Paid') },
+                { value: 'PARTIALLY_PAID', label: t('orders.payment.partiallyPaid', 'Partially Paid') },
+                { value: 'UNPAID', label: t('orders.payment.unpaid', 'Unpaid') },
+              ]}
+              value={paymentFilter}
+              onChange={(val) => {
+                setPaymentFilter(val || 'ALL');
+                setCurrentPage(1);
+              }}
+              size="sm"
+              radius="md"
+              className="flex-1 sm:w-44"
+              leftSection={<CircleDollarSign size={15} style={{ color: 'var(--text-muted)' }} />}
+              styles={{
+                input: {
+                  backgroundColor: 'var(--surface-bg)',
+                  borderColor: 'var(--surface-border)',
+                  fontSize: '13px',
+                },
+              }}
+            />
+
+            {/* Reset Filters CTA if any filter is active */}
+            {(paymentFilter !== 'ALL' || searchTerm) && (
+              <MantineButton
+                variant="subtle"
+                color="gray"
+                size="xs"
+                radius="md"
+                onClick={() => {
+                  setPaymentFilter('ALL');
+                  setSearchTerm('');
+                  setCurrentPage(1);
+                }}
+                leftSection={<X size={13} />}
+                className="shrink-0 h-9"
+                style={{
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  fontWeight: 600,
+                }}
+              >
+                {t('common.clear', 'Reset')}
+              </MantineButton>
+            )}
+
+            {/* Count Stats Badge */}
+            <Badge variant="light" color="blue" size="md" radius="md" className="hidden sm:inline-flex">
+              {filteredSales.length} {t('common.sales', 'Sales')}
+            </Badge>
+          </div>
+        </div>
+      </Box>
 
       {/* Main Content */}
-      <div className="flex-1 bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+      <div className="flex-1 bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col min-w-0 max-w-full">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-sm text-left min-w-[780px]">
             <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b">
               <tr>
-                <th className="px-6 py-4 font-semibold">{t('receipt.receiptNumber', 'Receipt #')}</th>
-                <th className="px-6 py-4 font-semibold">{t('orders.table.customer', 'Customer')}</th>
-                <th className="px-6 py-4 font-semibold">{t('receipt.cashier', 'Cashier')}</th>
-                <th className="px-6 py-4 font-semibold">{t('receipt.totalAmount', 'Total Amount')}</th>
-                <th className="px-6 py-4 font-semibold text-center">{t('orders.detail.materialsParts', 'Items')}</th>
-                <th className="px-6 py-4 font-semibold">{t('common.dateTime', 'Date & Time')}</th>
-                <th className="px-6 py-4 font-semibold">{t('common.status', 'Status')}</th>
-                <th className="px-6 py-4 font-semibold text-right">{t('common.actions', 'Actions')}</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">{t('receipt.receiptNumber', 'Receipt #')}</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">{t('orders.table.customer', 'Customer')}</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">{t('receipt.cashier', 'Cashier')}</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">{t('receipt.totalAmount', 'Total Amount')}</th>
+                <th className="px-6 py-4 font-semibold text-center whitespace-nowrap">{t('orders.detail.materialsParts', 'Items')}</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">{t('common.dateTime', 'Date & Time')}</th>
+                <th className="px-6 py-4 font-semibold whitespace-nowrap">{t('common.status', 'Status')}</th>
+                <th className="px-6 py-4 font-semibold text-right whitespace-nowrap">{t('common.actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -113,7 +197,7 @@ export default function DirectSalesHistory() {
                 </tr>
               ) : filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-6 py-20 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-14 h-14 rounded-full bg-muted/60 flex items-center justify-center mb-1">
                         <FileText className="w-7 h-7 text-muted-foreground/40" />
@@ -129,13 +213,13 @@ export default function DirectSalesHistory() {
                     className="hover:bg-muted/40 transition-colors cursor-pointer"
                     onClick={() => handleRowClick(sale)}
                   >
-                    <td className="px-6 py-4 font-medium text-foreground">
+                    <td className="px-6 py-4 font-medium text-foreground whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-bold text-foreground">
                         <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                         {sale.saleNumber}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {sale.customerName ? (
                         <div>
                           <div className="font-semibold text-foreground">{sale.customerName}</div>
@@ -147,22 +231,22 @@ export default function DirectSalesHistory() {
                         <span className="text-muted-foreground text-xs italic">{t('receipt.walkInCustomer', 'Walk-in Client')}</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-foreground/80 font-medium">
+                    <td className="px-6 py-4 text-foreground/80 font-medium whitespace-nowrap">
                       {sale.createdBy?.name || '-'}
                     </td>
-                    <td className="px-6 py-4 font-semibold text-foreground">
+                    <td className="px-6 py-4 font-semibold text-foreground whitespace-nowrap">
                       {formatCurrency(sale.totalAmount)}
                     </td>
-                    <td className="px-6 py-4 text-center font-medium">
+                    <td className="px-6 py-4 text-center font-medium whitespace-nowrap">
                       {sale._count?.lines || 0}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 text-foreground/80">
                         <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                         {formatAppDate(sale.saleDateTime, true)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {sale.paymentStatus === 'PAID' ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border border-green-200 dark:border-green-500/20">
                           {formatStatus('PAID')}
@@ -177,7 +261,7 @@ export default function DirectSalesHistory() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-6 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         <Tooltip label="View Details" withArrow>
                           <ActionIcon
@@ -207,21 +291,21 @@ export default function DirectSalesHistory() {
               )}
             </tbody>
           </table>
-          
-          <TablePagination
-            page={currentPage}
-            pageSize={itemsPerPage}
-            total={filteredSales.length}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setItemsPerPage(newSize);
-              setCurrentPage(1);
-            }}
-            itemLabel={t('common.sales', 'sales')}
-            disabled={isLoading}
-          />
         </div>
+        
+        <TablePagination
+          page={currentPage}
+          pageSize={itemsPerPage}
+          total={filteredSales.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(newSize) => {
+            setItemsPerPage(newSize);
+            setCurrentPage(1);
+          }}
+          itemLabel={t('common.sales', 'sales')}
+          disabled={isLoading}
+        />
       </div>
 
       {/* Sale Details Modal */}

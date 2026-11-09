@@ -10,6 +10,7 @@ import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
+import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
 import { toast } from 'sonner';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -304,8 +305,8 @@ export default function Cars() {
                 >
                   <div className="flex items-center gap-3 flex-1 overflow-hidden">
                     {brand.logoUrl ? (
-                      <img
-                        src={getImageUrl(brand.logoUrl)}
+                      <LazyImage
+                        src={brand.logoUrl}
                         alt={brand.name}
                         className="h-9 w-9 rounded object-contain bg-white border border-border p-0.5 shrink-0 pointer-events-none select-none"
                       />
@@ -420,7 +421,7 @@ export default function Cars() {
                 <CardHeader className="flex flex-row items-center justify-between gap-3 pb-3 pt-3 px-4 border-b border-border bg-muted/10 min-h-[57px]">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground truncate">
                     {selectedBrand.logoUrl && (
-                      <img src={getImageUrl(selectedBrand.logoUrl)} alt="" className="h-7 w-7 object-contain bg-muted rounded p-0.5 border border-border shrink-0" />
+                      <LazyImage src={selectedBrand.logoUrl} alt="" className="h-7 w-7 object-contain bg-muted rounded p-0.5 border border-border shrink-0" />
                     )}
                     <span className="truncate">{t('cars.brandModels', '{{brand}} Models', { brand: selectedBrand.name })}</span>
                     <span className="text-xs font-normal text-muted-foreground ml-1">({filteredModels.length})</span>
@@ -464,8 +465,8 @@ export default function Cars() {
                       <div key={model.id} className="p-3 border rounded-xl bg-card flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                         {model.imageUrl ? (
                           <div className="w-full h-28 rounded-lg overflow-hidden flex items-center justify-center">
-                            <img 
-                              src={getImageUrl(model.imageUrl)} 
+                            <LazyImage 
+                              src={model.imageUrl} 
                               alt={model.name} 
                               className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => setPreviewImage(model.imageUrl ? getImageUrl(model.imageUrl)! : null)}

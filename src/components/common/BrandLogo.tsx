@@ -4,12 +4,14 @@ export interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   onClick?: () => void;
+  showTextOnMobile?: boolean;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'md',
   className = '',
   onClick,
+  showTextOnMobile = false,
 }) => {
   const gradientId = useId().replace(/:/g, '');
 
@@ -22,27 +24,24 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       line1Size: 16.5,
       line2Y: 29,
       line2Size: 9.5,
-      gap: '8px',
     },
     md: {
-      logoHeight: 40,
+      logoHeight: 38,
       svgWidth: 138,
       svgHeight: 36,
       line1Y: 18,
       line1Size: 19,
       line2Y: 32,
       line2Size: 10.8,
-      gap: '10px',
     },
     lg: {
-      logoHeight: 48,
+      logoHeight: 46,
       svgWidth: 156,
       svgHeight: 42,
       line1Y: 21,
       line1Size: 21.5,
       line2Y: 37,
       line2Size: 12,
-      gap: '12px',
     },
   }[size];
 
@@ -61,8 +60,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
             }
           : undefined
       }
-      className={`inline-flex items-center select-none ${onClick ? 'cursor-pointer' : ''} ${className}`}
-      style={{ gap: config.gap }}
+      className={`inline-flex items-center select-none ${onClick ? 'cursor-pointer' : ''} ${
+        showTextOnMobile ? 'gap-2.5' : 'lg:gap-2.5'
+      } ${className}`}
     >
       {/* 1. Official Crest Logo */}
       <img
@@ -76,12 +76,14 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         }}
       />
 
-      {/* 2. Symmetrical 2-Line Typography: identical width with spaced tracking on both lines */}
+      {/* 2. Symmetrical 2-Line Typography: hidden on mobile & tablet, visible on desktop (lg+) */}
       <svg
         viewBox={`0 0 ${config.svgWidth} ${config.svgHeight}`}
         width={config.svgWidth}
         height={config.svgHeight}
-        className="shrink-0 brand-logo-svg overflow-visible"
+        className={`shrink-0 brand-logo-svg overflow-visible ${
+          showTextOnMobile ? 'block' : 'hidden lg:block'
+        }`}
         aria-label="YONATAN UPHOLSTERY"
       >
         <defs>

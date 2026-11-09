@@ -92,13 +92,14 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
   const hasAnyActivity = summary.totalRevenue > 0 || summary.totalOrders > 0;
 
   return (
-    <Box className="premium-card p-6 animate-in fade-in duration-300">
+    <Box className="premium-card p-4 sm:p-6 animate-in fade-in duration-300">
       {/* 1. Header Toolbar */}
-      <Group justify="space-between" align="center" mb="md" wrap="nowrap" gap="sm">
-        <Box style={{ minWidth: 0, flex: '1 1 auto' }}>
-          <Group gap="xs" align="center" wrap="nowrap">
+      <Box mb="md">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Title & Icon */}
+          <div className="flex items-center gap-2.5 min-w-0">
             <Box
-              className="stat-icon-wrapper"
+              className="stat-icon-wrapper shrink-0"
               style={{
                 width: 38,
                 height: 38,
@@ -106,7 +107,6 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0,
                 background: 'rgba(245, 158, 11, 0.12)',
                 color: 'var(--primary-accent)',
               }}
@@ -120,65 +120,63 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
                 style={{
                   letterSpacing: '-0.02em',
                   fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
                 }}
+                className="truncate"
               >
                 {t('dashboard.dailyStatsTitle', 'Daily Revenue & Order Volume')}
               </Title>
-              <Text size="xs" c="dimmed" mt={1} truncate>
+              <Text size="xs" c="dimmed" mt={1} className="truncate">
                 {t('dashboard.dailyStatsSubtitle', 'Pre-stored daily performance breakdown across workshop orders & POS direct sales')}
               </Text>
             </Box>
-          </Group>
-        </Box>
+          </div>
 
-        {/* View mode & timeframe controls - strictly on one line */}
-        <Group gap="xs" wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
-          <SegmentedControl
-            size="xs"
-            radius="md"
-            value={metricMode}
-            onChange={setMetricMode}
-            style={{ flexShrink: 0 }}
-            data={[
-              {
-                value: 'revenue',
-                label: (
-                  <Group gap={4} align="center" wrap="nowrap" style={{ whiteSpace: 'nowrap' }}>
-                    <DollarSign size={14} />
-                    <span style={{ whiteSpace: 'nowrap' }}>{t('dashboard.metricRevenue', 'Revenue')}</span>
-                  </Group>
-                ),
-              },
-              {
-                value: 'orders',
-                label: (
-                  <Group gap={4} align="center" wrap="nowrap" style={{ whiteSpace: 'nowrap' }}>
-                    <Car size={14} />
-                    <span style={{ whiteSpace: 'nowrap' }}>{t('dashboard.metricOrders', 'Orders & Jobs')}</span>
-                  </Group>
-                ),
-              },
-            ]}
-          />
+          {/* View mode & timeframe controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto shrink-0">
+            <SegmentedControl
+              size="xs"
+              radius="md"
+              value={metricMode}
+              onChange={setMetricMode}
+              className="w-full sm:w-auto"
+              data={[
+                {
+                  value: 'revenue',
+                  label: (
+                    <Group gap={4} justify="center" align="center" wrap="nowrap" style={{ whiteSpace: 'nowrap' }}>
+                      <DollarSign size={14} />
+                      <span>{t('dashboard.metricRevenue', 'Revenue')}</span>
+                    </Group>
+                  ),
+                },
+                {
+                  value: 'orders',
+                  label: (
+                    <Group gap={4} justify="center" align="center" wrap="nowrap" style={{ whiteSpace: 'nowrap' }}>
+                      <Car size={14} />
+                      <span>{t('dashboard.metricOrders', 'Orders & Jobs')}</span>
+                    </Group>
+                  ),
+                },
+              ]}
+            />
 
-          <SegmentedControl
-            size="xs"
-            radius="md"
-            value={timeframe}
-            onChange={setTimeframe}
-            style={{ flexShrink: 0 }}
-            data={[
-              { value: '7', label: '7D' },
-              { value: '14', label: '14D' },
-              { value: '30', label: '30D' },
-              { value: '90', label: '90D' },
-            ]}
-          />
-        </Group>
-      </Group>
+            <SegmentedControl
+              size="xs"
+              radius="md"
+              value={timeframe}
+              onChange={setTimeframe}
+              className="w-full sm:w-auto"
+              data={[
+                { value: '7', label: '7D' },
+                { value: '14', label: '14D' },
+                { value: '30', label: '30D' },
+                { value: '90', label: '90D' },
+              ]}
+            />
+          </div>
+        </div>
+      </Box>
 
       {/* 2. Executive KPI Summary Badges Bar */}
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs" mb="lg">
@@ -297,7 +295,7 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
       )}
 
       {/* 4. Chart Footer Insights */}
-      <Group justify="space-between" align="center" mt="md" pt="xs" style={{ borderTop: '1px solid var(--surface-border-subtle, rgba(255,255,255,0.06))' }}>
+      <Group justify="space-between" align="center" mt="md" pt="xs" wrap="wrap" gap="xs" style={{ borderTop: '1px solid var(--surface-border-subtle)' }}>
         <Group gap={6} align="center">
           <span className="pulse-dot" style={{ backgroundColor: '#f59e0b', width: 6, height: 6 }} />
           <Text size="11px" fw={600} style={{ color: 'var(--primary-accent)' }}>

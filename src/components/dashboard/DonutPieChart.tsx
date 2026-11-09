@@ -246,12 +246,9 @@ export function DonutPieChart({
                 align="center"
                 wrap="nowrap"
                 p="4px 8px"
-                className="rounded-lg transition-colors cursor-pointer"
-                style={{
-                  backgroundColor: isHovered
-                    ? 'rgba(255, 255, 255, 0.06)'
-                    : 'transparent',
-                }}
+                className={`rounded-lg transition-colors cursor-pointer ${
+                  isHovered ? 'bg-muted/60' : 'hover:bg-muted/40'
+                }`}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
               >

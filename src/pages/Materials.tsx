@@ -14,6 +14,7 @@ import {
 } from '../components/DataTable';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
+import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
@@ -686,8 +687,8 @@ export default function Materials() {
                 <TableRow key={mat.id}>
                   <TableCell className="w-[50px] px-3 py-2">
                     {mat.imageUrl ? (
-                      <img 
-                        src={getImageUrl(mat.imageUrl)} 
+                      <LazyImage 
+                        src={mat.imageUrl} 
                         alt={mat.nameEn} 
                         className="h-9 w-9 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => setPreviewImage(getImageUrl(mat.imageUrl)!)}
