@@ -129,47 +129,49 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
 
       {/* Right: Quick Actions, Language, Dark Mode & User Profile */}
       <Group gap="xs" className="gap-1 sm:gap-2 shrink-0" align="center" wrap="nowrap">
-        {/* Quick Action Button */}
+        {/* Quick Action Button (Hidden on Mobile) */}
         {(canCreateOrder || canCreateDirectSale) && (
-          <Menu shadow="md" width={190} position="bottom-end">
-            <Menu.Target>
-              <Button
-                size="xs"
-                variant="gradient"
-                gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-                leftSection={<Plus size={16} className="shrink-0" />}
-                style={{ fontWeight: 600 }}
-                className="px-2 sm:px-3 h-8 sm:h-[30px] [&_[data-position=left]]:mr-0 sm:[&_[data-position=left]]:mr-1.5"
-                aria-label={t("common.new", "New Action")}
-              >
-                <span className="hidden sm:inline">{t("common.new", "New Action")}</span>
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {canCreateOrder && (
-                <Menu.Item
-                  leftSection={<Car size={16} color="var(--primary-accent)" />}
-                  onClick={() => navigate("/orders/new")}
+          <div className="hidden sm:block">
+            <Menu shadow="md" width={190} position="bottom-end">
+              <Menu.Target>
+                <Button
+                  size="xs"
+                  variant="gradient"
+                  gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
+                  leftSection={<Plus size={16} className="shrink-0" />}
+                  style={{ fontWeight: 600 }}
+                  className="px-3 h-[30px]"
+                  aria-label={t("common.new", "New Action")}
                 >
-                  {t("orders.newOrder", "New Work Order")}
-                </Menu.Item>
-              )}
-              {canCreateDirectSale && (
+                  <span>{t("common.new", "New Action")}</span>
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {canCreateOrder && (
+                  <Menu.Item
+                    leftSection={<Car size={16} color="var(--primary-accent)" />}
+                    onClick={() => navigate("/orders/new")}
+                  >
+                    {t("orders.newOrder", "New Work Order")}
+                  </Menu.Item>
+                )}
+                {canCreateDirectSale && (
+                  <Menu.Item
+                    leftSection={<ShoppingBag size={16} color="var(--secondary-accent)" />}
+                    onClick={() => navigate("/direct-sales")}
+                  >
+                    {t("directSales.title", "Direct Sale")}
+                  </Menu.Item>
+                )}
                 <Menu.Item
-                  leftSection={<ShoppingBag size={16} color="var(--secondary-accent)" />}
-                  onClick={() => navigate("/direct-sales")}
+                  leftSection={<CircleDollarSign size={16} />}
+                  onClick={() => navigate("/storage")}
                 >
-                  {t("directSales.title", "Direct Sale")}
+                  {t("storage.transfers", "Store Transfer")}
                 </Menu.Item>
-              )}
-              <Menu.Item
-                leftSection={<CircleDollarSign size={16} />}
-                onClick={() => navigate("/storage")}
-              >
-                {t("storage.transfers", "Store Transfer")}
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+              </Menu.Dropdown>
+            </Menu>
+          </div>
         )}
 
         {/* Language Switcher */}

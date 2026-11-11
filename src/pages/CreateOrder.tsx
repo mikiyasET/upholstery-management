@@ -60,13 +60,13 @@ import { useTranslation } from 'react-i18next';
 import { PlateBadge } from '../components/common';
 
 const QUICK_ROLES = [
-  'Technician',
-  'Lead Tech',
-  'Upholsterer',
-  'Seat Dismantler',
-  'Tapestry',
-  'Electrician',
-  'Finisher',
+  { id: 'Technician', key: 'technician' },
+  { id: 'Lead Tech', key: 'leadTech' },
+  { id: 'Upholsterer', key: 'upholsterer' },
+  { id: 'Seat Dismantler', key: 'seatDismantler' },
+  { id: 'Tapestry', key: 'tapestry' },
+  { id: 'Electrician', key: 'electrician' },
+  { id: 'Finisher', key: 'finisher' },
 ];
 
 const DEADLINE_HOURS_PRESETS = [
@@ -822,8 +822,8 @@ export default function CreateOrder() {
   return (
     <div className="flex flex-col lg:min-h-[580px] lg:h-[calc(100vh-8.5rem)] gap-2.5 max-w-full overflow-x-hidden">
       {/* 1. Slim Executive Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 bg-card border border-border rounded-xl shadow-2xs shrink-0 max-w-full overflow-hidden">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between gap-2 px-2.5 sm:px-3.5 py-1.5 bg-card border border-border rounded-xl shadow-2xs shrink-0 max-w-full">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           <ActionIcon
             variant="subtle"
             color="gray"
@@ -831,20 +831,21 @@ export default function CreateOrder() {
             radius="md"
             onClick={() => navigate('/orders')}
             title="Back to Orders"
+            className="shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </ActionIcon>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-extrabold tracking-tight text-foreground">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-foreground truncate">
               {t('orders.createNew', 'New Work Order')}
             </h1>
             {isFormValid ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                 <CheckCircle className="w-3 h-3" />
                 <span>Ready</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
                 <AlertCircle className="w-3 h-3" />
                 <span>Vehicle & Client required</span>
               </span>
@@ -853,7 +854,7 @@ export default function CreateOrder() {
         </div>
 
         {/* Header Summary & CTAs */}
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground font-medium px-2.5 py-1 rounded-lg bg-muted/50 border border-border/50">
             <span className="font-bold text-foreground">{selectedServices.length}</span> services •{' '}
             <span className="font-bold text-foreground">{selectedMaterials.length}</span> parts •{' '}
@@ -875,7 +876,7 @@ export default function CreateOrder() {
             size="sm"
             onClick={() => setIsInspectionModalOpen(true)}
             leftSection={
-              <ShieldCheck className={`w-3.5 h-3.5 ${
+              <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${
                 selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim()
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-amber-500'
@@ -888,10 +889,10 @@ export default function CreateOrder() {
                 </span>
               ) : undefined
             }
+            className="h-8 text-xs font-semibold px-2.5 shrink-0"
             style={{
               fontWeight: 600,
               fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-              height: 34,
             }}
             title={t('orders.create.inspectionModalTitle', 'Vehicle Pre-Inspection Checklist & Intake Notes')}
           >
@@ -902,6 +903,7 @@ export default function CreateOrder() {
             radius="md"
             size="sm"
             onClick={() => navigate('/orders')}
+            className="hidden sm:inline-flex"
             style={{
               fontWeight: 600,
               fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
@@ -1399,16 +1401,16 @@ export default function CreateOrder() {
               <button
                 type="button"
                 onClick={() => setActiveAddMode('service')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-1.5 sm:px-2.5 rounded-md text-[11px] font-medium transition-all ${
                   activeAddMode === 'service'
                     ? 'bg-card text-foreground shadow-2xs font-bold border border-border/80 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
               >
-                <Wrench className="w-3 h-3 text-blue-500" />
-                <span>Services</span>
+                <Wrench className="w-3 h-3 text-blue-500 shrink-0" />
+                <span>{t('orders.create.services', 'Services')}</span>
                 {selectedServices.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-bold">
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-bold shrink-0">
                     {selectedServices.length}
                   </span>
                 )}
@@ -1417,16 +1419,17 @@ export default function CreateOrder() {
               <button
                 type="button"
                 onClick={() => setActiveAddMode('material')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-1.5 sm:px-2.5 rounded-md text-[11px] font-medium transition-all ${
                   activeAddMode === 'material'
                     ? 'bg-card text-foreground shadow-2xs font-bold border border-border/80 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
               >
-                <Layers className="w-3 h-3 text-amber-500" />
-                <span>Materials & Parts</span>
+                <Layers className="w-3 h-3 text-amber-500 shrink-0" />
+                <span className="hidden sm:inline">{t('orders.create.materialsAndParts', 'Materials & Parts')}</span>
+                <span className="sm:hidden">{t('orders.create.materials', 'Materials')}</span>
                 {selectedMaterials.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-bold">
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-bold shrink-0">
                     {selectedMaterials.length}
                   </span>
                 )}
@@ -1435,16 +1438,17 @@ export default function CreateOrder() {
               <button
                 type="button"
                 onClick={() => setActiveAddMode('staff')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-1.5 sm:px-2.5 rounded-md text-[11px] font-medium transition-all ${
                   activeAddMode === 'staff'
                     ? 'bg-card text-foreground shadow-2xs font-bold border border-border/80 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
                 }`}
               >
-                <Users className="w-3 h-3 text-purple-500" />
-                <span>Technicians</span>
+                <Users className="w-3 h-3 text-purple-500 shrink-0" />
+                <span className="hidden sm:inline">{t('orders.create.technicians', 'Technicians')}</span>
+                <span className="sm:hidden">{t('orders.create.workers', 'Workers')}</span>
                 {selectedAssignments.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-500/15 text-purple-600 dark:text-purple-400 font-mono font-bold">
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-500/15 text-purple-600 dark:text-purple-400 font-mono font-bold shrink-0">
                     {selectedAssignments.length}
                   </span>
                 )}
@@ -1548,7 +1552,7 @@ export default function CreateOrder() {
                                 const stock = Number(b.brandStocks?.find((s: any) => s.store?.type === 'MINI')?.quantity ?? 0);
                                 return (
                                   <span className="text-xs font-semibold truncate block">
-                                    {formatBrandSizeLabel({ name: b.name, size: b.size, color: b.color, type: b.type })} ({stock} in stock)
+                                    {formatBrandSizeLabel({ name: b.name, size: b.size, color: b.color, type: b.type })} ({stock} {t('orders.create.inStock', 'in stock')})
                                   </span>
                                 );
                               }}
@@ -1567,7 +1571,7 @@ export default function CreateOrder() {
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/60 border border-border/60 text-[11px] font-mono truncate">
                         <span className="font-semibold text-foreground truncate">{getLocName(activeSelectedCategory)}</span>
                         <span className="text-muted-foreground">•</span>
-                        <span className="text-muted-foreground">Standard: {formatCurrency(activeSelectedCategory.price)}</span>
+                        <span className="text-muted-foreground">{t('orders.create.standard', 'Standard')}: {formatCurrency(activeSelectedCategory.price)}</span>
                       </span>
                     )}
                   </div>
@@ -1622,7 +1626,7 @@ export default function CreateOrder() {
                         flexShrink: 0,
                       }}
                     >
-                      Add {activeSelectedCategory && `(${formatCurrency(Number(servicePriceInput) || activeSelectedCategory.price)})`}
+                      {t('common.add', 'Add')} {activeSelectedCategory && `(${formatCurrency(Number(servicePriceInput) || activeSelectedCategory.price)})`}
                     </Button>
                   </div>
                 </div>
@@ -1672,7 +1676,7 @@ export default function CreateOrder() {
                                       </span>
                                     )}
                                     <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${stock > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 font-bold'}`}>
-                                      {stock > 0 ? `Stock: ${stock}` : 'Out'}
+                                      {stock > 0 ? `${t('orders.create.stock', 'Stock')}: ${stock}` : t('orders.create.out', 'Out')}
                                     </span>
                                   </div>
                                 </div>
@@ -1703,7 +1707,7 @@ export default function CreateOrder() {
                                 <div className="flex items-center justify-between w-full gap-2">
                                   <span className="truncate">{label} ({formatCurrency(b.price)})</span>
                                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${bStock > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 font-bold'}`}>
-                                    {bStock > 0 ? `Stock: ${bStock}` : 'Out'}
+                                    {bStock > 0 ? `${t('orders.create.stock', 'Stock')}: ${bStock}` : t('orders.create.out', 'Out')}
                                   </span>
                                 </div>
                               )
@@ -1726,7 +1730,7 @@ export default function CreateOrder() {
                             <span className="font-semibold text-foreground truncate">{formatBrandSizeLabel(activeSelectedBrand)}</span>
                             <span className="text-muted-foreground">•</span>
                             <span className={`font-semibold ${activeBrandStock > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                              {activeBrandStock > 0 ? `${activeBrandStock} ${formatUnit(activeSelectedMat.unit)} in stock` : 'Out of stock'}
+                              {activeBrandStock > 0 ? `${activeBrandStock} ${formatUnit(activeSelectedMat.unit)} ${t('orders.create.inStock', 'in stock')}` : t('orders.create.outOfStock', 'Out of stock')}
                             </span>
                             <span className="text-muted-foreground">•</span>
                             <span className="font-semibold text-foreground">{formatCurrency(activeMatPrice)}</span>
@@ -1836,7 +1840,7 @@ export default function CreateOrder() {
                                 flexShrink: 0,
                               }}
                             >
-                              Add {activeSelectedMat && `(${formatCurrency((Number(materialPriceInput) || activeMatPrice) * (Number(materialQty) || 1))})`}
+                              {t('common.add', 'Add')} {activeSelectedMat && `(${formatCurrency((Number(materialPriceInput) || activeMatPrice) * (Number(materialQty) || 1))})`}
                             </Button>
                           );
                         })()}
@@ -1869,7 +1873,7 @@ export default function CreateOrder() {
                                     </span>
                                   )}
                                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${stock > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 font-bold'}`}>
-                                    {stock > 0 ? `Stock: ${stock}` : 'Out'}
+                                    {stock > 0 ? `${t('orders.create.stock', 'Stock')}: ${stock}` : t('orders.create.out', 'Out')}
                                   </span>
                                 </div>
                               </div>
@@ -1986,7 +1990,7 @@ export default function CreateOrder() {
                               flexShrink: 0,
                             }}
                           >
-                            Add {activeSelectedMat && `(${formatCurrency((Number(materialPriceInput) || activeMatPrice) * (Number(materialQty) || 1))})`}
+                            {t('common.add', 'Add')} {activeSelectedMat && `(${formatCurrency((Number(materialPriceInput) || activeMatPrice) * (Number(materialQty) || 1))})`}
                           </Button>
                         );
                       })()}
@@ -2067,7 +2071,7 @@ export default function CreateOrder() {
                       flexShrink: 0,
                     }}
                   >
-                    Assign
+                    {t('orders.create.assign', 'Assign')}
                   </Button>
                 </div>
 
@@ -2079,17 +2083,17 @@ export default function CreateOrder() {
                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-1">
                     {QUICK_ROLES.map(role => (
                       <button
-                        key={role}
+                        key={role.id}
                         type="button"
-                        onClick={() => setRoleInput(role)}
+                        onClick={() => setRoleInput(role.id)}
                         className={`py-1 px-1 rounded-md text-[10px] font-medium border text-center transition-all truncate ${
-                          roleInput === role 
+                          roleInput === role.id 
                             ? 'bg-purple-600 text-white border-purple-600 shadow-2xs font-bold' 
                             : 'bg-card text-muted-foreground hover:text-foreground border-border/80 hover:bg-muted/60'
                         }`}
-                        title={role}
+                        title={t(`orders.create.roles.${role.key}`, role.id)}
                       >
-                        {role}
+                        {t(`orders.create.roles.${role.key}`, role.id)}
                       </button>
                     ))}
                   </div>
@@ -2103,9 +2107,9 @@ export default function CreateOrder() {
             <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider pb-1.5 border-b border-border/50 shrink-0">
               <span className="flex items-center gap-1.5">
                 <PackageCheck className="w-3.5 h-3.5 text-primary" />
-                <span>Work Order Manifest</span>
+                <span>{t('orders.create.workOrderManifest', 'Work Order Manifest')}</span>
               </span>
-              <span>{totalItemsCount} items • {selectedAssignments.length} staff</span>
+              <span>{totalItemsCount} {t('orders.create.items', 'items')} • {selectedAssignments.length} {t('orders.create.staff', 'staff')}</span>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto pt-2">
@@ -2114,9 +2118,9 @@ export default function CreateOrder() {
                   <div className="p-2.5 rounded-full bg-muted/60 border border-border/60 mb-2">
                     <Wrench className="w-5 h-5 text-muted-foreground/40" />
                   </div>
-                  <div className="font-bold text-xs text-foreground">Order Manifest is Empty</div>
+                  <div className="font-bold text-xs text-foreground">{t('orders.create.manifestEmpty', 'Order Manifest is Empty')}</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
-                    Choose a service, spare part, or assign a technician using the tabs above.
+                    {t('orders.create.manifestEmptyDesc', 'Choose a service, spare part, or assign a technician using the tabs above.')}
                   </div>
                 </div>
               ) : (
@@ -2126,11 +2130,14 @@ export default function CreateOrder() {
                     <div className="space-y-1.5">
                       <div className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1">
                         <Wrench className="w-3 h-3" />
-                        <span>Services ({selectedServices.length})</span>
+                        <span>{t('orders.create.services', 'Services')} ({selectedServices.length})</span>
                       </div>
                       <div className="space-y-1">
                         {selectedServices.map(s => {
                           const hasDiscount = s.price < s.standardPrice;
+                          const srv = services?.find((x: any) => x.categories?.some((c: any) => c.id === s.categoryId));
+                          const cat = srv?.categories?.find((c: any) => c.id === s.categoryId);
+                          const sDisplayName = (srv && cat) ? `${getLocName(srv)} - ${getLocName(cat)}` : s.name;
                           return (
                             <div 
                               key={s.tempId} 
@@ -2141,7 +2148,7 @@ export default function CreateOrder() {
                                   <Wrench className="w-3.5 h-3.5" />
                                 </span>
                                 <div className="min-w-0">
-                                  <span className="font-semibold text-xs text-foreground truncate block">{s.name}</span>
+                                  <span className="font-semibold text-xs text-foreground truncate block">{sDisplayName}</span>
                                   {s.selectedMaterials && s.selectedMaterials.some((m: any) => m.brandName) && (
                                     <div className="flex flex-wrap items-center gap-1 mt-0.5">
                                       {s.selectedMaterials.filter((m: any) => m.brandName).map((m: any, idx: number) => (
@@ -2184,7 +2191,7 @@ export default function CreateOrder() {
                                   type="button" 
                                   onClick={() => setSelectedServices(selectedServices.filter(x => x.tempId !== s.tempId))} 
                                   className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 opacity-70 group-hover:opacity-100 transition-opacity"
-                                  title="Remove service"
+                                  title={t('common.remove', 'Remove')}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2201,11 +2208,13 @@ export default function CreateOrder() {
                     <div className="space-y-1.5">
                       <div className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
                         <Layers className="w-3 h-3" />
-                        <span>Direct Parts & Materials ({selectedMaterials.length})</span>
+                        <span>{t('orders.create.directMaterials', 'Direct Parts & Materials')} ({selectedMaterials.length})</span>
                       </div>
                       <div className="space-y-1">
                         {selectedMaterials.map(m => {
                           const hasDiscount = m.price < m.standardPrice;
+                          const mat = materials?.find((x: any) => x.id === m.materialId);
+                          const mDisplayName = mat ? getLocName(mat) : m.name;
                           return (
                             <div 
                               key={m.tempId} 
@@ -2217,7 +2226,7 @@ export default function CreateOrder() {
                                 </span>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-xs text-foreground truncate block">{m.name}</span>
+                                    <span className="font-semibold text-xs text-foreground truncate block">{mDisplayName}</span>
                                     {(m.brandName || m.sizeName || m.colorName || m.typeName) && (
                                       <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
                                         {formatBrandSizeLabel({ name: m.brandName, size: m.sizeName, color: m.colorName, type: m.typeName })}
@@ -2244,7 +2253,7 @@ export default function CreateOrder() {
                                     setEditingCartItem({
                                       type: 'material',
                                       tempId: m.tempId,
-                                      name: `${m.name}${(m.brandName || m.sizeName || m.colorName || m.typeName) ? ` (${formatBrandSizeLabel({ name: m.brandName, size: m.sizeName, color: m.colorName, type: m.typeName })})` : ''}`,
+                                      name: `${mDisplayName}${(m.brandName || m.sizeName || m.colorName || m.typeName) ? ` (${formatBrandSizeLabel({ name: m.brandName, size: m.sizeName, color: m.colorName, type: m.typeName })})` : ''}`,
                                       price: m.price,
                                       standardPrice: m.standardPrice,
                                     });
@@ -2259,7 +2268,7 @@ export default function CreateOrder() {
                                   type="button" 
                                   onClick={() => setSelectedMaterials(selectedMaterials.filter(x => x.tempId !== m.tempId))} 
                                   className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 opacity-70 group-hover:opacity-100 transition-opacity"
-                                  title="Remove material"
+                                  title={t('common.remove', 'Remove')}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2275,8 +2284,9 @@ export default function CreateOrder() {
                   {selectedAssignments.length > 0 && (
                     <div className="space-y-1.5">
                       <div className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>Assigned Technicians ({selectedAssignments.length})</span>
+                        <Users className="w-3 h-3 shrink-0" />
+                        <span className="hidden sm:inline">{t('orders.create.assignedTechnicians', 'Assigned Technicians')} ({selectedAssignments.length})</span>
+                        <span className="sm:hidden">{t('orders.create.assignedWorkers', 'Assigned Workers')} ({selectedAssignments.length})</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {selectedAssignments.map(a => (
@@ -2297,7 +2307,7 @@ export default function CreateOrder() {
                               type="button" 
                               onClick={() => setSelectedAssignments(selectedAssignments.filter(x => x.tempId !== a.tempId))} 
                               className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 opacity-70 group-hover:opacity-100 transition-opacity"
-                              title="Remove assignment"
+                              title={t('common.remove', 'Remove')}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -2312,13 +2322,13 @@ export default function CreateOrder() {
           </div>
 
           {/* Bottom Pinned Settlement Footer */}
-          <div className="p-3 px-4 bg-muted/40 border-t border-border/80 space-y-2.5 shrink-0">
+          <div className="p-2 sm:p-3 sm:px-4 bg-muted/40 border-t border-border/80 space-y-2 shrink-0">
             {/* Down Payment (Advance) Section */}
-            <div className="p-2.5 rounded-xl bg-card border border-border space-y-2 shadow-2xs">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-card border border-border space-y-2 shadow-2xs">
               {/* Top Sub-Row: Label on Left, Primary-Themed Micro-Pill Segment on Right */}
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                  <Banknote className="w-3.5 h-3.5 text-primary" />
+                  <Banknote className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span>{t('orders.create.downPayment', 'Advance Payment')}</span>
                   <span className="text-[10px] text-muted-foreground font-normal hidden sm:inline">
                     ({t('orders.create.deducted', 'deducted from total')})
@@ -2362,10 +2372,10 @@ export default function CreateOrder() {
                 </div>
               </div>
 
-              {/* Bottom Sub-Row: Unified ModernInput & ModernSelect Fields */}
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              {/* Bottom Sub-Row: Responsive Grid / Flex */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:items-center gap-2">
                 {/* 1. Amount input */}
-                <div className="relative flex-1 min-w-[120px]">
+                <div className="relative flex-1 min-w-0">
                   <ModernInput
                     icon={Banknote}
                     inputSize="sm"
@@ -2386,7 +2396,7 @@ export default function CreateOrder() {
                 </div>
 
                 {/* 2. Payment Method Select */}
-                <div className="w-[145px] sm:w-[160px] shrink-0">
+                <div className="min-w-0 sm:w-[160px] shrink-0">
                   <ModernSelect
                     inputSize="sm"
                     icon={getPaymentMethodIcon(downPaymentMethod)}
@@ -2400,7 +2410,7 @@ export default function CreateOrder() {
 
                 {/* 3. Reference / Transaction ID Input (Only shown for Bank or Mobile) */}
                 {(downPaymentMethod === 'BANK_TRANSFER' || downPaymentMethod === 'MOBILE_MONEY') && (
-                  <div className="flex-1 min-w-[120px] animate-in fade-in zoom-in-95 duration-150">
+                  <div className="col-span-1 sm:col-span-2 md:flex-1 min-w-0 animate-in fade-in zoom-in-95 duration-150">
                     <ModernInput
                       icon={Hash}
                       inputSize="sm"
@@ -2423,39 +2433,16 @@ export default function CreateOrder() {
               </div>
             )}
 
-            {/* Row 2: Financial tally & Submit Button */}
-            <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
-              <div className="flex items-center gap-3 text-xs flex-wrap">
-                {/* Items & Service Fee breakdown if fee is set */}
-                {serviceFeeAmount > 0 && (
-                  <>
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-muted-foreground block leading-none">
-                        Items
-                      </span>
-                      <span className="text-xs font-semibold text-muted-foreground font-mono">
-                        {formatCurrency(totalOrderAmount - serviceFeeAmount)}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground font-bold">+</span>
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block leading-none">
-                        Fee
-                      </span>
-                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">
-                        {formatCurrency(serviceFeeAmount)}
-                      </span>
-                    </div>
-                    <span className="text-muted-foreground font-bold">=</span>
-                  </>
-                )}
-
+            {/* Row 2: Financial tally & Action Buttons */}
+            <div className="space-y-2 pt-1.5 border-t border-border/50">
+              {/* Financial Breakdown Tally */}
+              <div className="flex items-center justify-between gap-2.5 sm:gap-3 text-xs w-full flex-wrap">
                 {/* Total */}
-                <div>
+                <div className="min-w-0">
                   <span className="text-[9px] uppercase font-bold text-muted-foreground block leading-none">
                     {t('orders.create.orderTotal', 'Order Total')}
                   </span>
-                  <span className="text-sm font-bold text-foreground font-mono">
+                  <span className="text-xs sm:text-sm font-bold text-foreground font-mono">
                     {formatCurrency(totalOrderAmount)}
                   </span>
                 </div>
@@ -2463,12 +2450,12 @@ export default function CreateOrder() {
                 {/* Down Payment deducted */}
                 {downPaymentAmount > 0 && !isDownPaymentInvalid && (
                   <>
-                    <span className="text-muted-foreground font-bold">-</span>
-                    <div>
+                    <span className="text-muted-foreground font-bold text-xs">-</span>
+                    <div className="min-w-0">
                       <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block leading-none">
-                        Advance ({t('orders.create.deducted', 'deducted')})
+                        {t('orders.create.advance', 'Advance')}
                       </span>
-                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                      <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                         {formatCurrency(downPaymentAmount)}
                       </span>
                     </div>
@@ -2476,12 +2463,12 @@ export default function CreateOrder() {
                 )}
 
                 {/* Balance Due */}
-                <span className="text-muted-foreground font-bold">=</span>
-                <div>
+                <span className="text-muted-foreground font-bold text-xs">=</span>
+                <div className="min-w-0">
                   <span className="text-[9px] uppercase font-bold text-muted-foreground block leading-none">
-                    {t('orders.create.balanceDue', 'Remaining Balance')}
+                    {t('orders.create.balanceDue', 'Remaining')}
                   </span>
-                  <span className={`text-base font-black font-mono leading-tight ${
+                  <span className={`text-sm sm:text-base font-black font-mono leading-tight ${
                     remainingBalanceDue === 0 && totalOrderAmount > 0
                       ? 'text-emerald-600 dark:text-emerald-400'
                       : isDownPaymentInvalid
@@ -2492,34 +2479,45 @@ export default function CreateOrder() {
                   </span>
                 </div>
 
+                {/* Service Fee breakdown if fee is set */}
+                {serviceFeeAmount > 0 && (
+                  <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-700 dark:text-amber-400 font-mono">
+                    <span>+{formatCurrency(serviceFeeAmount)}</span>
+                    <span className="text-[8px] uppercase font-bold text-amber-600">
+                      {t('orders.create.fee', 'fee')}
+                    </span>
+                  </div>
+                )}
+
                 {/* Target Deadline Tag if chosen */}
                 {deadline && (
                   <div className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
                     <Clock className="w-3 h-3" />
-                    <span>Due: {formatAppDate(deadline, true)}</span>
+                    <span>{t('orders.create.due', 'Due')}: {formatAppDate(deadline, true)}</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Service Fee on the left of Submit */}
+              {/* Action Buttons: Add Fee & Submit Order on DIFFERENT lines covering full space */}
+              <div className="flex flex-col gap-2 w-full pt-0.5">
+                {/* Service Fee on its own line covering full space */}
                 {!showServiceFee && (!serviceFee || Number(serviceFee) === 0) ? (
                   <button
                     type="button"
                     onClick={() => setShowServiceFee(true)}
-                    className="h-[38px] px-2.5 rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer hover:border-amber-500/70 shadow-2xs shrink-0"
+                    className="w-full h-[38px] px-3 rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:border-amber-500/70 shadow-2xs"
                     title={t('orders.create.addServiceFee', 'Add Service Fee')}
                   >
                     <Plus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>{t('orders.create.addServiceFee', 'Add Service Fee')}</span>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-1.5 h-[38px] px-2 rounded-md bg-card border border-amber-500/50 shadow-2xs animate-in fade-in zoom-in-95 duration-150 shrink-0">
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 select-none">
+                  <div className="w-full flex items-center justify-between gap-2 h-[38px] px-3 rounded-md bg-card border border-amber-500/50 shadow-2xs animate-in fade-in zoom-in-95 duration-150">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 select-none shrink-0">
                       <Receipt className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                       <span>{t('orders.create.serviceFee', 'Fee')}:</span>
                     </div>
-                    <div className="relative">
+                    <div className="relative flex-1 max-w-[200px]">
                       <input
                         type="text"
                         placeholder="0.00"
@@ -2535,7 +2533,7 @@ export default function CreateOrder() {
                             (e.target as HTMLInputElement).blur();
                           }
                         }}
-                        className="w-20 h-7 px-2 pr-6 text-xs font-mono font-bold bg-muted/60 hover:bg-muted focus:bg-background border border-input rounded text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors"
+                        className="w-full h-7 px-2 pr-6 text-xs font-mono font-bold bg-muted/60 hover:bg-muted focus:bg-background border border-input rounded text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors"
                       />
                       <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted-foreground select-none pointer-events-none">
                         ETB
@@ -2547,7 +2545,7 @@ export default function CreateOrder() {
                         setServiceFee('');
                         setShowServiceFee(false);
                       }}
-                      className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                      className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
                       title={t('common.remove', 'Remove')}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -2555,24 +2553,24 @@ export default function CreateOrder() {
                   </div>
                 )}
 
+                {/* Submit Order Button on its own line covering full space */}
                 <Button 
                   variant="gradient"
                   gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
                   radius="md"
                   size="sm"
+                  fullWidth
                   loading={submitOrderMutation.isPending}
                   disabled={!isFormValid || isDownPaymentInvalid || submitOrderMutation.isPending}
                   onClick={() => submitOrderMutation.mutate()} 
-                  leftSection={<Check className="w-4 h-4" />}
+                  leftSection={<Check className="w-4 h-4 shrink-0" />}
                   style={{
                     boxShadow: (!isFormValid || isDownPaymentInvalid || submitOrderMutation.isPending) ? "none" : "0 2px 10px rgba(245, 158, 11, 0.25)",
                     fontWeight: 600,
                     fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
                     letterSpacing: "-0.01em",
-                    height: 38,
-                    paddingLeft: 20,
-                    paddingRight: 20,
-                    flexShrink: 0,
+                    height: 40,
+                    width: '100%',
                   }}
                 >
                   {t('orders.create.submitOrder', 'Submit Order')}
@@ -2883,7 +2881,7 @@ export default function CreateOrder() {
                           onClick={() => setEditCartPriceInput(String(editingCartItem.standardPrice))}
                           className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
                         >
-                          Reset to Standard
+                          {t('orders.resetToStandard', 'Reset to Standard')}
                         </button>
                       )}
                     </div>
