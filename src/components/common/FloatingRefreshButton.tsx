@@ -52,7 +52,12 @@ export function FloatingRefreshButton({
         zIndex: 999,
       }}
     >
-      <Tooltip label={label} withArrow position="left">
+      <Tooltip
+        label={label}
+        withArrow
+        position="left"
+        events={{ hover: true, focus: false, touch: false }}
+      >
         <ActionIcon
           size={50}
           radius="xl"

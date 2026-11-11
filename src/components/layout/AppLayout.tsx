@@ -47,10 +47,12 @@ export function AppLayout() {
         padding={{ base: "md", sm: "lg", lg: "xl" }}
         style={{
           minHeight: "100vh",
+          maxWidth: "100vw",
+          overflowX: "hidden",
           backgroundColor: "var(--surface-bg)",
         }}
       >
-        <AppShell.Header withBorder={false}>
+        <AppShell.Header withBorder={false} style={{ maxWidth: "100vw", overflowX: "hidden" }}>
           <AppHeader
             mobileOpened={mobileOpened}
             toggleMobile={toggleMobile}
@@ -61,7 +63,7 @@ export function AppLayout() {
           <AppSidebar onNavigate={closeMobile} />
         </AppShell.Navbar>
 
-        <AppShell.Main>
+        <AppShell.Main style={{ maxWidth: "100vw", overflowX: "hidden" }}>
           <Box
             className="animate-fade-in"
             style={{

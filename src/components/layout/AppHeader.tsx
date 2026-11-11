@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Group,
   Burger,
@@ -49,12 +50,18 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
+  const [userMenuOpened, setUserMenuOpened] = useState(false);
+
   const canCreateOrder = usePermission("orders.create");
   const canCreateDirectSale = usePermission("directSales.create");
 
   const toggleLanguage = () => {
+    setUserMenuOpened(false);
     const nextLang = i18n.language === "am" ? "en" : "am";
-    i18n.changeLanguage(nextLang);
+    // Yield execution to allow menu transition and event handlers to settle cleanly
+    setTimeout(() => {
+      i18n.changeLanguage(nextLang);
+    }, 10);
   };
 
   const handleLogout = () => {
@@ -105,10 +112,10 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
       align="center"
       wrap="nowrap"
       className="glass-header"
-      style={{ overflow: "hidden" }}
+      style={{ overflow: "hidden", maxWidth: "100%", width: "100%" }}
     >
       {/* Left: Mobile Toggle & Brand Logo */}
-      <Group gap="xs" align="center" wrap="nowrap" style={{ flexShrink: 0, minWidth: 0 }}>
+      <Group gap="xs" align="center" wrap="nowrap" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden" }}>
         <Burger
           opened={mobileOpened}
           onClick={toggleMobile}
@@ -121,7 +128,7 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
       </Group>
 
       {/* Right: Quick Actions, Language, Dark Mode & User Profile */}
-      <Group gap="xs" className="gap-1.5 sm:gap-2" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
+      <Group gap="xs" className="gap-1 sm:gap-2 shrink-0" align="center" wrap="nowrap">
         {/* Quick Action Button */}
         {(canCreateOrder || canCreateDirectSale) && (
           <Menu shadow="md" width={190} position="bottom-end">
@@ -166,7 +173,10 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
         )}
 
         {/* Language Switcher */}
-        <Tooltip label={i18n.language === "am" ? "Switch to English" : "ወደ አማርኛ ቀይር"}>
+        <Tooltip
+          label={i18n.language === "am" ? "Switch to English" : "ወደ አማርኛ ቀይር"}
+          events={{ hover: true, focus: false, touch: false }}
+        >
           <ActionIcon
             variant="default"
             size="md"
@@ -180,7 +190,10 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
         </Tooltip>
 
         {/* Dark / Light Mode Toggle */}
-        <Tooltip label={isDark ? "Light Mode" : "Dark Mode"}>
+        <Tooltip
+          label={isDark ? "Light Mode" : "Dark Mode"}
+          events={{ hover: true, focus: false, touch: false }}
+        >
           <ActionIcon
             variant="default"
             size="md"
@@ -198,11 +211,20 @@ export function AppHeader({ mobileOpened, toggleMobile }: AppHeaderProps) {
         </Tooltip>
 
         {/* Executive User Profile Menu */}
-        <Menu shadow="md" width={240} position="bottom-end" transitionProps={{ transition: "pop-top-right", duration: 150 }}>
+        <Menu
+          opened={userMenuOpened}
+          onChange={setUserMenuOpened}
+          shadow="md"
+          width={240}
+          position="bottom-end"
+          withinPortal={true}
+          transitionProps={{ transition: "pop-top-right", duration: 150 }}
+        >
           <Menu.Target>
             <UnstyledButton
               className="exec-profile-capsule p-0.5 sm:py-1 sm:pl-1.5 sm:pr-3"
               aria-label="User profile menu"
+              style={{ touchAction: "manipulation" }}
             >
               <Box className="exec-avatar-wrapper w-8 h-8 sm:w-[34px] sm:h-[34px] text-xs sm:text-[13px]">
                 {initials}

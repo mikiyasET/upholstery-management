@@ -820,9 +820,9 @@ export default function CreateOrder() {
   });
 
   return (
-    <div className="flex flex-col lg:min-h-[580px] lg:h-[calc(100vh-8.5rem)] gap-2.5 animate-in fade-in duration-200">
+    <div className="flex flex-col lg:min-h-[580px] lg:h-[calc(100vh-8.5rem)] gap-2.5 max-w-full overflow-x-hidden">
       {/* 1. Slim Executive Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 bg-card border border-border rounded-xl shadow-2xs shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 bg-card border border-border rounded-xl shadow-2xs shrink-0 max-w-full overflow-hidden">
         <div className="flex items-center gap-2.5">
           <ActionIcon
             variant="subtle"
