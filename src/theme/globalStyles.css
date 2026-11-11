@@ -853,3 +853,57 @@ body {
   color: var(--text-main);
 }
 
+/* ========================================================
+   THEME-MATCHED SKELETON LOADERS & CHART LOADING STATES
+   Eliminates harsh gray background across all loading states
+   ======================================================== */
+.mantine-Skeleton-root {
+  background-color: var(--surface-border-subtle, rgba(0, 0, 0, 0.04)) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .mantine-Skeleton-root,
+[data-mantine-color-scheme="dark"] .mantine-Skeleton-root,
+:root[data-mantine-color-scheme="dark"] .mantine-Skeleton-root {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.mantine-Skeleton-root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(245, 158, 11, 0.08) 50%,
+    transparent 100%
+  ) !important;
+  animation: theme-skeleton-shimmer 1.8s infinite ease-in-out;
+}
+
+@keyframes theme-skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes chart-bar-pulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scaleY(1.015);
+  }
+}
+
+@keyframes donut-ring-pulse {
+  0%, 100% {
+    opacity: 0.50;
+  }
+  50% {
+    opacity: 0.92;
+  }
+}
+

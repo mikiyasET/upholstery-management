@@ -18,6 +18,9 @@ export interface DonutPieChartProps {
   showLegend?: boolean;
 }
 
+export { DonutChartSkeleton } from './ChartSkeletons';
+export type { DonutChartSkeletonProps } from './ChartSkeletons';
+
 const COLOR_MAP: Record<string, string> = {
   'amber.6': '#F59E0B',
   'blue.6': '#3B82F6',

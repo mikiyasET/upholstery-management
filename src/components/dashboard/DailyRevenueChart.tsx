@@ -10,7 +10,7 @@ import {
   Skeleton,
   SimpleGrid,
 } from '@mantine/core';
-import { StackedBarChart } from './StackedBarChart';
+import { StackedBarChart, StackedBarChartSkeleton } from './StackedBarChart';
 import {
   BarChart3,
   DollarSign,
@@ -184,53 +184,72 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
           <Text size="11px" fw={600} c="dimmed" tt="uppercase">
             {t('dashboard.periodTotalRevenue', 'Period Total Revenue')}
           </Text>
-          <Text size="sm" fw={800} mt={2} style={{ color: 'var(--primary-accent)' }}>
-            {formatCurrency(summary.totalRevenue, i18n.language as any)}
-          </Text>
+          {isLoading ? (
+            <Skeleton height={20} width={90} mt={3} radius="sm" />
+          ) : (
+            <Text size="sm" fw={800} mt={2} style={{ color: 'var(--primary-accent)' }}>
+              {formatCurrency(summary.totalRevenue, i18n.language as any)}
+            </Text>
+          )}
         </Box>
 
         <Box p="xs" className="rounded-xl border border-border/60 bg-muted/20">
           <Text size="11px" fw={600} c="dimmed" tt="uppercase">
             {t('dashboard.totalOrdersJobs', 'Total Orders & Jobs')}
           </Text>
-          <Text size="sm" fw={800} mt={2}>
-            {summary.totalOrders}{' '}
-            <Text component="span" size="xs" fw={500} c="dimmed">
-              {t('dashboard.recorded', 'recorded')}
+          {isLoading ? (
+            <Skeleton height={20} width={80} mt={3} radius="sm" />
+          ) : (
+            <Text size="sm" fw={800} mt={2}>
+              {summary.totalOrders}{' '}
+              <Text component="span" size="xs" fw={500} c="dimmed">
+                {t('dashboard.recorded', 'recorded')}
+              </Text>
             </Text>
-          </Text>
+          )}
         </Box>
 
         <Box p="xs" className="rounded-xl border border-border/60 bg-muted/20">
           <Text size="11px" fw={600} c="dimmed" tt="uppercase">
             {t('dashboard.dailyAverage', 'Daily Average')}
           </Text>
-          <Text size="sm" fw={800} mt={2}>
-            {formatCurrency(summary.avgDailyRevenue, i18n.language as any)}
-            <Text component="span" size="10px" fw={500} c="dimmed">
-              {t('dashboard.perDay', '/day')}
+          {isLoading ? (
+            <Skeleton height={20} width={85} mt={3} radius="sm" />
+          ) : (
+            <Text size="sm" fw={800} mt={2}>
+              {formatCurrency(summary.avgDailyRevenue, i18n.language as any)}
+              <Text component="span" size="10px" fw={500} c="dimmed">
+                {t('dashboard.perDay', '/day')}
+              </Text>
             </Text>
-          </Text>
+          )}
         </Box>
 
         <Box p="xs" className="rounded-xl border border-border/60 bg-muted/20">
           <Text size="11px" fw={600} c="dimmed" tt="uppercase">
             {t('dashboard.peakDay', 'Peak Day')}
           </Text>
-          <Group gap={4} align="center" mt={2}>
-            <Text size="sm" fw={800} truncate style={{ color: '#10b981' }}>
-              {summary.peakDay
-                ? `${formatShortDate(summary.peakDay.date, false, i18n.language)} (${formatCurrency(summary.peakDay.totalRevenue, i18n.language as any)})`
-                : '—'}
-            </Text>
-            {summary.peakDay && <ArrowUpRight size={14} color="#10b981" />}
-          </Group>
+          {isLoading ? (
+            <Skeleton height={20} width={100} mt={3} radius="sm" />
+          ) : (
+            <Group gap={4} align="center" mt={2}>
+              <Text size="sm" fw={800} truncate style={{ color: '#10b981' }}>
+                {summary.peakDay
+                  ? `${formatShortDate(summary.peakDay.date, false, i18n.language)} (${formatCurrency(summary.peakDay.totalRevenue, i18n.language as any)})`
+                  : '—'}
+              </Text>
+              {summary.peakDay && <ArrowUpRight size={14} color="#10b981" />}
+            </Group>
+          )}
         </Box>
       </SimpleGrid>
 
       {/* 3. The BarChart */}
       {isLoading ? (
-        <Skeleton height={280} radius="md" />
+        <StackedBarChartSkeleton
+          h={280}
+          barCount={daysCount <= 7 ? 7 : daysCount <= 14 ? 14 : 20}
+        />
       ) : chartData.length === 0 || !hasAnyActivity ? (
         <Box
           py="xl"

@@ -188,5 +188,11 @@ export const theme = createTheme({
         highlightToday: true,
       },
     },
+    Skeleton: {
+      defaultProps: {
+        radius: "md",
+        animate: true,
+      },
+    },
   },
 });

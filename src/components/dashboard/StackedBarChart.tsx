@@ -17,6 +17,9 @@ export interface StackedBarChartProps {
   h?: number | string;
 }
 
+export { StackedBarChartSkeleton } from './ChartSkeletons';
+export type { StackedBarChartSkeletonProps } from './ChartSkeletons';
+
 const COLOR_MAP: Record<string, string> = {
   'amber.6': '#F59E0B',
   'blue.6': '#3B82F6',

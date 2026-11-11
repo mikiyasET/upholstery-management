@@ -47,8 +47,8 @@ import {
   PieChart,
 } from 'lucide-react';
 import { PageHeader } from '../components/common';
-import { StackedBarChart } from '../components/dashboard/StackedBarChart';
-import { DonutPieChart } from '../components/dashboard/DonutPieChart';
+import { StackedBarChart, StackedBarChartSkeleton } from '../components/dashboard/StackedBarChart';
+import { DonutPieChart, DonutChartSkeleton } from '../components/dashboard/DonutPieChart';
 
 type DatePreset = 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
@@ -889,7 +889,10 @@ export default function Reports() {
 
             {/* Stacked Bar Chart */}
             {revenueLoading ? (
-              <Skeleton height={270} radius="md" />
+              <StackedBarChartSkeleton
+                h={265}
+                barCount={chartData.length > 0 ? Math.min(chartData.length, 20) : 14}
+              />
             ) : !hasRevenueActivity && chartData.length === 0 ? (
               <Box
                 py="xl"
@@ -977,14 +980,18 @@ export default function Reports() {
                   </Text>
                 </div>
 
-                <DonutPieChart
-                  data={revenueStreamData}
-                  size={155}
-                  innerRadiusRatio={0.65}
-                  valueFormatter={(v) => formatCurrency(v, i18n.language as any)}
-                  centerLabel={t('reports.chart.total', 'Total')}
-                  centerValue={formatCurrency(totalRevenue, i18n.language as any)}
-                />
+                {revenueLoading ? (
+                  <DonutChartSkeleton size={155} innerRadiusRatio={0.65} />
+                ) : (
+                  <DonutPieChart
+                    data={revenueStreamData}
+                    size={155}
+                    innerRadiusRatio={0.65}
+                    valueFormatter={(v) => formatCurrency(v, i18n.language as any)}
+                    centerLabel={t('reports.chart.total', 'Total')}
+                    centerValue={formatCurrency(totalRevenue, i18n.language as any)}
+                  />
+                )}
               </Box>
 
               {/* Card 2: Top Services Revenue Share */}
@@ -1014,7 +1021,7 @@ export default function Reports() {
                 </div>
 
                 {servicesLoading ? (
-                  <Skeleton height={155} radius="md" />
+                  <DonutChartSkeleton size={155} innerRadiusRatio={0.65} />
                 ) : (
                   <DonutPieChart
                     data={serviceDonutData}
@@ -1060,7 +1067,11 @@ export default function Reports() {
                           {t('reports.charts.dailyAverage', 'Avg Daily Revenue')}:
                         </Text>
                         <Text size="xs" fw={700} style={{ color: 'var(--primary-accent)' }}>
-                          {formatCurrency(performanceStats.avgDailyRevenue, i18n.language as any)}
+                          {revenueLoading ? (
+                            <Skeleton height={14} width={70} radius="sm" />
+                          ) : (
+                            formatCurrency(performanceStats.avgDailyRevenue, i18n.language as any)
+                          )}
                         </Text>
                       </Group>
                       <Text size="10px" c="dimmed" mt={2}>
@@ -1075,9 +1086,13 @@ export default function Reports() {
                           {t('reports.charts.peakDay', 'Peak Day')}:
                         </Text>
                         <Text size="xs" fw={700} style={{ color: '#10b981' }}>
-                          {performanceStats.peakDay
-                            ? formatCurrency(performanceStats.peakDay.total, i18n.language as any)
-                            : '—'}
+                          {revenueLoading ? (
+                            <Skeleton height={14} width={70} radius="sm" />
+                          ) : performanceStats.peakDay ? (
+                            formatCurrency(performanceStats.peakDay.total, i18n.language as any)
+                          ) : (
+                            '—'
+                          )}
                         </Text>
                       </Group>
                       <Text size="10px" c="dimmed" mt={2} truncate>
