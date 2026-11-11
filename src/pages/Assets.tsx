@@ -563,7 +563,7 @@ export default function Assets() {
           </div>
         </div>
 
-        <Table>
+        <Table page={currentPage} pageSize={pageSize}>
           <TableHeader>
             <TableRow>
               <TableHead>{t('common.image', 'Image')}</TableHead>

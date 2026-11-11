@@ -7,7 +7,7 @@ import { formatInputNumber, parseInputNumber, formatCurrency } from '../lib/util
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/DataTable';
 import { Checkbox } from '../components/ui/checkbox';
 import { Edit2, ShieldAlert, Shield, UserCog, UserRound, Eye, EyeOff, ChevronDown, ChevronRight, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -470,7 +470,7 @@ export default function Users() {
           <div className="p-8 text-center text-muted-foreground">{t('users.loadingUsers', 'Loading users...')}</div>
         ) : (
           <>
-            <Table>
+            <Table page={currentPage} pageSize={pageSize}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('common.name', 'Name')}</TableHead>

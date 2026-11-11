@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 interface TableContextType {
   page?: number;
   limit?: number;
+  pageSize?: number;
 }
 
 const TableContext = React.createContext<TableContextType>({});
@@ -15,23 +16,27 @@ const TableContext = React.createContext<TableContextType>({});
 export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {
   page?: number;
   limit?: number;
+  pageSize?: number;
 }
 
 export const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className, page, limit, ...props }, ref) => (
-    <TableContext.Provider value={{ page, limit }}>
-      <div className="w-full overflow-x-auto custom-scrollbar">
-        <table
-          ref={ref}
-          className={cn(
-            "w-full border-collapse text-left text-sm text-foreground align-middle",
-            className
-          )}
-          {...props}
-        />
-      </div>
-    </TableContext.Provider>
-  )
+  ({ className, page, limit, pageSize, ...props }, ref) => {
+    const effectiveLimit = limit ?? pageSize;
+    return (
+      <TableContext.Provider value={{ page, limit: effectiveLimit, pageSize: effectiveLimit }}>
+        <div className="w-full overflow-x-auto custom-scrollbar">
+          <table
+            ref={ref}
+            className={cn(
+              "w-full border-collapse text-left text-sm text-foreground align-middle",
+              className
+            )}
+            {...props}
+          />
+        </div>
+      </TableContext.Provider>
+    );
+  }
 );
 Table.displayName = 'Table';
 
@@ -59,11 +64,19 @@ export const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLA
 );
 TableHeader.displayName = 'TableHeader';
 
-export const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, children, ...props }, ref) => {
+export interface TableBodyProps extends React.HTMLAttributes<HTMLTableSectionElement> {
+  page?: number;
+  limit?: number;
+  pageSize?: number;
+}
+
+export const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
+  ({ className, children, page: bodyPage, limit: bodyLimit, pageSize: bodyPageSize, ...props }, ref) => {
     const childrenArray = React.Children.toArray(children);
-    const { page, limit } = React.useContext(TableContext);
-    let rowIndexCounter = (page !== undefined && limit !== undefined) ? (page - 1) * limit : 0;
+    const ctx = React.useContext(TableContext);
+    const page = bodyPage ?? ctx.page;
+    const limit = bodyLimit ?? bodyPageSize ?? ctx.limit ?? ctx.pageSize;
+    let rowIndexCounter = (page !== undefined && limit !== undefined) ? Math.max(0, page - 1) * limit : 0;
     return (
       <tbody
         ref={ref}

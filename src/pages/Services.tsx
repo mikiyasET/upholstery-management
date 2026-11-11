@@ -636,7 +636,7 @@ export default function Services() {
       ) : viewMode === 'table' ? (
         /* ======================== TABLE VIEW (PRIMARY) ======================== */
         <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-          <Table>
+          <Table page={currentPage} pageSize={pageSize}>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[320px] max-w-[350px] px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -1349,7 +1349,7 @@ export default function Services() {
                       <img
                         src={URL.createObjectURL(serviceFile)}
                         alt="Selected"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-0.5"
                       />
                     ) : editingService?.imageUrl ? (
                       <LazyImage

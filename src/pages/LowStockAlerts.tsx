@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertTriangle, Package, ArrowRightLeft, ShieldAlert, Store, Archive } from 'lucide-react';
 import api from '../lib/api';
-import { formatUnit } from '../lib/utils';
+import { formatUnit, getImageUrl } from '../lib/utils';
 import { LazyImage } from '../components/common/LazyImage';
 import { Button } from '../components/ui/button';
+import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { PageHeader } from '../components/common';
 import { Box, Group, SimpleGrid, Text, Button as MantineButton } from '@mantine/core';
 
@@ -61,6 +63,8 @@ export default function LowStockAlerts() {
     const stock = brand.brandStocks?.find((s) => s.store?.type === storeType);
     return stock ? Number(stock.quantity) : 0;
   };
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const { data: materials = [], isLoading, refetch, isFetching } = useQuery<Material[]>({
     queryKey: ['storage_materials'],
@@ -351,7 +355,12 @@ export default function LowStockAlerts() {
                   <div className="flex items-start gap-4">
                     <div className="w-16 h-16 rounded-xl bg-muted/50 flex items-center justify-center overflow-hidden border border-border shrink-0 shadow-sm">
                       {m.imageUrl ? (
-                        <LazyImage src={m.imageUrl} alt={getLocName(m)} className="w-full h-full object-cover" />
+                        <LazyImage 
+                          src={m.imageUrl} 
+                          alt={getLocName(m)} 
+                          className="w-full h-full object-cover cursor-pointer hover:opacity-85 transition-opacity" 
+                          onClick={() => setPreviewImage(getImageUrl(m.imageUrl) || null)}
+                        />
                       ) : (
                         <Package className="h-6 w-6 text-muted-foreground opacity-50" />
                       )}
@@ -467,6 +476,8 @@ export default function LowStockAlerts() {
           })}
         </div>
       )}
+
+      <ImagePreviewModal isOpen={!!previewImage} onClose={() => setPreviewImage(null)} imageUrl={previewImage} />
     </div>
   );
 }

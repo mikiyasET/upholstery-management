@@ -308,8 +308,9 @@ export default function Cars() {
                       <LazyImage
                         src={brand.logoUrl}
                         alt={brand.name}
+                        containWithBlur={false}
                         wrapperClassName="h-9 w-9 rounded-md overflow-hidden border border-border shrink-0 pointer-events-none select-none bg-white dark:bg-white"
-                        imgClassName="w-full h-full object-cover"
+                        imgClassName="w-full h-full object-contain p-0.5"
                       />
                     ) : (
                       <div className="h-9 w-9 bg-secondary/80 rounded-md flex items-center justify-center text-[10px] font-bold text-secondary-foreground shrink-0">
@@ -425,8 +426,9 @@ export default function Cars() {
                       <LazyImage
                         src={selectedBrand.logoUrl}
                         alt=""
+                        containWithBlur={false}
                         wrapperClassName="h-7 w-7 rounded-md overflow-hidden border border-border shrink-0 bg-white dark:bg-white"
-                        imgClassName="w-full h-full object-cover"
+                        imgClassName="w-full h-full object-contain p-0.5"
                       />
                     )}
                     <span className="truncate">{t('cars.brandModels', '{{brand}} Models', { brand: selectedBrand.name })}</span>
@@ -470,12 +472,13 @@ export default function Cars() {
                     {filteredModels.map(model => (
                       <div key={model.id} className="p-3 border rounded-xl bg-card flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                         {model.imageUrl ? (
-                          <div className="w-full h-28 rounded-lg overflow-hidden flex items-center justify-center">
+                          <div className="w-full h-28 rounded-lg overflow-hidden flex items-center justify-center bg-muted/40 dark:bg-muted/15">
                             <LazyImage 
                               src={model.imageUrl} 
                               alt={model.name} 
-                              wrapperClassName="w-full h-full"
-                              imgClassName="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              containWithBlur={false}
+                              wrapperClassName="w-full h-full bg-transparent dark:bg-transparent flex items-center justify-center"
+                              imgClassName="w-full h-full object-contain p-1.5 cursor-pointer hover:scale-105 transition-all duration-300"
                               onClick={() => setPreviewImage(model.imageUrl ? getImageUrl(model.imageUrl)! : null)}
                             />
                           </div>

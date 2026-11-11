@@ -884,7 +884,7 @@ export default function Storage() {
       {/* 3. Storage Data Table Card */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
+          <Table page={currentPage} pageSize={pageSize}>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[64px] py-3 px-4 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{t('storage.table.image', 'Image')}</TableHead>

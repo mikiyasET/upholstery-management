@@ -685,7 +685,7 @@ export default function Materials() {
             {filteredMaterials.length} {t('common.materials', 'Materials')}
           </span>
         </div>
-        <Table>
+        <Table page={currentPage} pageSize={pageSize}>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px] px-3 py-2.5 whitespace-nowrap">{t('storage.table.image', 'Image')}</TableHead>
@@ -713,11 +713,11 @@ export default function Materials() {
                       <LazyImage 
                         src={mat.imageUrl} 
                         alt={mat.nameEn} 
-                        className="h-9 w-9 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        className="h-9 w-9 rounded-md border border-border/60 shadow-2xs cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => setPreviewImage(getImageUrl(mat.imageUrl)!)}
                       />
                     ) : (
-                      <div className="h-9 w-9 rounded bg-muted flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-md bg-muted border border-border/60 flex items-center justify-center">
                         <ImageOff className="h-4 w-4 text-muted-foreground" />
                       </div>
                     )}

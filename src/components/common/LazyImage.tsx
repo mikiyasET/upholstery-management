@@ -9,6 +9,7 @@ export interface LazyImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageEl
   wrapperClassName?: string;
   imgClassName?: string;
   showIconPlaceholder?: boolean;
+  containWithBlur?: boolean;
 }
 
 export const LazyImage: React.FC<LazyImageProps> = ({
@@ -19,6 +20,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   imgClassName = '',
   fallback,
   showIconPlaceholder: _showIconPlaceholder,
+  containWithBlur = true,
   onClick,
   style,
   ...rest
@@ -52,10 +54,16 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     );
   }
 
+  // When containWithBlur is true, ensure the foreground image uses object-contain
+  // and does not get overridden by any legacy object-cover passed in imgClassName or className
+  const cleanedImgClassName = containWithBlur
+    ? (imgClassName || className).replace(/\bobject-(cover|fill|none|scale-down)\b/g, '').trim()
+    : (imgClassName || className);
+
   return (
     <div
       className={cn(
-        "relative overflow-hidden shrink-0 flex items-center justify-center bg-zinc-200 dark:bg-zinc-800",
+        "relative overflow-hidden shrink-0 flex items-center justify-center bg-zinc-200/80 dark:bg-zinc-800/80",
         wrapperClassName || className
       )}
       onClick={onClick}
@@ -78,7 +86,22 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         <div className="absolute inset-0 -translate-x-full animate-image-shimmer bg-gradient-to-r from-transparent via-white/30 dark:via-white/15 to-transparent pointer-events-none" />
       </div>
 
-      {/* Actual image: smoothly scales and transitions into full opacity */}
+      {/* Blurred background of the same image covering unfilled space (Direct Sales style) */}
+      {containWithBlur && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <img
+            src={resolvedSrc}
+            alt=""
+            aria-hidden="true"
+            className={cn(
+              "w-full h-full object-cover blur-[2px] scale-[1.08] opacity-80 dark:opacity-70 transition-opacity duration-700 ease-out pointer-events-none select-none",
+              isLoaded ? "opacity-80 dark:opacity-70" : "opacity-0"
+            )}
+          />
+        </div>
+      )}
+
+      {/* Actual image: cleanly contained so the full product fits the space without being cropped */}
       <img
         src={resolvedSrc}
         alt={alt}
@@ -88,10 +111,11 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         onError={() => setHasError(true)}
         className={cn(
           "w-full h-full relative z-10 transform-gpu transition-all duration-700 ease-out",
+          containWithBlur && "object-contain p-[2px]",
           isLoaded
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-1 pointer-events-none",
-          imgClassName || className
+          cleanedImgClassName
         )}
         {...rest}
       />

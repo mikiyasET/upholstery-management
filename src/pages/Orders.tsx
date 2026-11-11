@@ -397,7 +397,7 @@ export default function Orders() {
 
       {/* 3. Orders Data Table */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden min-w-0 max-w-full">
-        <Table className="min-w-[780px]">
+        <Table page={currentPage} pageSize={pageSize} className="min-w-[780px]">
           <TableHeader>
             <TableRow>
               <TableHead className="whitespace-nowrap">{t('orders.table.orderInfo')}</TableHead>

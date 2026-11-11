@@ -576,7 +576,9 @@ export default function CustomerDetail() {
                         <LazyImage
                           src={v.carModel.imageUrl}
                           alt={`${v.carModel?.brand?.name || ''} ${v.carModel?.name || ''}`}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          containWithBlur={false}
+                          wrapperClassName="w-full h-full bg-transparent dark:bg-transparent flex items-center justify-center"
+                          imgClassName="w-full h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-muted/70 to-card">
@@ -787,7 +789,7 @@ export default function CustomerDetail() {
               </div>
             ) : (
               <>
-                <Table>
+                <Table page={orderPage} pageSize={orderPageSize}>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('common.order', 'Order #')}</TableHead>
@@ -947,7 +949,7 @@ export default function CustomerDetail() {
               </div>
             ) : (
               <>
-                <Table>
+                <Table page={directSalePage} pageSize={directSalePageSize}>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('directSales.table.saleNumber', 'Sale #')}</TableHead>

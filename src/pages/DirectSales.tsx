@@ -584,39 +584,17 @@ export default function DirectSales() {
                   {m.imageUrl ? (
                     <>
                       <div className="flex-1 overflow-hidden bg-muted relative flex items-center justify-center">
-                        {isOutOfStock ? (
-                          /* On out of stock, fill the entire space with the material image as cover */
-                          <LazyImage
-                            src={m.imageUrl}
-                            alt={getLocName(m)}
-                            wrapperClassName="w-full h-full"
-                            imgClassName="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <>
-                            {/* Blurred background of the same image covering unfilled space (subtle blur) */}
-                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                              <LazyImage
-                                src={m.imageUrl}
-                                alt=""
-                                fallback={<div className="w-full h-full bg-muted" />}
-                                wrapperClassName="w-full h-full bg-transparent dark:bg-transparent"
-                                imgClassName="w-full h-full object-cover blur-[1px] scale-[1.02] opacity-80 dark:opacity-70"
-                              />
-                            </div>
-                            {/* Crisp foreground image cleanly contained */}
-                            <LazyImage
-                              src={m.imageUrl}
-                              alt={getLocName(m)}
-                              wrapperClassName="w-full h-full bg-transparent dark:bg-transparent flex items-center justify-center relative z-10"
-                              imgClassName="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-                            />
-                          </>
-                        )}
-                        <div className="absolute top-1 right-1 z-20 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium backdrop-blur-sm shadow-sm">
-                          {t('common.stock', 'Stock')}: {stock}
-                        </div>
+                      <LazyImage
+                        src={m.imageUrl}
+                        alt={getLocName(m)}
+                        wrapperClassName="w-full h-full"
+                        imgClassName={isOutOfStock ? "w-full h-full object-cover" : "w-full h-full group-hover:scale-105 transition-transform duration-200"}
+                        containWithBlur={!isOutOfStock}
+                      />
+                      <div className="absolute top-1 right-1 z-20 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium backdrop-blur-sm shadow-sm">
+                        {t('common.stock', 'Stock')}: {stock}
                       </div>
+                    </div>
                       <div className="p-2.5 border-t border-border bg-card">
                         <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
                         <div className="flex items-center justify-between gap-1 mt-0.5">

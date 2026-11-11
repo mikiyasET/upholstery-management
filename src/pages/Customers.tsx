@@ -86,7 +86,7 @@ export default function Customers() {
         </div>
 
         <div className="overflow-x-auto">
-            <Table>
+            <Table page={currentPage} pageSize={pageSize}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('customers.customer')}</TableHead>

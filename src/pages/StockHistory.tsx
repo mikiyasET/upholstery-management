@@ -732,7 +732,7 @@ export default function StockHistory() {
 
       {/* 4. Movements Data Table */}
       <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-        <Table>
+        <Table page={currentPage} pageSize={itemsPerPage}>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[130px] px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
