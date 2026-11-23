@@ -16,6 +16,10 @@ import "./theme/globalStyles.css";
 import "./index.css";
 import "./i18n";
 import { preloadPlateAssets } from "./utils/plateAssets";
+import { initViewportHandler } from "./lib/viewport";
+
+// Initialize mobile & tablet viewport / keyboard tracking
+initViewportHandler();
 
 // Preload plate assets (CARGO2.ttf and holographic-foil.jpg) when app boots
 preloadPlateAssets();

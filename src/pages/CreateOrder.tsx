@@ -44,6 +44,8 @@ import {
   Pencil,
   Tag,
   Boxes,
+  Package,
+  ChevronRight,
 } from 'lucide-react';
 import {
   Dialog,
@@ -85,6 +87,29 @@ const DEADLINE_DAYS_PRESETS = [
   { key: '1w', label: '+1w', title: '1 Week (7 Days)', type: 'days' as const, val: 7 },
 ];
 
+export interface CustomerBelongingItem {
+  id: string;
+  itemName: string;
+  quantity: number;
+  notes?: string;
+  presetKey?: string;
+}
+
+export const PRESET_BELONGINGS = [
+  { key: 'spareTire', defaultName: 'Spare / Scort Tire', icon: '🛞' },
+  { key: 'wheelJack', defaultName: 'Wheel Jack', icon: '🔩' },
+  { key: 'wheelSpanner', defaultName: 'Wheel Wrench / Spanner', icon: '🔧' },
+  { key: 'warningTriangle', defaultName: 'Warning Triangle', icon: '⚠️' },
+  { key: 'toolKit', defaultName: 'Tool Kit / Tools', icon: '🧰' },
+  { key: 'dashcam', defaultName: 'Dashboard Camera / Dashcam', icon: '📹' },
+  { key: 'jumperCables', defaultName: 'Jumper Cables', icon: '🔋' },
+  { key: 'floorMats', defaultName: 'Floor Mats', icon: '🧼' },
+  { key: 'flashlight', defaultName: 'Flashlight / Torch', icon: '🔦' },
+  { key: 'fireExtinguisher', defaultName: 'Fire Extinguisher', icon: '🧯' },
+  { key: 'trunkLuggage', defaultName: 'Trunk Bags / Luggage', icon: '🧳' },
+  { key: 'usbAudio', defaultName: 'USB / Flash Drive / Audio', icon: '🎵' },
+];
+
 export default function CreateOrder() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -115,12 +140,16 @@ export default function CreateOrder() {
   const [downPaymentMethod, setDownPaymentMethod] = useState<'CASH' | 'BANK_TRANSFER' | 'MOBILE_MONEY' | 'OTHER'>('CASH');
   const [downPaymentRef, setDownPaymentRef] = useState('');
 
-  // Vehicle Inspection & Condition
+  // Vehicle Inspection, Condition & Belongings
   const [selectedCarStatusIds, setSelectedCarStatusIds] = useState<string[]>([]);
   const [customConditionName, setCustomConditionName] = useState('');
   const [customConditionDesc, setCustomConditionDesc] = useState('');
+  const [customerItems, setCustomerItems] = useState<CustomerBelongingItem[]>([]);
+  const [customBelongingName, setCustomBelongingName] = useState('');
+  const [customBelongingQty, setCustomBelongingQty] = useState(1);
+  const [customBelongingNote, setCustomBelongingNote] = useState('');
   const [isInspectionModalOpen, setIsInspectionModalOpen] = useState(false);
-  const [inspectionModalTab, setInspectionModalTab] = useState<'exterior' | 'interior' | 'custom'>('exterior');
+  const [inspectionModalTab, setInspectionModalTab] = useState<'exterior' | 'interior' | 'belongings' | 'custom'>('exterior');
 
   // Order Items
   const [selectedServices, setSelectedServices] = useState<{
@@ -408,6 +437,11 @@ export default function CreateOrder() {
         downPayment: downPaymentNum,
         serviceFee: serviceFeeAmount,
         notes: customConditionDesc.trim() || undefined,
+        customerItems: customerItems.map(item => ({
+          itemName: item.itemName,
+          quantity: item.quantity || 1,
+          notes: item.notes?.trim() || undefined,
+        })),
       });
       const orderId = res.data.id;
 
@@ -863,12 +897,12 @@ export default function CreateOrder() {
           {/* Pre-Inspection Modal Trigger Button */}
           <Button
             variant={
-              selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim()
+              selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim() || customerItems.length > 0
                 ? 'light'
                 : 'default'
             }
             color={
-              selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim()
+              selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim() || customerItems.length > 0
                 ? 'amber'
                 : undefined
             }
@@ -877,15 +911,15 @@ export default function CreateOrder() {
             onClick={() => setIsInspectionModalOpen(true)}
             leftSection={
               <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${
-                selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim()
+                selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim() || customerItems.length > 0
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-amber-500'
               }`} />
             }
             rightSection={
-              (selectedCarStatusIds.length > 0 || customConditionName.trim()) ? (
+              (selectedCarStatusIds.length > 0 || customConditionName.trim() || customerItems.length > 0) ? (
                 <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold bg-amber-500 text-white leading-none">
-                  {selectedCarStatusIds.length + (customConditionName.trim() ? 1 : 0)}
+                  {selectedCarStatusIds.length + (customConditionName.trim() ? 1 : 0) + customerItems.length}
                 </span>
               ) : undefined
             }
@@ -897,6 +931,11 @@ export default function CreateOrder() {
             title={t('orders.create.inspectionModalTitle', 'Vehicle Pre-Inspection Checklist & Intake Notes')}
           >
             {t('orders.create.vehiclePreInspection', 'Pre-Inspection')}
+            {customerItems.length > 0 && (
+              <span className="ml-1 text-[11px] font-normal opacity-90 hidden sm:inline">
+                • {customerItems.length} {customerItems.length === 1 ? 'item' : 'items'}
+              </span>
+            )}
           </Button>
           <Button
             variant="default"
@@ -1114,6 +1153,47 @@ export default function CreateOrder() {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Customer Belongings & Vehicle Intake Quick Bar */}
+                <div 
+                  onClick={() => {
+                    setInspectionModalTab('belongings');
+                    setIsInspectionModalOpen(true);
+                  }}
+                  className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all flex items-center justify-between ${
+                    customerItems.length > 0
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-950 dark:text-amber-200'
+                      : 'bg-muted/20 border-dashed border-border/80 text-muted-foreground hover:bg-muted/40 hover:border-border'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className={`p-1.5 rounded-lg shrink-0 ${
+                      customerItems.length > 0 
+                        ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      <Package className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-foreground">
+                          {t('orders.create.customerBelongings', 'Customer Belongings & Car Inventory')}
+                        </span>
+                        {customerItems.length > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white font-mono">
+                            {customerItems.length}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {customerItems.length > 0
+                          ? customerItems.map(c => `${c.itemName}${c.quantity > 1 ? ` (${c.quantity}x)` : ''}`).join(', ')
+                          : t('orders.create.belongingsHelp', 'Record spare tire, jack, tools, dashcam, valuables...')}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 ml-1" />
                 </div>
               </div>
             </div>
@@ -2646,16 +2726,17 @@ export default function CreateOrder() {
             <button
               type="button"
               onClick={() => setInspectionModalTab('exterior')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-1.5 px-1 sm:px-2 rounded-md text-[10px] sm:text-[11px] font-medium transition-all ${
                 inspectionModalTab === 'exterior'
                   ? 'bg-card text-foreground font-bold shadow-2xs border border-border/80 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
             >
-              <Car className="w-3.5 h-3.5 text-blue-500" />
-              <span>{t('orders.create.exteriorTab', 'Exterior Body & Glass')}</span>
+              <Car className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              <span className="truncate hidden md:inline">{t('orders.create.exteriorTab', 'Exterior & Glass')}</span>
+              <span className="truncate md:hidden">{t('orders.create.exteriorTabShort', 'Exterior')}</span>
               {exteriorSelectedCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-bold">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-500/15 text-blue-600 dark:text-blue-400 font-mono font-bold shrink-0">
                   {exteriorSelectedCount}
                 </span>
               )}
@@ -2664,16 +2745,17 @@ export default function CreateOrder() {
             <button
               type="button"
               onClick={() => setInspectionModalTab('interior')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-1.5 px-1 sm:px-2 rounded-md text-[10px] sm:text-[11px] font-medium transition-all ${
                 inspectionModalTab === 'interior'
                   ? 'bg-card text-foreground font-bold shadow-2xs border border-border/80 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
             >
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>{t('orders.create.interiorTab', 'Interior & Electrical')}</span>
+              <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="truncate hidden md:inline">{t('orders.create.interiorTab', 'Interior & Elec')}</span>
+              <span className="truncate md:hidden">{t('orders.create.interiorTabShort', 'Interior')}</span>
               {interiorSelectedCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-bold">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-bold shrink-0">
                   {interiorSelectedCount}
                 </span>
               )}
@@ -2681,17 +2763,37 @@ export default function CreateOrder() {
 
             <button
               type="button"
+              onClick={() => setInspectionModalTab('belongings')}
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-1.5 px-1 sm:px-2 rounded-md text-[10px] sm:text-[11px] font-medium transition-all ${
+                inspectionModalTab === 'belongings'
+                  ? 'bg-card text-foreground font-bold shadow-2xs border border-border/80 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span className="truncate hidden md:inline">{t('orders.create.belongingsTab', 'Belongings & Tools')}</span>
+              <span className="truncate md:hidden">{t('orders.create.belongingsTabShort', 'Belongings')}</span>
+              {customerItems.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-mono font-bold shrink-0">
+                  {customerItems.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
               onClick={() => setInspectionModalTab('custom')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-md text-[11px] font-medium transition-all ${
+              className={`flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1 sm:py-1.5 px-1 sm:px-2 rounded-md text-[10px] sm:text-[11px] font-medium transition-all ${
                 inspectionModalTab === 'custom'
                   ? 'bg-card text-foreground font-bold shadow-2xs border border-border/80 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
             >
-              <ClipboardList className="w-3.5 h-3.5 text-purple-500" />
-              <span>{t('orders.create.customDefectTab', 'Custom Defect')}</span>
+              <ClipboardList className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+              <span className="truncate hidden md:inline">{t('orders.create.customDefectTab', 'Custom Defect')}</span>
+              <span className="truncate md:hidden">{t('orders.create.customDefectTabShort', 'Custom')}</span>
               {customConditionName.trim() && (
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-500/15 text-purple-600 dark:text-purple-400 font-mono font-bold">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-purple-500/15 text-purple-600 dark:text-purple-400 font-mono font-bold shrink-0">
                   1
                 </span>
               )}
@@ -2768,19 +2870,290 @@ export default function CreateOrder() {
             </div>
           )}
 
-          {/* Tab 3: Custom Defect */}
+          {/* Tab 3: Customer Belongings & Car Inventory */}
+          {inspectionModalTab === 'belongings' && (
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
+              {/* Info banner */}
+              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">{t('orders.create.customerBelongings', 'Customer Belongings & Vehicle Inventory')}:</span>{' '}
+                  <span className="text-[11px] opacity-90">{t('orders.create.belongingsHelp', 'Record tools, spare tire, electronics, or personal items found in the vehicle to prevent loss or disputes.')}</span>
+                </div>
+              </div>
+
+              {/* Quick Preset Toggles */}
+              <div>
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
+                  {t('orders.create.quickChecklist', 'Quick Checklist (Click to add / remove)')}
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {PRESET_BELONGINGS.map((preset) => {
+                    const existing = customerItems.find(item => item.presetKey === preset.key || item.itemName.toLowerCase() === t(`orders.create.${preset.key}`, preset.defaultName).toLowerCase());
+                    const isSelected = !!existing;
+                    const translatedName = t(`orders.create.${preset.key}`, preset.defaultName);
+
+                    return (
+                      <div
+                        key={preset.key}
+                        onClick={() => {
+                          if (isSelected) {
+                            setCustomerItems(prev => prev.filter(i => i.id !== existing.id));
+                          } else {
+                            setCustomerItems(prev => [
+                              ...prev,
+                              {
+                                id: `preset-${preset.key}-${Date.now()}`,
+                                itemName: translatedName,
+                                quantity: 1,
+                                presetKey: preset.key,
+                                notes: '',
+                              }
+                            ]);
+                          }
+                        }}
+                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer select-none transition-all ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-500/60 text-amber-950 dark:text-amber-200 font-bold shadow-2xs'
+                            : 'bg-card border-border/70 text-foreground hover:bg-muted/50 hover:border-border font-medium'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected
+                            ? 'bg-amber-500 border-amber-600 text-white'
+                            : 'border-muted-foreground/30 bg-background'
+                        }`}>
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                        <span className="text-sm shrink-0">{preset.icon}</span>
+                        <span className="text-xs leading-tight truncate">{translatedName}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Logged Belongings List */}
+              {customerItems.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {t('orders.create.loggedItems', 'Logged Items ({{count}})', { count: customerItems.length })}
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={() => setCustomerItems([])}
+                      className="text-[10px] text-muted-foreground hover:text-red-500 font-medium cursor-pointer"
+                    >
+                      {t('orders.create.clearAllBelongings', 'Clear All Belongings')}
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 max-h-[160px] overflow-y-auto custom-scrollbar pr-0.5">
+                    {customerItems.map((item, idx) => (
+                      <div
+                        key={item.id || idx}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 p-2 rounded-lg bg-card border border-border text-xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span className="font-bold text-foreground truncate">{item.itemName}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                          {/* Quantity controls */}
+                          <div className="flex items-center gap-1 bg-muted/40 border border-input rounded-md px-1 h-7">
+                            <span className="text-[10px] text-muted-foreground font-semibold">
+                              {t('orders.create.qtyShort', 'Qty:')}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newQty = Math.max(1, (item.quantity || 1) - 1);
+                                setCustomerItems(prev => prev.map(i => i.id === item.id ? { ...i, quantity: newQty } : i));
+                              }}
+                              className="w-4 h-4 rounded hover:bg-muted flex items-center justify-center text-xs font-bold cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="w-4 text-center font-bold text-xs font-mono">{item.quantity || 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newQty = (item.quantity || 1) + 1;
+                                setCustomerItems(prev => prev.map(i => i.id === item.id ? { ...i, quantity: newQty } : i));
+                              }}
+                              className="w-4 h-4 rounded hover:bg-muted flex items-center justify-center text-xs font-bold cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                          {/* Note input */}
+                          <input
+                            type="text"
+                            placeholder={t('orders.create.notePlaceholder', 'Note / location...')}
+                            value={item.notes || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCustomerItems(prev => prev.map(i => i.id === item.id ? { ...i, notes: val } : i));
+                            }}
+                            className="h-7 text-[11px] px-2 rounded-md bg-muted/30 border border-input focus:outline-none focus:ring-1 focus:ring-primary w-32 sm:w-44"
+                          />
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() => setCustomerItems(prev => prev.filter(i => i.id !== item.id))}
+                            className="w-7 h-7 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-red-500 flex items-center justify-center cursor-pointer"
+                            title={t('common.delete', 'Delete')}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Custom Belonging Row */}
+              <div className="pt-2 border-t border-border/60 space-y-1.5 w-full">
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground block">
+                  {t('orders.create.addBelonging', 'Add Other Custom Item')}
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5 sm:gap-2 w-full items-center">
+                  {/* Field 1: Item Name */}
+                  <div className="col-span-12 sm:col-span-5 w-full">
+                    <ModernInput
+                      inputSize="sm"
+                      placeholder={t('orders.create.belongingNamePlaceholder', 'Item name (e.g. Baby seat, Sunglasses, Toolbox...)')}
+                      value={customBelongingName}
+                      onChange={(e) => setCustomBelongingName(e.target.value)}
+                      className="w-full text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (customBelongingName.trim()) {
+                            setCustomerItems(prev => [
+                              ...prev,
+                              {
+                                id: `custom-${Date.now()}`,
+                                itemName: customBelongingName.trim(),
+                                quantity: customBelongingQty,
+                                notes: customBelongingNote.trim() || undefined,
+                              }
+                            ]);
+                            setCustomBelongingName('');
+                            setCustomBelongingNote('');
+                            setCustomBelongingQty(1);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Field 2: Quantity Stepper */}
+                  <div className="col-span-4 sm:col-span-2 w-full">
+                    <div className="flex items-center justify-between bg-background border border-input rounded-lg px-2 h-9 w-full shadow-2xs">
+                      <span className="text-[10px] text-muted-foreground font-semibold shrink-0">
+                        {t('orders.create.qtyShort', 'Qty:')}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setCustomBelongingQty(q => Math.max(1, q - 1))}
+                          className="w-5 h-5 rounded hover:bg-muted flex items-center justify-center text-xs font-bold text-foreground cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="w-5 text-center font-bold text-xs font-mono text-foreground">{customBelongingQty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCustomBelongingQty(q => q + 1)}
+                          className="w-5 h-5 rounded hover:bg-muted flex items-center justify-center text-xs font-bold text-foreground cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field 3: Notes / Location */}
+                  <div className="col-span-8 sm:col-span-3 w-full">
+                    <input
+                      type="text"
+                      placeholder={t('orders.create.belongingNotePlaceholder', 'Note / Location (optional)')}
+                      value={customBelongingNote}
+                      onChange={(e) => setCustomBelongingNote(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (customBelongingName.trim()) {
+                            setCustomerItems(prev => [
+                              ...prev,
+                              {
+                                id: `custom-${Date.now()}`,
+                                itemName: customBelongingName.trim(),
+                                quantity: customBelongingQty,
+                                notes: customBelongingNote.trim() || undefined,
+                              }
+                            ]);
+                            setCustomBelongingName('');
+                            setCustomBelongingNote('');
+                            setCustomBelongingQty(1);
+                          }
+                        }
+                      }}
+                      className="h-9 text-xs px-3 rounded-lg bg-background border border-input hover:border-foreground/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 outline-none w-full shadow-2xs text-foreground placeholder:text-muted-foreground/60 transition-all duration-200"
+                    />
+                  </div>
+
+                  {/* Button: Add */}
+                  <div className="col-span-12 sm:col-span-2 w-full">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!customBelongingName.trim()}
+                      onClick={() => {
+                        if (customBelongingName.trim()) {
+                          setCustomerItems(prev => [
+                            ...prev,
+                            {
+                              id: `custom-${Date.now()}`,
+                              itemName: customBelongingName.trim(),
+                              quantity: customBelongingQty,
+                              notes: customBelongingNote.trim() || undefined,
+                            }
+                          ]);
+                          setCustomBelongingName('');
+                          setCustomBelongingNote('');
+                          setCustomBelongingQty(1);
+                        }
+                      }}
+                      className="h-9 w-full px-2 text-xs flex items-center justify-center font-semibold rounded-lg shrink-0 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1 shrink-0" />
+                      <span className="truncate">{t('common.add', 'Add')}</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 4: Custom Defect */}
           {inspectionModalTab === 'custom' && (
             <div className="flex-1 min-h-0 overflow-y-auto space-y-2 p-1">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-foreground">Custom Defect Title</Label>
+                <Label className="text-xs font-semibold text-foreground">
+                  {t('orders.create.customDefectTitle', 'Custom Defect Title')}
+                </Label>
                 <ModernInput
                   inputSize="sm"
-                  placeholder="e.g. Scratched alloy rims, loose spoiler, missing hubcap"
+                  placeholder={t('orders.create.customDefectPlaceholder', 'e.g. Scratched alloy rims, loose spoiler, missing hubcap')}
                   value={customConditionName}
                   onChange={e => setCustomConditionName(e.target.value)}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Specify any uncommon defect or pre-existing condition not covered in the standard checklist above.
+                  {t('orders.create.customDefectHelp', 'Specify any uncommon defect or pre-existing condition not covered in the standard checklist above.')}
                 </p>
               </div>
             </div>
@@ -2794,7 +3167,7 @@ export default function CreateOrder() {
                 <span>{t('orders.create.globalIntakeNotes', 'General Intake Notes & Observations')}</span>
               </Label>
               <span className="text-[10px] text-muted-foreground hidden sm:inline">
-                Fuel level, tools in trunk, personal items, overall condition
+                {t('orders.create.intakeNotesHint', 'Fuel level, tools in trunk, personal items, overall condition')}
               </span>
             </div>
             <textarea
@@ -2809,28 +3182,30 @@ export default function CreateOrder() {
           <DialogFooter className="pt-2 border-t border-border/60 flex items-center justify-between sm:justify-between shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-foreground">
-                {selectedCarStatusIds.length + (customConditionName.trim() ? 1 : 0) + (customConditionDesc.trim() ? 1 : 0)} notes/defects logged
+                {t('orders.create.totalLoggedCount', '{{count}} notes/items logged', { count: selectedCarStatusIds.length + (customConditionName.trim() ? 1 : 0) + (customConditionDesc.trim() ? 1 : 0) + customerItems.length })}
               </span>
-              {(selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim()) && (
+              {(selectedCarStatusIds.length > 0 || customConditionName.trim() || customConditionDesc.trim() || customerItems.length > 0) && (
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedCarStatusIds([]);
                     setCustomConditionName('');
                     setCustomConditionDesc('');
+                    setCustomerItems([]);
                   }}
-                  className="text-[11px] font-semibold text-muted-foreground hover:text-red-500 hover:underline"
+                  className="text-[11px] font-semibold text-muted-foreground hover:text-red-500 hover:underline cursor-pointer"
                 >
-                  Clear All
+                  {t('common.clearAll', 'Clear All')}
                 </button>
               )}
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant="default"
+                variant="outline"
                 radius="md"
                 size="sm"
                 onClick={() => setIsInspectionModalOpen(false)}
+                className="font-medium px-4 text-xs"
                 style={{
                   fontWeight: 600,
                   fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",

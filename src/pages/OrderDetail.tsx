@@ -54,6 +54,7 @@ import { UpdateOrderStatusDialog } from '../components/UpdateOrderStatusDialog';
 import { OrderPaymentDialog } from '../components/OrderPaymentDialog';
 import { printOrderReceipt } from '../lib/receipt-printer';
 import { PlateBadge, FloatingRefreshButton } from '../components/common';
+import { PRESET_BELONGINGS } from './CreateOrder';
 import { PermissionGate } from '../components/PermissionGate';
 import { ActionIcon, Tooltip, Button as MantineButton, Box } from '@mantine/core';
 
@@ -119,7 +120,7 @@ function ResponsiveModal({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+          className="rounded-t-2xl sm:rounded-t-3xl min-h-[50dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
         >
           <SheetTitle className="sr-only">{title}</SheetTitle>
           {description && <SheetDescription className="sr-only">{description}</SheetDescription>}
@@ -260,6 +261,10 @@ export default function OrderDetail() {
   const [fsrInputValue, setFsrInputValue] = useState('');
   const [isServiceFeeModalOpen, setIsServiceFeeModalOpen] = useState(false);
   const [serviceFeeInput, setServiceFeeInput] = useState('');
+  const [isAddBelongingOpen, setIsAddBelongingOpen] = useState(false);
+  const [newBelongingName, setNewBelongingName] = useState('');
+  const [newBelongingQty, setNewBelongingQty] = useState('1');
+  const [newBelongingNote, setNewBelongingNote] = useState('');
 
   // Queries for selectors
   const { data: allServices } = useQuery<any[]>({
@@ -335,6 +340,38 @@ export default function OrderDetail() {
     setServiceFeeInput(currentFee > 0 ? String(currentFee) : '');
     setIsServiceFeeModalOpen(true);
   };
+
+  const addBelongingMutation = useMutation({
+    mutationFn: async ({ itemName, quantity, notes }: { itemName: string; quantity?: number; notes?: string }) => {
+      await api.post(`/orders/${id}/customer-items`, { itemName, quantity, notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success(t('orders.detail.belongingAddedSuccess', 'Customer belonging recorded successfully'));
+      setIsAddBelongingOpen(false);
+      setNewBelongingName('');
+      setNewBelongingQty('1');
+      setNewBelongingNote('');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || t('alerts.error'));
+    }
+  });
+
+  const removeBelongingMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      await api.delete(`/orders/${id}/customer-items/${itemId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success(t('orders.detail.belongingRemovedSuccess', 'Item removed successfully'));
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || t('alerts.error'));
+    }
+  });
 
   // Mutations
   const addServiceMutation = useMutation({
@@ -992,9 +1029,10 @@ export default function OrderDetail() {
 
             </div>
 
-            {/* Column 2: Preset Conditions Card */}
-            <div className="flex w-full">
-              <div className="w-full shadow-xs border border-border bg-card rounded-2xl overflow-hidden flex flex-col hover:border-amber-500/30 transition-all">
+            {/* Column 2: Preset Conditions & Customer Belongings Stacked */}
+            <div className="space-y-2.5 flex flex-col justify-between">
+              {/* Preset Conditions Card */}
+              <div className="bg-card border border-border rounded-2xl shadow-xs overflow-hidden hover:border-amber-500/30 transition-all">
                 <div className="py-2 px-3.5 border-b border-border/60 flex items-center justify-between bg-card">
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -1016,9 +1054,9 @@ export default function OrderDetail() {
                   </Badge>
                 </div>
                 
-                <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-start">
+                <div className="p-2.5 sm:p-3">
                   {order.carStatuses && order.carStatuses.length > 0 ? (
-                    <div className="space-y-2 max-h-[175px] overflow-y-auto custom-scrollbar pr-1">
+                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto custom-scrollbar pr-1">
                       {order.carStatuses.map((cs: any, idx: number) => {
                         let statusLabel = cs.customName;
                         if (!statusLabel && cs.carStatus?.name) {
@@ -1038,17 +1076,15 @@ export default function OrderDetail() {
                         return (
                           <div 
                             key={cs.id || idx}
-                            className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-500/5 dark:bg-amber-950/15 border border-amber-500/15 hover:border-amber-500/30 transition-colors"
+                            className="flex items-start gap-2 p-1.5 rounded-lg bg-amber-500/5 dark:bg-amber-950/15 border border-amber-500/15"
                           >
-                            <div className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                              <AlertCircle className="w-3.5 h-3.5" />
-                            </div>
+                            <AlertCircle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-gray-900 dark:text-amber-100 leading-snug">
+                              <p className="text-xs font-semibold text-gray-900 dark:text-amber-100 truncate leading-snug">
                                 {statusLabel}
                               </p>
                               {cs.customDescription && (
-                                <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5 leading-snug">
+                                <p className="text-[11px] text-gray-600 dark:text-gray-400 truncate leading-snug">
                                   {cs.customDescription}
                                 </p>
                               )}
@@ -1058,14 +1094,108 @@ export default function OrderDetail() {
                       })}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 text-muted-foreground py-2 px-1">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                        <ShieldCheck className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-muted-foreground py-0.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="text-xs text-muted-foreground">{t('orders.detail.cleanInspection')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Customer Belongings & Vehicle Intake Checklist Card */}
+              <div className="bg-card border border-border rounded-2xl shadow-xs overflow-hidden hover:border-amber-500/30 transition-all">
+                <div className="py-2 px-3.5 border-b border-border/60 flex items-center justify-between bg-card">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                      <Package className="w-3 h-3" />
+                    </div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {t('orders.detail.customerBelongingsTitle', 'Customer Belongings')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Badge 
+                      variant={order.customerItems?.length ? "outline" : "secondary"} 
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        order.customerItems?.length 
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' 
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {order.customerItems?.length || 0} {t('common.items', 'Items')}
+                    </Badge>
+                    {canModify && (
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setIsAddBelongingOpen(true)}
+                        title={t('orders.detail.addBelongingItem', 'Add Belonging')}
+                        className="text-gray-400 hover:text-primary h-5 w-5"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-2.5 sm:p-3">
+                  {order.customerItems && order.customerItems.length > 0 ? (
+                    <div className="space-y-1.5 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                      {order.customerItems.map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-muted/40 border border-border/60 group hover:border-amber-500/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs">🧰</span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-semibold text-foreground truncate">{item.itemName}</span>
+                                {item.quantity > 1 && (
+                                  <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4 font-mono font-bold">
+                                    x{item.quantity}
+                                  </Badge>
+                                )}
+                              </div>
+                              {item.notes && (
+                                <p className="text-[10px] text-muted-foreground truncate">{item.notes}</p>
+                              )}
+                            </div>
+                          </div>
+                          {canModify && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(t('orders.detail.deleteBelongingConfirm', 'Are you sure you want to remove this item?'))) {
+                                  removeBelongingMutation.mutate(item.id);
+                                }
+                              }}
+                              className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded cursor-pointer shrink-0"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between py-0.5">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Package className="w-3.5 h-3.5 opacity-40 shrink-0" />
+                        <span className="text-xs italic">{t('orders.detail.noBelongingsRecorded', 'No customer belongings recorded.')}</span>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t('orders.detail.cleanInspection')}</p>
-                        <p className="text-[11px] text-muted-foreground">{t('orders.detail.noDamageNoted')}</p>
-                      </div>
+                      {canModify && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsAddBelongingOpen(true)}
+                          className="h-6 text-[11px] px-2 text-primary hover:bg-primary/10"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          {t('orders.create.addBelonging', 'Add Item')}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2757,6 +2887,140 @@ export default function OrderDetail() {
             </div>
           );
         })()}
+      </ResponsiveModal>
+
+      {/* Add Customer Belonging Modal */}
+      <ResponsiveModal
+        isOpen={isAddBelongingOpen}
+        onOpenChange={(open) => {
+          setIsAddBelongingOpen(open);
+          if (!open) {
+            setNewBelongingName('');
+            setNewBelongingQty('1');
+            setNewBelongingNote('');
+          }
+        }}
+        title={t('orders.detail.addBelongingItem', 'Add Customer Belonging')}
+        description={t('orders.create.belongingsHelp', 'Record tools, spare tire, electronics, or personal items found in the vehicle.')}
+        icon={Package}
+        isMobileOrTablet={isMobileOrTablet}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddBelongingOpen(false)}
+              disabled={addBelongingMutation.isPending}
+              className="border-gray-200 dark:border-gray-800"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={() => {
+                if (!newBelongingName.trim()) return;
+                addBelongingMutation.mutate({
+                  itemName: newBelongingName.trim(),
+                  quantity: Math.max(1, parseInt(newBelongingQty, 10) || 1),
+                  notes: newBelongingNote.trim() || undefined,
+                });
+              }}
+              disabled={!newBelongingName.trim() || addBelongingMutation.isPending}
+              className="rounded-lg"
+            >
+              {addBelongingMutation.isPending ? t('common.saving') : t('common.save')}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Quick presets chips */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-foreground">
+              {t('orders.create.quickPresets', 'Quick Presets')}
+            </Label>
+            <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto custom-scrollbar p-1">
+              {PRESET_BELONGINGS.map((preset) => {
+                const translatedName = t(`orders.create.${preset.key}`, preset.defaultName);
+                const isSelected = newBelongingName === translatedName;
+                return (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    onClick={() => setNewBelongingName(translatedName)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500/15 border-amber-500 text-amber-900 dark:text-amber-100 font-bold'
+                        : 'bg-card border-border hover:border-amber-500/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span>{preset.icon}</span>
+                    <span>{translatedName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Item Name Input */}
+          <div className="space-y-1.5">
+            <Label htmlFor="belonging-item-name" className="text-xs font-semibold text-foreground">
+              {t('orders.create.belongingName', 'Item Name')} <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="belonging-item-name"
+              placeholder="e.g. Spare Tire, Dashcam, Tool Bag"
+              value={newBelongingName}
+              onChange={(e) => setNewBelongingName(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {/* Quantity and Notes */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="belonging-item-qty" className="text-xs font-semibold text-foreground">
+                {t('orders.create.belongingQty', 'Quantity')}
+              </Label>
+              <div className="flex items-center gap-1 bg-card border border-input rounded-xl px-2 h-10">
+                <button
+                  type="button"
+                  onClick={() => setNewBelongingQty(prev => String(Math.max(1, (parseInt(prev, 10) || 1) - 1)))}
+                  className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <input
+                  id="belonging-item-qty"
+                  type="text"
+                  className="w-full text-center bg-transparent text-sm font-bold font-mono focus:outline-none text-foreground"
+                  value={newBelongingQty}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setNewBelongingQty(val || '1');
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setNewBelongingQty(prev => String((parseInt(prev, 10) || 1) + 1))}
+                  className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="belonging-item-note" className="text-xs font-semibold text-foreground">
+                {t('orders.create.belongingNotes', 'Notes / Location')}
+              </Label>
+              <Input
+                id="belonging-item-note"
+                placeholder="e.g. In trunk, under seat, Michelin 16-inch"
+                value={newBelongingNote}
+                onChange={(e) => setNewBelongingNote(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
       </ResponsiveModal>
     </div>
   );

@@ -268,6 +268,7 @@ export function ModernSelect({
 
   if (isBottomSheet && options) {
     const displayTitle = sheetTitle || label || placeholder || t('common.select', 'Select');
+    const hasSearch = Boolean(isSearchable || (options && options.length > 5));
 
     return (
       <div className={cn("flex flex-col gap-1.5", containerClassName)}>
@@ -298,7 +299,12 @@ export function ModernSelect({
             <SheetContent
               side="bottom"
               showCloseButton={false}
-              className="rounded-t-2xl sm:rounded-t-3xl h-[80vh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
+              className={cn(
+                "rounded-t-2xl sm:rounded-t-3xl border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none",
+                hasSearch
+                  ? "!h-[82dvh] sm:!h-[75dvh] min-h-[55dvh] max-h-[88dvh]"
+                  : "max-h-[88dvh]"
+              )}
             >
               <SheetTitle className="sr-only">{displayTitle}</SheetTitle>
 
@@ -336,7 +342,7 @@ export function ModernSelect({
               </div>
 
               {/* Search Bar if > 5 options or searchable */}
-              {(isSearchable || options.length > 5) && (
+              {hasSearch && (
                 <div className="p-3 border-b border-border/40 bg-background/50 backdrop-blur-xs shrink-0">
                   <div className="relative flex items-center">
                     <Search className="w-4 h-4 absolute left-3 text-muted-foreground pointer-events-none" />
@@ -345,7 +351,16 @@ export function ModernSelect({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={t('common.searchOptions', `Search ${displayTitle.toLowerCase()}...`)}
-                      className="w-full h-10 pl-9 pr-9 bg-muted/40 border border-input/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-foreground placeholder:text-muted-foreground/60"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="search"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      className="w-full h-10 pl-9 pr-9 bg-muted/40 border border-input/60 rounded-xl text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-foreground placeholder:text-muted-foreground/60"
                     />
                     {searchQuery && (
                       <button
@@ -419,9 +434,9 @@ export function ModernSelect({
               )}
 
               {/* Options List */}
-              <div className="flex-1 overflow-y-auto overscroll-contain p-2.5 sm:p-3 space-y-3 min-h-[160px] pb-8 sm:pb-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2.5 sm:p-3 space-y-3 pb-8 sm:pb-4">
                 {filteredGroups.length === 0 ? (
-                  <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
+                  <div className="h-full min-h-[180px] py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
                     <Search className="w-8 h-8 opacity-30 text-muted-foreground" />
                     <p className="text-xs font-medium">{t('common.noResultsFound', 'No options found.')}</p>
                     {(selectedCategory || searchQuery) && (

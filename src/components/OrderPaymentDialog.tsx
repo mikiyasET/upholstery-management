@@ -188,7 +188,7 @@ export function OrderPaymentDialog({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="rounded-t-2xl sm:rounded-t-3xl max-h-[90dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+          className="rounded-t-2xl sm:rounded-t-3xl min-h-[50dvh] max-h-[90dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
         >
           <SheetTitle className="sr-only">{t('orders.actions.addPayment')}</SheetTitle>
           <SheetDescription className="sr-only">{t('orders.amountPaid')}</SheetDescription>

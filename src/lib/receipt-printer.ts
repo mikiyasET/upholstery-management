@@ -685,6 +685,33 @@ export const printOrderReceipt = (orderData: any) => {
             </tbody>
           </table>
 
+          <!-- Vehicle Intake & Customer Belongings Checklist -->
+          ${orderData.customerItems && orderData.customerItems.length > 0 ? `
+            <div style="margin-bottom: 18px; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; background: #fffbeb;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #fef3c7; padding-bottom: 4px;">
+                <div style="font-size: 11px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                  <span>🧰</span>
+                  <span>${i18n.t('receipt.customerBelongings', 'Vehicle Intake & Customer Belongings Log')}</span>
+                </div>
+                <span style="font-size: 10px; font-weight: 700; color: #92400e; background: #fde68a; padding: 2px 7px; border-radius: 4px;">
+                  ${orderData.customerItems.length} ${i18n.t('common.items', 'Items')}
+                </span>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${orderData.customerItems.map((item: any) => `
+                  <div style="background: #ffffff; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    <strong style="color: #1f2937;">${item.itemName}</strong>
+                    ${Number(item.quantity) > 1 ? `<span style="background: #f3f4f6; color: #374151; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px;">x${item.quantity}</span>` : ''}
+                    ${item.notes ? `<span style="color: #6b7280; font-size: 11px; font-style: italic;">(${item.notes})</span>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+              <div style="font-size: 10px; color: #92400e; margin-top: 6px; font-style: italic;">
+                ✓ ${i18n.t('receipt.belongingsVerified', 'Items and vehicle condition verified upon intake')}
+              </div>
+            </div>
+          ` : ''}
+
           <!-- Summary & Totals -->
           <div class="summary-grid">
             <div class="card-box" style="background: #ffffff;">

@@ -1228,7 +1228,7 @@ export default function DirectSales() {
           <SheetContent
             side="bottom"
             showCloseButton={false}
-            className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+            className="rounded-t-2xl sm:rounded-t-3xl min-h-[45dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
           >
             <SheetTitle className="sr-only">
               {editId ? t('directSales.confirmUpdateTitle', 'Confirm Sale Update') : t('directSales.confirmSaleTitle', 'Confirm Direct Sale')}
@@ -1543,7 +1543,7 @@ export default function DirectSales() {
           <SheetContent
             side="bottom"
             showCloseButton={false}
-            className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+            className="rounded-t-2xl sm:rounded-t-3xl min-h-[45dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
           >
             <SheetTitle className="sr-only">{t('directSales.saleCompleted', 'Sale Completed')}</SheetTitle>
             <SheetDescription className="sr-only">{completedSale?.saleNumber}</SheetDescription>
@@ -1852,7 +1852,7 @@ export default function DirectSales() {
           <SheetContent
             side="bottom"
             showCloseButton={false}
-            className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+            className="rounded-t-2xl sm:rounded-t-3xl min-h-[45dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
           >
             <SheetTitle className="sr-only">
               {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
@@ -2278,7 +2278,7 @@ export default function DirectSales() {
               <SheetContent
                 side="bottom"
                 showCloseButton={false}
-                className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+                className="rounded-t-2xl sm:rounded-t-3xl min-h-[45dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
               >
                 <SheetTitle className="sr-only">
                   {t('directSales.adjustPrice', 'Adjust Item Price / Discount')}

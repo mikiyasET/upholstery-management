@@ -103,6 +103,23 @@ export function parseInputNumber(value: string): number {
   return Number(value.replace(/,/g, '')) || 0;
 }
 
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location) {
+    const { hostname, protocol } = window.location;
+    // If accessing via localhost or any IPv4 address (e.g. tablet on LAN/hotspot)
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || /^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+      return `${protocol}//${hostname}:3000`;
+    }
+  }
+
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  if (envUrl && !/^(https?:\/\/)?(?:\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(envUrl)) {
+    return envUrl;
+  }
+
+  return 'http://localhost:3000';
+}
+
 export function getImageUrl(relativeUrl?: string | null): string | undefined {
   if (!relativeUrl) return undefined;
 
@@ -114,8 +131,7 @@ export function getImageUrl(relativeUrl?: string | null): string | undefined {
   // Clean up leading slashes just in case
   const path = relativeUrl.startsWith('/') ? relativeUrl.slice(1) : relativeUrl;
   
-  // Use VITE_API_BASE_URL or VITE_API_URL or default to localhost
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const baseUrl = getApiBaseUrl();
   
   return `${baseUrl}/uploads/${path}`;
 }

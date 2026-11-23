@@ -782,3 +782,15 @@
 [data-mantine-color-scheme="dark"] .eth-dp-save-btn:hover {
   background-color: #FBBF24 !important;
 }
+
+/* Mobile and Tablet Bottom Sheet Keyboard Safety & Viewport Stability */
+:root {
+  --keyboard-offset: 0px;
+  --visual-viewport-h: 100dvh;
+}
+
+[data-slot="sheet-content"][data-side="bottom"] {
+  bottom: var(--keyboard-offset, 0px) !important;
+  max-height: min(90dvh, calc(var(--visual-viewport-h, 100dvh) - 10px)) !important;
+  transition: bottom 0.2s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
