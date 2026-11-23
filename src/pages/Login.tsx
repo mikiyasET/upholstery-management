@@ -252,7 +252,11 @@ export default function Login() {
                   label="Phone Number"
                   placeholder="0911234567"
                   value={phone}
-                  onChange={(e) => setPhone(e.currentTarget.value)}
+                  onChange={(e) => setPhone(e.currentTarget.value.replace(/\D/g, ""))}
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   leftSection={<Phone size={18} color="var(--text-muted)" />}
                   required
                   size="md"

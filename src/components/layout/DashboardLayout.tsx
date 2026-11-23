@@ -22,7 +22,8 @@ import {
   CircleUserRound,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
@@ -341,6 +342,12 @@ export default function DashboardLayout() {
           <Link to="/reports" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm ${location.pathname === '/reports' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted hover:text-primary'}`}>
             <BarChart size={18} strokeWidth={2.5} />
             {t('common.reports')}
+          </Link>
+        )}
+        {canViewReports && (
+          <Link to="/daily-workload" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all font-medium text-sm ${location.pathname === '/daily-workload' ? 'bg-primary/10 text-primary font-bold' : 'text-muted-foreground hover:bg-muted hover:text-primary'}`}>
+            <UserCheck size={18} strokeWidth={2.5} />
+            {t('labor.title', 'Daily Workload')}
           </Link>
         )}
       </div>

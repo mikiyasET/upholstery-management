@@ -5,12 +5,16 @@ import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
-import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight, Receipt, X, Check } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingCart, User, Phone, CreditCard, Search, FileText, ImageOff, CheckCircle2, AlertTriangle, Tag, ArrowRight, Receipt, X, Check, Pencil } from 'lucide-react';
 import { ModernInput } from '../components/ui/modern-input';
 import { ModernSelect } from '../components/ui/modern-select';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { formatCurrency, formatPaymentMethod, isUnitIntegerOnly, getMaterialUnallocatedStock, formatBrandSizeLabel, formatAppDate } from '../lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '../components/ui/sheet';
+import { useMediaQuery } from '@mantine/hooks';
 import { Printer, History } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
@@ -63,6 +67,7 @@ type CartItem = {
   material: Material;
   brand?: { id?: string; name: string; size?: string | null; color?: string | null; type?: string | null; price: number };
   unitPrice: number;
+  originalPrice: number;
   quantity: number;
 };
 
@@ -79,6 +84,7 @@ export default function DirectSales() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const editId = searchParams.get('editId');
+  const isMobileOrTablet = useMediaQuery('(max-width: 74.99em)');
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -90,6 +96,16 @@ export default function DirectSales() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [brandPickerMaterial, setBrandPickerMaterial] = useState<Material | null>(null);
+  const [editingPriceItem, setEditingPriceItem] = useState<{
+    key: string;
+    materialName: string;
+    brandLabel?: string;
+    unit?: string;
+    originalPrice: number;
+    currentPrice: number;
+    quantity: number;
+    priceInput: string;
+  } | null>(null);
 
   // Tax toggle
   const [taxEnabled, setTaxEnabled] = useState(localStorage.getItem('defaultVatEnabled') === 'true');
@@ -196,13 +212,22 @@ export default function DirectSales() {
           const brand = line.brandName
             ? { id: line.materialBrandId || undefined, name: line.brandName, size: line.sizeName || null, color: line.colorName || null, type: line.typeName || null, price: Number(line.priceAtSaleTime) }
             : undefined;
-          const key = `${mat.id}-${brand?.name || 'standard'}`;
+          let originalPrice = Number(mat.currentPrice || 0);
+          if (line.materialBrandId && mat.brands) {
+            const matchedBrand = mat.brands.find(b => b.id === line.materialBrandId);
+            if (matchedBrand) originalPrice = Number(matchedBrand.price);
+          } else if (line.brandName && mat.brands) {
+            const matchedBrand = mat.brands.find(b => b.name === line.brandName);
+            if (matchedBrand) originalPrice = Number(matchedBrand.price);
+          }
+          const key = `${mat.id}-${brand?.id || `${brand?.name || 'standard'}-${brand?.size || 'std'}-${brand?.color || ''}-${brand?.type || ''}`}`;
           newCart.push({
             key,
             material: mat,
             brand,
             unitPrice: Number(line.priceAtSaleTime),
-            quantity: line.quantity,
+            originalPrice,
+            quantity: Number(line.quantity),
           });
         }
       });
@@ -313,7 +338,9 @@ export default function DirectSales() {
     setTimeout(() => setIsBouncing(false), 300);
 
     const key = `${material.id}-${brand?.id || `${brand?.name || 'standard'}-${brand?.size || 'std'}-${brand?.color || ''}-${brand?.type || ''}`}`;
-    const unitPrice = brand ? Number(brand.price) : Number(material.currentPrice || 0);
+    const standardPrice = brand ? Number(brand.price) : Number(material.currentPrice || 0);
+    const unitPrice = standardPrice;
+    const originalPrice = standardPrice;
 
     setCart(prev => {
       const existingIndex = prev.findIndex(item => item.key === key);
@@ -322,7 +349,7 @@ export default function DirectSales() {
           idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prev, { key, material, brand, unitPrice, quantity: 1 }];
+      return [...prev, { key, material, brand, unitPrice, originalPrice, quantity: 1 }];
     });
 
     if (brandPickerMaterial) {
@@ -379,6 +406,59 @@ export default function DirectSales() {
       return sum + (item.unitPrice * item.quantity);
     }, 0);
   }, [cart]);
+
+  const totalDiscount = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      return sum + (Math.max(0, item.originalPrice - item.unitPrice) * item.quantity);
+    }, 0);
+  }, [cart]);
+
+  const handleOpenPriceModal = (item: CartItem) => {
+    setEditingPriceItem({
+      key: item.key,
+      materialName: getLocName(item.material),
+      brandLabel: item.brand ? formatBrandSizeLabel(item.brand) : undefined,
+      unit: item.material.unit || t('common.unit', 'unit'),
+      originalPrice: item.originalPrice,
+      currentPrice: item.unitPrice,
+      quantity: item.quantity,
+      priceInput: String(item.unitPrice),
+    });
+  };
+
+  const handleSavePrice = () => {
+    if (!editingPriceItem) return;
+    const parsed = Number(editingPriceItem.priceInput);
+    if (isNaN(parsed) || parsed < 0) {
+      toast.error(t('orders.invalidPrice', 'Please enter a valid price (0 or greater)'));
+      return;
+    }
+    setCart(prev =>
+      prev.map(item =>
+        item.key === editingPriceItem.key ? { ...item, unitPrice: parsed } : item
+      )
+    );
+    if (parsed < editingPriceItem.originalPrice) {
+      const diff = editingPriceItem.originalPrice - parsed;
+      const pct = Math.round((diff / editingPriceItem.originalPrice) * 100);
+      toast.success(
+        t('directSales.discountApplied', 'Discount applied: -{{amount}} (-{{pct}}%)', {
+          amount: formatCurrency(diff),
+          pct: `${pct}`,
+        })
+      );
+    } else if (parsed > editingPriceItem.originalPrice) {
+      toast.success(t('directSales.customPriceApplied', 'Custom price applied'));
+    } else {
+      toast.info(t('directSales.standardPriceRestored', 'Restored to standard catalog price'));
+    }
+    setEditingPriceItem(null);
+  };
+
+  const handleResetPrice = () => {
+    if (!editingPriceItem) return;
+    setEditingPriceItem(prev => (prev ? { ...prev, priceInput: String(prev.originalPrice) } : null));
+  };
 
   const taxAmount = taxEnabled ? subtotal * 0.15 : 0;
   const grandTotal = subtotal + taxAmount;
@@ -530,10 +610,10 @@ export default function DirectSales() {
   });
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 animate-in fade-in duration-300 md:h-[calc(100vh-8rem)] min-h-[calc(100vh-8rem)] relative">
+    <div className="flex flex-col md:flex-row gap-3 sm:gap-3.5 lg:gap-4 animate-in fade-in duration-300 md:h-[calc(100vh-5.5rem)] min-h-[calc(100vh-5.5rem)] relative">
       {/* Left side: Products */}
       <div className="flex-1 flex flex-col bg-card border rounded-lg overflow-hidden shadow-sm min-h-[500px] md:min-h-0 md:h-auto">
-        <div className="p-4 border-b bg-muted/30 flex items-end gap-3">
+        <div className="p-3 sm:p-4 border-b bg-muted/30 flex items-end gap-2 sm:gap-3">
           <div className="flex-1">
             <ModernInput
               inputSize="sm"
@@ -556,13 +636,13 @@ export default function DirectSales() {
             </Button>
           </PermissionGate>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {isLoading ? (
             <div className="text-center text-muted-foreground py-8">{t('common.loading', 'Loading items...')}</div>
           ) : filteredMaterials.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">{t('directSales.noItems', 'No standalone items available.')}</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-3.5 lg:gap-4">
               {filteredMaterials.map(m => {
                 const stock = getMiniStoreStock(m);
                 const unallocated = getMaterialUnallocatedStock(m, 'MINI');
@@ -573,17 +653,17 @@ export default function DirectSales() {
                 <div
                   key={m.id}
                   onClick={() => !isOutOfStock && handleMaterialCardClick(m)}
-                  className={`border border-border rounded-lg overflow-hidden h-40 flex flex-col group relative bg-card ${
+                  className={`border border-border rounded-xl overflow-hidden h-48 sm:h-52 flex flex-col group relative bg-card transition-all shadow-2xs hover:shadow-md ${
                     isOutOfStock 
                       ? 'opacity-50 cursor-not-allowed grayscale' 
                       : needsAllocation
-                      ? 'border-amber-500/50 hover:border-amber-500 hover:shadow-md cursor-pointer'
-                      : 'cursor-pointer hover:border-amber-500 hover:shadow-md transition-all'
+                      ? 'border-amber-500/50 hover:border-amber-500 cursor-pointer ring-1 ring-amber-500/20'
+                      : 'cursor-pointer hover:border-amber-500'
                   }`}
                 >
                   {m.imageUrl ? (
                     <>
-                      <div className="flex-1 overflow-hidden bg-muted relative flex items-center justify-center">
+                      <div className="h-28 sm:h-32 w-full overflow-hidden bg-muted relative flex items-center justify-center shrink-0">
                       <LazyImage
                         src={m.imageUrl}
                         alt={getLocName(m)}
@@ -591,46 +671,56 @@ export default function DirectSales() {
                         imgClassName={isOutOfStock ? "w-full h-full object-cover" : "w-full h-full group-hover:scale-105 transition-transform duration-200"}
                         containWithBlur={!isOutOfStock}
                       />
-                      <div className="absolute top-1 right-1 z-20 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-medium backdrop-blur-sm shadow-sm">
+                      <div className="absolute top-1.5 right-1.5 z-20 bg-black/65 text-white text-[10px] px-1.5 py-0.5 rounded-md font-semibold backdrop-blur-sm shadow-sm">
                         {t('common.stock', 'Stock')}: {stock}
                       </div>
                     </div>
-                      <div className="p-2.5 border-t border-border bg-card">
-                        <h4 className="font-semibold text-foreground text-xs line-clamp-1">{getLocName(m)}</h4>
-                        <div className="flex items-center justify-between gap-1 mt-0.5">
-                          <div className="font-bold text-amber-500 text-xs">
+                      <div className="p-2.5 sm:p-3 border-t border-border bg-card flex-1 flex flex-col justify-between">
+                        <h4 className="font-semibold text-foreground text-xs sm:text-sm line-clamp-2 leading-tight" title={getLocName(m)}>
+                          {getLocName(m)}
+                        </h4>
+                        <div className="flex items-center justify-between gap-1 mt-1">
+                          <div className="font-bold text-amber-600 dark:text-amber-400 text-xs sm:text-sm whitespace-nowrap truncate">
                             {m.brands && m.brands.length > 0 
                               ? formatCurrency(Math.min(...m.brands.map(b => Number(b.price))))
                               : formatCurrency(m.currentPrice)
                             }
                           </div>
                           {m.brands && m.brands.length > 0 && (
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                              {m.brands.length} {t('materials.brands', 'Brands')}
+                            <span 
+                              className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0"
+                              title={`${m.brands.length} ${t('materials.brands', 'Brands')}`}
+                            >
+                              {m.brands.length}
                             </span>
                           )}
                         </div>
                       </div>
                     </>
                   ) : (
-                    <div className={`flex-1 flex flex-col items-center justify-center p-3 bg-muted/30 ${!isOutOfStock && 'group-hover:bg-amber-500/5'} relative`}>
-                      <div className="absolute top-1 right-1 bg-muted-foreground/20 text-foreground text-[10px] px-1.5 py-0.5 rounded font-medium">
+                    <div className={`flex-1 flex flex-col items-center justify-between p-3 bg-muted/20 ${!isOutOfStock && 'group-hover:bg-amber-500/5'} relative`}>
+                      <div className="absolute top-1.5 right-1.5 bg-muted text-foreground text-[10px] px-1.5 py-0.5 rounded-md font-semibold border border-border/50">
                         {t('common.stock', 'Stock')}: {stock}
                       </div>
-                      <ImageOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                      <h4 className="font-semibold text-foreground text-sm text-center line-clamp-2">
-                        {getLocName(m)}
-                      </h4>
-                      <div className="flex items-center justify-between gap-1 mt-1.5 w-full px-1">
-                        <div className="font-bold text-amber-500 text-xs">
+                      <div className="flex-1 flex flex-col items-center justify-center pt-2">
+                        <ImageOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                        <h4 className="font-semibold text-foreground text-xs sm:text-sm text-center line-clamp-2 leading-tight px-1">
+                          {getLocName(m)}
+                        </h4>
+                      </div>
+                      <div className="flex items-center justify-between gap-1 mt-1 w-full pt-2 border-t border-border/40">
+                        <div className="font-bold text-amber-600 dark:text-amber-400 text-xs sm:text-sm whitespace-nowrap truncate">
                           {m.brands && m.brands.length > 0 
                             ? formatCurrency(Math.min(...m.brands.map(b => Number(b.price))))
                             : formatCurrency(m.currentPrice)
                           }
                         </div>
                         {m.brands && m.brands.length > 0 && (
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
-                            {m.brands.length} {t('materials.brands', 'Brands')}
+                          <span 
+                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0"
+                            title={`${m.brands.length} ${t('materials.brands', 'Brands')}`}
+                          >
+                            {m.brands.length}
                           </span>
                         )}
                       </div>
@@ -677,8 +767,8 @@ export default function DirectSales() {
       </div>
 
       {/* Right side: Cart */}
-      <div id="cart-section" className="w-full md:w-[320px] lg:w-[420px] flex flex-col bg-card border border-border rounded-lg shadow-sm overflow-hidden flex-shrink-0 min-h-[500px] md:min-h-0 md:h-auto scroll-mt-6">
-        <div className="p-4 border-b border-amber-600/30 bg-amber-600 text-white flex justify-between items-center shadow-sm">
+      <div id="cart-section" className="w-full md:w-[330px] lg:w-[380px] xl:w-[420px] flex flex-col bg-card border border-border rounded-xl shadow-xs overflow-hidden flex-shrink-0 min-h-[500px] md:min-h-0 md:h-auto scroll-mt-6">
+        <div className="p-3 sm:p-4 border-b border-amber-600/30 bg-amber-600 text-white flex justify-between items-center shadow-sm">
           <h2 className="font-bold flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" /> {t('directSales.currentSale', 'Current Sale')}
           </h2>
@@ -686,7 +776,7 @@ export default function DirectSales() {
         </div>
 
         {/* Pinned Sub-Header Bar: Customer & FSR Metadata */}
-        <div className="px-3.5 py-1.5 border-b border-border/60 bg-muted/25 dark:bg-zinc-900/40 flex items-center justify-between text-xs gap-2 select-none">
+        <div className="px-3 py-1.5 border-b border-border/60 bg-muted/25 dark:bg-zinc-900/40 flex items-center justify-between text-xs gap-1.5 select-none">
           {/* Left: Current Client & FSR summary badge */}
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <User className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
@@ -894,32 +984,82 @@ export default function DirectSales() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-2">
           {cart.length === 0 ? (
             <div className="text-center text-muted-foreground py-12 flex flex-col items-center">
               <ShoppingCart className="w-12 h-12 mb-2 opacity-20" />
               <p>{t('directSales.cartEmpty', 'Cart is empty')}</p>
             </div>
           ) : (
-              <div className="space-y-3">
-                {cart.map(item => (
-                  <div key={item.key} className="flex justify-between items-start text-sm">
-                    <div className="flex-1 pr-2">
-                      <div className="font-medium line-clamp-1 flex items-center gap-1.5 flex-wrap">
-                        <span>{getLocName(item.material)}</span>
-                        {item.brand && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
-                            {formatBrandSizeLabel(item.brand)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-muted-foreground text-xs">{formatCurrency(item.unitPrice)}</div>
+            <div className="space-y-2">
+              {cart.map(item => (
+                <div key={item.key} className="p-2.5 rounded-lg bg-muted/25 dark:bg-zinc-900/40 border border-border/50 hover:border-amber-500/30 transition-all flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground text-xs sm:text-sm truncate" title={getLocName(item.material)}>
+                        {getLocName(item.material)}
+                      </span>
+                      {item.brand && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30 shrink-0 whitespace-nowrap">
+                          {formatBrandSizeLabel(item.brand)}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 shrink-0 -mr-0.5" 
+                      onClick={() => removeFromCart(item.key)}
+                      title={t('common.remove', 'Remove')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/30">
+                    <div className="flex flex-col min-w-0">
+                      {item.unitPrice < item.originalPrice && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground line-through font-mono">
+                            {formatCurrency(item.originalPrice)}
+                          </span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30 font-mono leading-none">
+                            -{formatCurrency(item.originalPrice - item.unitPrice)} (-{Math.round(((item.originalPrice - item.unitPrice) / item.originalPrice) * 100)}%)
+                          </span>
+                        </div>
+                      )}
+                      {item.unitPrice > item.originalPrice && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-muted-foreground line-through font-mono">
+                            {formatCurrency(item.originalPrice)}
+                          </span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30 font-mono leading-none">
+                            +{formatCurrency(item.unitPrice - item.originalPrice)}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPriceModal(item)}
+                        className="group/price flex items-center gap-1 text-left cursor-pointer hover:opacity-80 transition-opacity w-fit"
+                        title={t('directSales.clickToEditPrice', 'Click to edit price / discount')}
+                      >
+                        <span className="text-[11px] sm:text-xs font-semibold text-foreground font-mono">
+                          {formatCurrency(item.unitPrice)}
+                        </span>
+                        <span className="p-0.5 rounded text-muted-foreground group-hover/price:text-amber-600 group-hover/price:bg-amber-500/10 transition-colors">
+                          <Pencil className="w-2.5 h-2.5" />
+                        </span>
+                      </button>
+                      <span className="text-xs sm:text-sm font-bold text-foreground font-mono">
+                        {formatCurrency(item.unitPrice * item.quantity)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button 
                         variant="outline" 
                         size="icon" 
-                        className="h-6 w-6" 
+                        className="h-7 w-7 rounded-md border-border/80 active:scale-95" 
                         onClick={() => {
                           const isInt = isUnitIntegerOnly(item.material.unit);
                           const next = isInt 
@@ -928,11 +1068,11 @@ export default function DirectSales() {
                           updateQuantity(item.key, next);
                         }}
                       >
-                        <Minus className="h-3 w-3" />
+                        <Minus className="h-3.5 w-3.5" />
                       </Button>
                       <input
                         type="text"
-                        className="w-12 h-6 text-center bg-transparent border border-input rounded text-xs font-mono font-medium focus:outline-none"
+                        className="w-10 sm:w-11 h-7 text-center bg-background border border-input rounded-md text-xs font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
                         value={item.quantity}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -946,7 +1086,7 @@ export default function DirectSales() {
                       <Button 
                         variant="outline" 
                         size="icon" 
-                        className="h-6 w-6" 
+                        className="h-7 w-7 rounded-md border-border/80 active:scale-95" 
                         onClick={() => {
                           const isInt = isUnitIntegerOnly(item.material.unit);
                           const next = isInt 
@@ -955,16 +1095,14 @@ export default function DirectSales() {
                           updateQuantity(item.key, next);
                         }}
                       >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => removeFromCart(item.key)}>
-                        <Trash2 className="h-3 w-3" />
+                        <Plus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="p-3 border-t bg-muted/10 flex flex-col gap-3">
@@ -999,7 +1137,7 @@ export default function DirectSales() {
             {payments.map((payment) => (
               <div key={payment.id} className="bg-muted/20 p-2 rounded-lg border border-border/50 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex-[2]">
+                  <div className="flex-[1.2] min-w-0">
                     <ModernSelect
                       inputSize="sm"
                       icon={CreditCard}
@@ -1014,7 +1152,7 @@ export default function DirectSales() {
                       ]}
                     />
                   </div>
-                  <div className="flex-[1.5]">
+                  <div className="flex-1 min-w-0">
                     <ModernInput
                       inputSize="sm"
                       placeholder={payments.length === 1 ? formatCurrency(grandTotal) : t('common.amount', 'Amount')}
@@ -1061,6 +1199,11 @@ export default function DirectSales() {
           <div className="flex items-end justify-between pt-2 border-t">
             <div className="text-[11px] space-y-0.5 text-muted-foreground">
               <div>{t('orders.detail.subtotal')}: <span className="text-foreground font-medium">{formatCurrency(subtotal)}</span></div>
+              {totalDiscount > 0 && (
+                <div className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                  {t('directSales.totalSavings', 'Total Discount')}: -{formatCurrency(totalDiscount)}
+                </div>
+              )}
               <div>{t('common.vat', 'VAT')} {taxEnabled ? '(15%)' : `(${t('common.off', 'Off')})`}: <span className="text-foreground font-medium">{taxEnabled ? formatCurrency(taxAmount) : '-'}</span></div>
             </div>
             <div className="text-right">
@@ -1070,7 +1213,7 @@ export default function DirectSales() {
           </div>
 
               <Button 
-                className="w-full h-12 text-lg font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm" 
+                className="w-full h-11 sm:h-12 text-base sm:text-lg font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm" 
                 disabled={cart.length === 0 || checkoutMutation.isPending}
                 onClick={handleInitiateCheckout}
               >
@@ -1079,238 +1222,587 @@ export default function DirectSales() {
         </div>
       </div>
 
-      {/* Checkout Confirmation Modal */}
-      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <DialogContent className="sm:max-w-[480px] bg-card text-card-foreground border-border">
-          <DialogHeader className="pb-3 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg font-bold text-foreground">
-                  {editId ? t('directSales.confirmUpdateTitle', 'Confirm Sale Update') : t('directSales.confirmSaleTitle', 'Confirm Direct Sale')}
-                </DialogTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t('directSales.confirmSaleDesc', 'Please review the sale and payment details before completing.')}
-                </p>
-              </div>
-            </div>
-          </DialogHeader>
+      {/* Checkout Confirmation Modal / Bottom Sheet */}
+      {isMobileOrTablet ? (
+        <Sheet open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+          >
+            <SheetTitle className="sr-only">
+              {editId ? t('directSales.confirmUpdateTitle', 'Confirm Sale Update') : t('directSales.confirmSaleTitle', 'Confirm Direct Sale')}
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              {t('directSales.confirmSaleDesc', 'Please review the sale and payment details before completing.')}
+            </SheetDescription>
 
-          <div className="space-y-4 py-2 text-sm text-foreground">
-            {/* Customer & FSR info */}
-            <div className="bg-muted/40 p-3 rounded-lg border border-border flex flex-col gap-1.5 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground font-medium">{t('orders.table.customer', 'Customer')}:</span>
-                <span className="font-semibold text-foreground">
-                  {customerName ? `${customerName} ${customerPhone ? `(${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
-                </span>
-              </div>
-              {fsrNumber && (
-                <div className="flex items-center justify-between pt-1 border-t border-border/50">
-                  <span className="text-muted-foreground font-medium">{t('orders.fsrNumber', 'FSR Number')}:</span>
-                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{fsrNumber.trim()}</span>
+            {/* Drag Handle Indicator */}
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+            {/* Header */}
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
                 </div>
-              )}
+                <div className="min-w-0">
+                  <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
+                    {editId ? t('directSales.confirmUpdateTitle', 'Confirm Sale Update') : t('directSales.confirmSaleTitle', 'Confirm Direct Sale')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {t('directSales.confirmSaleDesc', 'Please review the sale and payment details before completing.')}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsConfirmOpen(false)}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+                title={t('common.close', 'Close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Items summary */}
-            <div className="space-y-1.5 max-h-[22vh] overflow-y-auto custom-scrollbar pr-1">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {t('directSales.itemsPurchased', 'Items')} ({cart.reduce((s, i) => s + i.quantity, 0)})
-              </div>
-              {cart.map((item) => (
-                <div key={item.key} className="flex justify-between items-center text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
-                  <span className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
-                    <span>{item.quantity}x {getLocName(item.material)}</span>
-                    {item.brand && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
-                        {item.brand.name}
-                      </span>
-                    )}
-                  </span>
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-3.5 min-h-0 text-sm text-foreground">
+              {/* Customer & FSR info */}
+              <div className="bg-muted/40 p-3.5 rounded-xl border border-border flex flex-col gap-1.5 text-xs sm:text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground font-medium">{t('orders.table.customer', 'Customer')}:</span>
                   <span className="font-semibold text-foreground">
-                    {formatCurrency(item.unitPrice * item.quantity)}
+                    {customerName ? `${customerName} ${customerPhone ? `(${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
                   </span>
                 </div>
-              ))}
-            </div>
-
-            {/* Payment and totals summary */}
-            <div className="bg-muted/40 p-3.5 rounded-xl border border-border space-y-2 text-xs">
-              <div className="flex justify-between text-muted-foreground">
-                <span>{t('orders.detail.subtotal', 'Subtotal')}</span>
-                <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
-              </div>
-              {taxEnabled && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{t('receipt.vat', 'VAT (15%)')}</span>
-                  <span className="font-medium text-foreground">{formatCurrency(taxAmount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-border font-bold">
-                <span className="text-sm text-foreground">{t('common.total', 'Grand Total')}</span>
-                <span className="text-lg text-primary">{formatCurrency(grandTotal)}</span>
+                {fsrNumber && (
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">{t('orders.fsrNumber', 'FSR Number')}:</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{fsrNumber.trim()}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Payments breakdown */}
-              <div className="pt-2 border-t border-border space-y-1">
-                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t('receipt.paymentsRecorded', 'Payment Methods')}
+              {/* Items summary */}
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                  <span>{t('directSales.itemsPurchased', 'Items')}</span>
+                  <span className="font-mono text-muted-foreground font-medium">({cart.reduce((s, i) => s + i.quantity, 0)})</span>
                 </div>
-                {payments.map((p, idx) => {
-                  const amt = (Number(p.amount) || 0) === 0 && payments.length === 1 ? grandTotal : Number(p.amount) || 0;
-                  return (
-                    <div key={idx} className="flex justify-between items-center text-xs">
-                      <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] font-medium text-foreground">
-                        {formatPaymentMethod(p.method)}
-                        {p.referenceNumber && ` (${p.referenceNumber})`}
+                <div className="space-y-1.5 max-h-[32vh] overflow-y-auto custom-scrollbar pr-0.5">
+                  {cart.map((item) => (
+                    <div key={item.key} className="flex justify-between items-center text-xs sm:text-sm bg-muted/20 border border-border/60 rounded-xl p-2.5 sm:p-3">
+                      <span className="font-medium text-foreground flex items-center gap-1.5 flex-wrap min-w-0 pr-2">
+                        <span>{item.quantity}x {getLocName(item.material)}</span>
+                        {item.brand && (
+                          <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                            {formatBrandSizeLabel(item.brand)}
+                          </span>
+                        )}
+                        {item.unitPrice < item.originalPrice && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+                            {t('orders.discount', 'Discount')}
+                          </span>
+                        )}
+                        {item.unitPrice > item.originalPrice && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30">
+                            {t('orders.customPrice', 'Custom Price')}
+                          </span>
+                        )}
                       </span>
-                      <span className="font-semibold text-foreground">{formatCurrency(amt)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Stock notice */}
-            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2">
-              <span className="text-base">📦</span>
-              <span>{t('directSales.stockDeductNotice', 'Inventory stock will be deducted from Mini Store automatically upon confirmation.')}</span>
-            </div>
-          </div>
-
-          <DialogFooter className="sm:justify-between border-t border-border pt-4 mt-2">
-            <Button variant="outline" onClick={() => setIsConfirmOpen(false)} disabled={checkoutMutation.isPending}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button 
-              onClick={() => checkoutMutation.mutate()} 
-              disabled={checkoutMutation.isPending}
-              className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
-            >
-              {checkoutMutation.isPending ? t('common.processing', 'Processing...') : (editId ? t('directSales.updateSale', 'Update Sale & Payments') : t('directSales.confirmAndProceed', 'Confirm & Complete Sale'))}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Receipt Modal with full Dark & Light mode styling */}
-      <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
-        <DialogContent className="sm:max-w-[440px] bg-card text-card-foreground border-border">
-          <DialogHeader className="print:hidden pb-3 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg font-bold text-foreground">{t('directSales.saleCompleted', 'Sale Completed')}</DialogTitle>
-                <p className="text-xs text-muted-foreground">{completedSale?.saleNumber}</p>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2 text-sm text-foreground">
-            {/* Header info */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground pb-2 border-b border-border">
-              <span>{completedSale && formatAppDate(completedSale.saleDateTime, true)}</span>
-              <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
-            </div>
-
-            {/* Customer & FSR */}
-            {(completedSale?.customerName || completedSale?.customerPhone || completedSale?.fsrNumber) && (
-              <div className="bg-muted/30 p-2.5 rounded-lg border border-border text-xs space-y-1">
-                {completedSale.customerName && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t('orders.table.customer', 'Customer')}:</span>
-                    <span className="font-medium text-foreground">{completedSale.customerName}</span>
-                  </div>
-                )}
-                {completedSale.customerPhone && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t('common.phone', 'Phone')}:</span>
-                    <span className="font-medium text-foreground">{completedSale.customerPhone}</span>
-                  </div>
-                )}
-                {completedSale.fsrNumber && (
-                  <div className="flex justify-between pt-1 border-t border-border/50">
-                    <span className="text-muted-foreground">{t('orders.fsrNumber', 'FSR Number')}:</span>
-                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{completedSale.fsrNumber}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Line items */}
-            <div className="space-y-2 max-h-[22vh] overflow-y-auto custom-scrollbar pr-1">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {t('directSales.itemsPurchased', 'Items Purchased')}
-              </div>
-              {completedSale?.lines?.map((line: any) => (
-                <div key={line.id} className="flex justify-between items-start text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
-                  <div>
-                    <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
-                      <span>{getLocName(line.material)}</span>
-                      {line.brandName && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
-                          {line.brandName}
+                      <div className="flex flex-col items-end shrink-0">
+                        {item.unitPrice !== item.originalPrice && (
+                          <span className="text-[10px] text-muted-foreground line-through font-mono">
+                            {formatCurrency(item.originalPrice * item.quantity)}
+                          </span>
+                        )}
+                        <span className="font-semibold text-foreground shrink-0 font-mono">
+                          {formatCurrency(item.unitPrice * item.quantity)}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-muted-foreground text-[11px]">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
-                  </div>
-                  <div className="font-bold text-foreground">
-                    {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Financial summary */}
-            <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-2 text-xs">
-              {Number(completedSale?.taxAmount) > 0 && (
-                <div className="flex justify-between text-muted-foreground">
-                  <span>{t('receipt.vat', 'VAT (15%)')}</span>
-                  <span className="font-medium text-foreground">{formatCurrency(completedSale.taxAmount)}</span>
-                </div>
-              )}
-              {completedSale?.payments?.length > 0 && (
-                <div className="pt-2 border-t border-border space-y-1.5">
-                  <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
-                    {t('receipt.paymentsRecorded', 'Payments Recorded')}
-                  </div>
-                  {completedSale.payments.map((p: any) => (
-                    <div key={p.id} className="flex justify-between items-center text-xs">
-                      <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] font-medium text-foreground">
-                        {formatPaymentMethod(p.method)}
-                        {p.methodDetails && ` (${p.methodDetails})`}
-                      </span>
-                      <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-border text-sm font-bold">
-                <span className="text-foreground">{t('receipt.totalPaid', 'Total Paid')}</span>
-                <span className="text-base text-primary">
-                  {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0)}
-                </span>
+              </div>
+
+              {/* Payment and totals summary */}
+              <div className="bg-muted/40 p-3.5 sm:p-4 rounded-xl border border-border space-y-2 text-xs sm:text-sm">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('orders.detail.subtotal', 'Subtotal')}</span>
+                  <span className="font-medium text-foreground font-mono">{formatCurrency(subtotal)}</span>
+                </div>
+                {totalDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span>{t('directSales.totalSavings', 'Total Discount')}</span>
+                    <span className="font-mono">-{formatCurrency(totalDiscount)}</span>
+                  </div>
+                )}
+                {taxEnabled && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t('receipt.vat', 'VAT (15%)')}</span>
+                    <span className="font-medium text-foreground font-mono">{formatCurrency(taxAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-border font-bold">
+                  <span className="text-sm sm:text-base text-foreground">{t('common.total', 'Grand Total')}</span>
+                  <span className="text-xl sm:text-2xl text-primary font-mono">{formatCurrency(grandTotal)}</span>
+                </div>
+
+                {/* Payments breakdown */}
+                <div className="pt-2 border-t border-border space-y-1.5">
+                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {t('receipt.paymentsRecorded', 'Payment Methods')}
+                  </div>
+                  {payments.map((p, idx) => {
+                    const amt = (Number(p.amount) || 0) === 0 && payments.length === 1 ? grandTotal : Number(p.amount) || 0;
+                    return (
+                      <div key={idx} className="flex justify-between items-center text-xs sm:text-sm">
+                        <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] sm:text-xs font-medium text-foreground">
+                          {formatPaymentMethod(p.method)}
+                          {p.referenceNumber && ` (${p.referenceNumber})`}
+                        </span>
+                        <span className="font-semibold text-foreground font-mono">{formatCurrency(amt)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Stock notice */}
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-xs sm:text-sm flex items-center gap-2.5">
+                <span className="text-lg shrink-0">📦</span>
+                <span className="leading-relaxed">{t('directSales.stockDeductNotice', 'Inventory stock will be deducted from Mini Store automatically upon confirmation.')}</span>
               </div>
             </div>
-          </div>
 
-          <DialogFooter className="print:hidden sm:justify-between border-t border-border pt-4 mt-2">
-            <Button variant="outline" onClick={() => setCompletedSale(null)}>{t("common.close", "Close")}</Button>
-            <Button 
-              onClick={() => printDirectSaleReceipt(completedSale)} 
-              className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
-            >
-              <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* Docked Footer */}
+            <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between gap-3 sm:gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsConfirmOpen(false)} 
+                disabled={checkoutMutation.isPending}
+                className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl font-medium shrink-0 cursor-pointer text-sm sm:text-base"
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button 
+                onClick={() => checkoutMutation.mutate()} 
+                disabled={checkoutMutation.isPending}
+                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 bg-amber-600 text-white hover:bg-amber-700 font-bold shadow-md transition-all cursor-pointer text-sm sm:text-base"
+              >
+                {checkoutMutation.isPending ? t('common.processing', 'Processing...') : (editId ? t('directSales.updateSale', 'Update Sale & Payments') : t('directSales.confirmAndProceed', 'Confirm & Complete Sale'))}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <DialogContent className="sm:max-w-[480px] bg-card text-card-foreground border-border">
+            <DialogHeader className="pb-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold text-foreground">
+                    {editId ? t('directSales.confirmUpdateTitle', 'Confirm Sale Update') : t('directSales.confirmSaleTitle', 'Confirm Direct Sale')}
+                  </DialogTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t('directSales.confirmSaleDesc', 'Please review the sale and payment details before completing.')}
+                  </p>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2 text-sm text-foreground">
+              {/* Customer & FSR info */}
+              <div className="bg-muted/40 p-3 rounded-lg border border-border flex flex-col gap-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground font-medium">{t('orders.table.customer', 'Customer')}:</span>
+                  <span className="font-semibold text-foreground">
+                    {customerName ? `${customerName} ${customerPhone ? `(${customerPhone})` : ''}` : t('receipt.walkInCustomer', 'Walk-in Client')}
+                  </span>
+                </div>
+                {fsrNumber && (
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">{t('orders.fsrNumber', 'FSR Number')}:</span>
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{fsrNumber.trim()}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Items summary */}
+              <div className="space-y-1.5 max-h-[22vh] overflow-y-auto custom-scrollbar pr-1">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t('directSales.itemsPurchased', 'Items')} ({cart.reduce((s, i) => s + i.quantity, 0)})
+                </div>
+                {cart.map((item) => (
+                  <div key={item.key} className="flex justify-between items-center text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
+                    <span className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                      <span>{item.quantity}x {getLocName(item.material)}</span>
+                      {item.brand && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                          {formatBrandSizeLabel(item.brand)}
+                        </span>
+                      )}
+                      {item.unitPrice < item.originalPrice && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+                          {t('orders.discount', 'Discount')}
+                        </span>
+                      )}
+                      {item.unitPrice > item.originalPrice && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30">
+                          {t('orders.customPrice', 'Custom Price')}
+                        </span>
+                      )}
+                    </span>
+                    <div className="flex flex-col items-end shrink-0">
+                      {item.unitPrice !== item.originalPrice && (
+                        <span className="text-[10px] text-muted-foreground line-through font-mono">
+                          {formatCurrency(item.originalPrice * item.quantity)}
+                        </span>
+                      )}
+                      <span className="font-semibold text-foreground font-mono">
+                        {formatCurrency(item.unitPrice * item.quantity)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Payment and totals summary */}
+              <div className="bg-muted/40 p-3.5 rounded-xl border border-border space-y-2 text-xs">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('orders.detail.subtotal', 'Subtotal')}</span>
+                  <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
+                </div>
+                {totalDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span>{t('directSales.totalSavings', 'Total Discount')}</span>
+                    <span className="font-mono">-{formatCurrency(totalDiscount)}</span>
+                  </div>
+                )}
+                {taxEnabled && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t('receipt.vat', 'VAT (15%)')}</span>
+                    <span className="font-medium text-foreground">{formatCurrency(taxAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-border font-bold">
+                  <span className="text-sm text-foreground">{t('common.total', 'Grand Total')}</span>
+                  <span className="text-lg text-primary">{formatCurrency(grandTotal)}</span>
+                </div>
+
+                {/* Payments breakdown */}
+                <div className="pt-2 border-t border-border space-y-1">
+                  <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {t('receipt.paymentsRecorded', 'Payment Methods')}
+                  </div>
+                  {payments.map((p, idx) => {
+                    const amt = (Number(p.amount) || 0) === 0 && payments.length === 1 ? grandTotal : Number(p.amount) || 0;
+                    return (
+                      <div key={idx} className="flex justify-between items-center text-xs">
+                        <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] font-medium text-foreground">
+                          {formatPaymentMethod(p.method)}
+                          {p.referenceNumber && ` (${p.referenceNumber})`}
+                        </span>
+                        <span className="font-semibold text-foreground">{formatCurrency(amt)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Stock notice */}
+              <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400 text-xs flex items-center gap-2">
+                <span className="text-base">📦</span>
+                <span>{t('directSales.stockDeductNotice', 'Inventory stock will be deducted from Mini Store automatically upon confirmation.')}</span>
+              </div>
+            </div>
+
+            <DialogFooter className="sm:justify-between border-t border-border pt-4 mt-2">
+              <Button variant="outline" onClick={() => setIsConfirmOpen(false)} disabled={checkoutMutation.isPending}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button 
+                onClick={() => checkoutMutation.mutate()} 
+                disabled={checkoutMutation.isPending}
+                className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
+              >
+                {checkoutMutation.isPending ? t('common.processing', 'Processing...') : (editId ? t('directSales.updateSale', 'Update Sale & Payments') : t('directSales.confirmAndProceed', 'Confirm & Complete Sale'))}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Receipt Modal / Bottom Sheet with full Dark & Light mode styling */}
+      {isMobileOrTablet ? (
+        <Sheet open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+          >
+            <SheetTitle className="sr-only">{t('directSales.saleCompleted', 'Sale Completed')}</SheetTitle>
+            <SheetDescription className="sr-only">{completedSale?.saleNumber}</SheetDescription>
+
+            {/* Drag Handle Indicator */}
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+            {/* Header */}
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
+                    {t('directSales.saleCompleted', 'Sale Completed')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
+                    {completedSale?.saleNumber}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCompletedSale(null)}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+                title={t('common.close', 'Close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-3.5 min-h-0 text-sm text-foreground">
+              {/* Header info */}
+              <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground pb-2 border-b border-border">
+                <span>{completedSale && formatAppDate(completedSale.saleDateTime, true)}</span>
+                <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
+              </div>
+
+              {/* Customer & FSR */}
+              {(completedSale?.customerName || completedSale?.customerPhone || completedSale?.fsrNumber) && (
+                <div className="bg-muted/30 p-3.5 rounded-xl border border-border text-xs sm:text-sm space-y-1.5">
+                  {completedSale.customerName && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t('orders.table.customer', 'Customer')}:</span>
+                      <span className="font-medium text-foreground">{completedSale.customerName}</span>
+                    </div>
+                  )}
+                  {completedSale.customerPhone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t('common.phone', 'Phone')}:</span>
+                      <span className="font-medium text-foreground">{completedSale.customerPhone}</span>
+                    </div>
+                  )}
+                  {completedSale.fsrNumber && (
+                    <div className="flex justify-between pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground">{t('orders.fsrNumber', 'FSR Number')}:</span>
+                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{completedSale.fsrNumber}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Line items */}
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t('directSales.itemsPurchased', 'Items Purchased')} ({completedSale?.lines?.length || 0})
+                </div>
+                <div className="space-y-1.5 max-h-[30vh] overflow-y-auto custom-scrollbar pr-0.5">
+                  {completedSale?.lines?.map((line: any) => (
+                    <div key={line.id} className="flex justify-between items-start text-xs sm:text-sm bg-muted/20 border border-border/60 rounded-xl p-2.5 sm:p-3">
+                      <div>
+                        <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+                          <span>{getLocName(line.material)}</span>
+                          {line.brandName && (
+                            <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                              {line.brandName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-muted-foreground text-[11px] sm:text-xs mt-0.5 font-mono">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
+                      </div>
+                      <div className="font-bold text-foreground font-mono">
+                        {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Financial summary */}
+              <div className="bg-muted/30 p-3.5 sm:p-4 rounded-xl border border-border space-y-2 text-xs sm:text-sm">
+                {Number(completedSale?.taxAmount) > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t('receipt.vat', 'VAT (15%)')}</span>
+                    <span className="font-medium text-foreground font-mono">{formatCurrency(completedSale.taxAmount)}</span>
+                  </div>
+                )}
+                {completedSale?.payments?.length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-1.5">
+                    <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                      {t('receipt.paymentsRecorded', 'Payments Recorded')}
+                    </div>
+                    {completedSale.payments.map((p: any) => (
+                      <div key={p.id} className="flex justify-between items-center text-xs sm:text-sm">
+                        <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] sm:text-xs font-medium text-foreground">
+                          {formatPaymentMethod(p.method)}
+                          {p.methodDetails && ` (${p.methodDetails})`}
+                        </span>
+                        <span className="font-semibold text-foreground font-mono">{formatCurrency(p.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-border text-sm sm:text-base font-bold">
+                  <span className="text-foreground">{t('receipt.totalPaid', 'Total Paid')}</span>
+                  <span className="text-base sm:text-lg text-primary font-mono">
+                    {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Docked Footer */}
+            <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between gap-3 sm:gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setCompletedSale(null)}
+                className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl font-medium shrink-0 cursor-pointer text-sm sm:text-base"
+              >
+                {t("common.close", "Close")}
+              </Button>
+              <Button 
+                onClick={() => printDirectSaleReceipt(completedSale)} 
+                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 bg-amber-600 text-white hover:bg-amber-700 font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                <Printer className="w-4 h-4 mr-1.5" /> {t('receipt.receipt', 'Print Receipt')}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
+          <DialogContent className="sm:max-w-[440px] bg-card text-card-foreground border-border">
+            <DialogHeader className="print:hidden pb-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold text-foreground">{t('directSales.saleCompleted', 'Sale Completed')}</DialogTitle>
+                  <p className="text-xs text-muted-foreground">{completedSale?.saleNumber}</p>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2 text-sm text-foreground">
+              {/* Header info */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground pb-2 border-b border-border">
+                <span>{completedSale && formatAppDate(completedSale.saleDateTime, true)}</span>
+                <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
+              </div>
+
+              {/* Customer & FSR */}
+              {(completedSale?.customerName || completedSale?.customerPhone || completedSale?.fsrNumber) && (
+                <div className="bg-muted/30 p-2.5 rounded-lg border border-border text-xs space-y-1">
+                  {completedSale.customerName && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t('orders.table.customer', 'Customer')}:</span>
+                      <span className="font-medium text-foreground">{completedSale.customerName}</span>
+                    </div>
+                  )}
+                  {completedSale.customerPhone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t('common.phone', 'Phone')}:</span>
+                      <span className="font-medium text-foreground">{completedSale.customerPhone}</span>
+                    </div>
+                  )}
+                  {completedSale.fsrNumber && (
+                    <div className="flex justify-between pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground">{t('orders.fsrNumber', 'FSR Number')}:</span>
+                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{completedSale.fsrNumber}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Line items */}
+              <div className="space-y-2 max-h-[22vh] overflow-y-auto custom-scrollbar pr-1">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t('directSales.itemsPurchased', 'Items Purchased')}
+                </div>
+                {completedSale?.lines?.map((line: any) => (
+                  <div key={line.id} className="flex justify-between items-start text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
+                    <div>
+                      <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+                        <span>{getLocName(line.material)}</span>
+                        {line.brandName && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                            {line.brandName}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground text-[11px]">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
+                    </div>
+                    <div className="font-bold text-foreground">
+                      {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Financial summary */}
+              <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-2 text-xs">
+                {Number(completedSale?.taxAmount) > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{t('receipt.vat', 'VAT (15%)')}</span>
+                    <span className="font-medium text-foreground">{formatCurrency(completedSale.taxAmount)}</span>
+                  </div>
+                )}
+                {completedSale?.payments?.length > 0 && (
+                  <div className="pt-2 border-t border-border space-y-1.5">
+                    <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                      {t('receipt.paymentsRecorded', 'Payments Recorded')}
+                    </div>
+                    {completedSale.payments.map((p: any) => (
+                      <div key={p.id} className="flex justify-between items-center text-xs">
+                        <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] font-medium text-foreground">
+                          {formatPaymentMethod(p.method)}
+                          {p.methodDetails && ` (${p.methodDetails})`}
+                        </span>
+                        <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 border-t border-border text-sm font-bold">
+                  <span className="text-foreground">{t('receipt.totalPaid', 'Total Paid')}</span>
+                  <span className="text-base text-primary">
+                    {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="print:hidden sm:justify-between border-t border-border pt-4 mt-2">
+              <Button variant="outline" onClick={() => setCompletedSale(null)}>{t("common.close", "Close")}</Button>
+              <Button 
+                onClick={() => printDirectSaleReceipt(completedSale)} 
+                className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
+              >
+                <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Mobile Sticky Floating Cart Button (Portaled to document.body so it stays strictly sticky on scroll) */}
       {cart.length > 0 && typeof document !== 'undefined' && createPortal(
@@ -1354,128 +1846,559 @@ export default function DirectSales() {
         document.body
       )}
 
-      {/* Brand Selection Modal */}
-      <Dialog open={!!brandPickerMaterial} onOpenChange={(open) => !open && setBrandPickerMaterial(null)}>
-        <DialogContent className="sm:max-w-[420px] bg-card text-card-foreground border-border">
-          <DialogHeader className="pb-3 border-b border-border">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <Tag className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-foreground">
-                  {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
-                    ? t('materials.selectSize', 'Select Size')
-                    : t('materials.selectBrand', 'Select Brand')}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                  {brandPickerMaterial ? getLocName(brandPickerMaterial) : ''}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="py-2 space-y-2 max-h-[50vh] overflow-y-auto">
-            {brandPickerMaterial && (() => {
-              const unallocated = getMaterialUnallocatedStock(brandPickerMaterial, 'MINI');
-              if (unallocated <= 0) return null;
-              return (
-                <div className="p-1.5 px-2 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 mb-2">
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3 shrink-0 text-amber-600" />
-                    <span>
-                      {unallocated} {brandPickerMaterial.unit || ''} {t('storage.unallocatedStock', 'unallocated')}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const mat = brandPickerMaterial;
-                      setBrandPickerMaterial(null);
-                      navigateToStorageAllocation(mat);
-                    }}
-                    className="font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 cursor-pointer text-[10px] flex items-center gap-0.5"
-                  >
-                    <span>{t('storage.allocate', 'Allocate')}</span>
-                    <ArrowRight className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              );
-            })()}
-            <p className="text-xs text-muted-foreground mb-3">
+      {/* Brand Selection Modal / Bottom Sheet */}
+      {isMobileOrTablet ? (
+        <Sheet open={!!brandPickerMaterial} onOpenChange={(open) => !open && setBrandPickerMaterial(null)}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+          >
+            <SheetTitle className="sr-only">
               {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
-                ? t('materials.selectSizeDesc', 'Choose a size for this item:')
-                : t('materials.hasBrandsDesc', 'Choose a brand for this item:')}
-            </p>
-            {brandPickerMaterial?.brands?.map((brand) => {
-              const bStock = getBrandMiniStock(brand);
-              const brandKey = `${brandPickerMaterial.id}-${brand.id || `${brand.name}-${brand.size || 'std'}-${brand.color || ''}-${brand.type || ''}`}`;
-              const inCartForBrand = cart.find(c => c.key === brandKey)?.quantity || 0;
-              const isOutOfStock = bStock <= 0;
-              const isMaxInCart = inCartForBrand >= bStock;
-              const isDisabled = isOutOfStock || isMaxInCart;
+                ? t('materials.selectSize', 'Select Size')
+                : t('materials.selectBrand', 'Select Brand')}
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              {brandPickerMaterial ? getLocName(brandPickerMaterial) : ''}
+            </SheetDescription>
 
-              return (
-                <button
-                  key={brand.id || `${brand.name}-${brand.size}-${brand.color}-${brand.type}`}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => {
-                    if (brandPickerMaterial) {
-                      addItemToCart(brandPickerMaterial, {
-                        id: brand.id,
-                        name: brand.name,
-                        size: brand.size,
-                        color: brand.color,
-                        type: brand.type,
-                        price: Number(brand.price),
-                      });
-                    }
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left group ${
-                    isDisabled 
-                      ? 'border-border/40 bg-muted/20 opacity-60 cursor-not-allowed' 
-                      : 'border-border bg-card hover:border-amber-500 hover:bg-amber-500/5 cursor-pointer'
-                  }`}
-                >
-                  <div>
-                    <div className="font-semibold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                      {formatBrandSizeLabel(brand)}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                      <span>{t('materials.brandPrice', 'Price')}: <span className="font-medium text-foreground">{formatCurrency(brand.price)}</span></span>
-                      <span>•</span>
-                      <span className={bStock <= 0 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}>
-                        {t('storage.brandStock', 'Stock')}: <span className="font-medium text-foreground">{bStock}</span>
+            {/* Drag Handle Indicator */}
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+            {/* Header */}
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
+                    {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
+                      ? t('materials.selectSize', 'Select Size')
+                      : t('materials.selectBrand', 'Select Brand')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {brandPickerMaterial ? getLocName(brandPickerMaterial) : ''}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setBrandPickerMaterial(null)}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+                title={t('common.close', 'Close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-2.5 min-h-0">
+              {brandPickerMaterial && (() => {
+                const unallocated = getMaterialUnallocatedStock(brandPickerMaterial, 'MINI');
+                if (unallocated <= 0) return null;
+                return (
+                  <div className="p-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-xs text-amber-700 dark:text-amber-400 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                      <span>
+                        {unallocated} {brandPickerMaterial.unit || ''} {t('storage.unallocatedStock', 'unallocated')}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const mat = brandPickerMaterial;
+                        setBrandPickerMaterial(null);
+                        navigateToStorageAllocation(mat);
+                      }}
+                      className="font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 cursor-pointer text-xs flex items-center gap-0.5"
+                    >
+                      <span>{t('storage.allocate', 'Allocate')}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
                   </div>
-                  {isOutOfStock ? (
-                    <div className="text-[11px] font-semibold text-red-500 bg-red-500/10 px-2.5 py-1 rounded-md border border-red-500/20">
-                      {t('storage.outOfStock', 'Out of Stock')}
-                    </div>
-                  ) : isMaxInCart ? (
-                    <div className="text-[11px] font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
-                      {t('storage.limitReached', 'Max in Cart')}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 group-hover:bg-amber-600 group-hover:text-white transition-all">
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>{t('common.add', 'Add')}</span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                );
+              })()}
+              <p className="text-xs text-muted-foreground">
+                {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
+                  ? t('materials.selectSizeDesc', 'Choose a size for this item:')
+                  : t('materials.hasBrandsDesc', 'Choose a brand for this item:')}
+              </p>
 
-          <DialogFooter className="border-t border-border pt-3">
-            <Button variant="outline" size="sm" onClick={() => setBrandPickerMaterial(null)}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <div className="space-y-2">
+                {brandPickerMaterial?.brands?.map((brand) => {
+                  const bStock = getBrandMiniStock(brand);
+                  const brandKey = `${brandPickerMaterial.id}-${brand.id || `${brand.name}-${brand.size || 'std'}-${brand.color || ''}-${brand.type || ''}`}`;
+                  const inCartForBrand = cart.find(c => c.key === brandKey)?.quantity || 0;
+                  const isOutOfStock = bStock <= 0;
+                  const isMaxInCart = inCartForBrand >= bStock;
+                  const isDisabled = isOutOfStock || isMaxInCart;
+
+                  return (
+                    <button
+                      key={brand.id || `${brand.name}-${brand.size}-${brand.color}-${brand.type}`}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (brandPickerMaterial) {
+                          addItemToCart(brandPickerMaterial, {
+                            id: brand.id,
+                            name: brand.name,
+                            size: brand.size,
+                            color: brand.color,
+                            type: brand.type,
+                            price: Number(brand.price),
+                          });
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-xl border transition-all text-left group min-h-[56px] ${
+                        isDisabled 
+                          ? 'border-border/40 bg-muted/20 opacity-60 cursor-not-allowed' 
+                          : 'border-border bg-card hover:border-amber-500 hover:bg-amber-500/5 active:scale-[0.99] cursor-pointer shadow-2xs'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-sm sm:text-base text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                          {formatBrandSizeLabel(brand)}
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                          <span>{t('materials.brandPrice', 'Price')}: <span className="font-medium text-foreground font-mono">{formatCurrency(brand.price)}</span></span>
+                          <span>•</span>
+                          <span className={bStock <= 0 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}>
+                            {t('storage.brandStock', 'Stock')}: <span className="font-medium text-foreground font-mono">{bStock}</span>
+                          </span>
+                        </div>
+                      </div>
+                      {isOutOfStock ? (
+                        <div className="text-xs font-semibold text-red-500 bg-red-500/10 px-2.5 py-1.5 rounded-lg border border-red-500/20">
+                          {t('storage.outOfStock', 'Out of Stock')}
+                        </div>
+                      ) : isMaxInCart ? (
+                        <div className="text-xs font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-1.5 rounded-lg border border-amber-500/20">
+                          {t('storage.limitReached', 'Max in Cart')}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-2xs">
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{t('common.add', 'Add')}</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Docked Footer */}
+            <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0">
+              <Button 
+                variant="outline" 
+                onClick={() => setBrandPickerMaterial(null)}
+                className="w-full h-11 sm:h-12 rounded-xl font-medium cursor-pointer text-sm sm:text-base"
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={!!brandPickerMaterial} onOpenChange={(open) => !open && setBrandPickerMaterial(null)}>
+          <DialogContent className="sm:max-w-[420px] bg-card text-card-foreground border-border">
+            <DialogHeader className="pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-bold text-foreground">
+                    {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
+                      ? t('materials.selectSize', 'Select Size')
+                      : t('materials.selectBrand', 'Select Brand')}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    {brandPickerMaterial ? getLocName(brandPickerMaterial) : ''}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="py-2 space-y-2 max-h-[50vh] overflow-y-auto">
+              {brandPickerMaterial && (() => {
+                const unallocated = getMaterialUnallocatedStock(brandPickerMaterial, 'MINI');
+                if (unallocated <= 0) return null;
+                return (
+                  <div className="p-1.5 px-2 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 mb-2">
+                    <div className="flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0 text-amber-600" />
+                      <span>
+                        {unallocated} {brandPickerMaterial.unit || ''} {t('storage.unallocatedStock', 'unallocated')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const mat = brandPickerMaterial;
+                        setBrandPickerMaterial(null);
+                        navigateToStorageAllocation(mat);
+                      }}
+                      className="font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 cursor-pointer text-[10px] flex items-center gap-0.5"
+                    >
+                      <span>{t('storage.allocate', 'Allocate')}</span>
+                      <ArrowRight className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                );
+              })()}
+              <p className="text-xs text-muted-foreground mb-3">
+                {brandPickerMaterial?.brands?.every(b => !b.name || b.name.toLowerCase() === 'universal' || b.name.toLowerCase() === 'standard')
+                  ? t('materials.selectSizeDesc', 'Choose a size for this item:')
+                  : t('materials.hasBrandsDesc', 'Choose a brand for this item:')}
+              </p>
+              {brandPickerMaterial?.brands?.map((brand) => {
+                const bStock = getBrandMiniStock(brand);
+                const brandKey = `${brandPickerMaterial.id}-${brand.id || `${brand.name}-${brand.size || 'std'}-${brand.color || ''}-${brand.type || ''}`}`;
+                const inCartForBrand = cart.find(c => c.key === brandKey)?.quantity || 0;
+                const isOutOfStock = bStock <= 0;
+                const isMaxInCart = inCartForBrand >= bStock;
+                const isDisabled = isOutOfStock || isMaxInCart;
+
+                return (
+                  <button
+                    key={brand.id || `${brand.name}-${brand.size}-${brand.color}-${brand.type}`}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (brandPickerMaterial) {
+                        addItemToCart(brandPickerMaterial, {
+                          id: brand.id,
+                          name: brand.name,
+                          size: brand.size,
+                          color: brand.color,
+                          type: brand.type,
+                          price: Number(brand.price),
+                        });
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left group ${
+                      isDisabled 
+                        ? 'border-border/40 bg-muted/20 opacity-60 cursor-not-allowed' 
+                        : 'border-border bg-card hover:border-amber-500 hover:bg-amber-500/5 cursor-pointer'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold text-sm text-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                        {formatBrandSizeLabel(brand)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <span>{t('materials.brandPrice', 'Price')}: <span className="font-medium text-foreground">{formatCurrency(brand.price)}</span></span>
+                        <span>•</span>
+                        <span className={bStock <= 0 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}>
+                          {t('storage.brandStock', 'Stock')}: <span className="font-medium text-foreground">{bStock}</span>
+                        </span>
+                      </div>
+                    </div>
+                    {isOutOfStock ? (
+                      <div className="text-[11px] font-semibold text-red-500 bg-red-500/10 px-2.5 py-1 rounded-md border border-red-500/20">
+                        {t('storage.outOfStock', 'Out of Stock')}
+                      </div>
+                    ) : isMaxInCart ? (
+                      <div className="text-[11px] font-semibold text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
+                        {t('storage.limitReached', 'Max in Cart')}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>{t('common.add', 'Add')}</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <DialogFooter className="border-t border-border pt-3">
+              <Button variant="outline" size="sm" onClick={() => setBrandPickerMaterial(null)}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Adjust Item Price / Discount Modal / Bottom Sheet */}
+      {(() => {
+        if (!editingPriceItem) return null;
+        const parsedPrice = Number(editingPriceItem.priceInput);
+        const isPriceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+        const originalPrice = editingPriceItem.originalPrice || 0;
+        const diff = originalPrice - parsedPrice;
+        const isDiscount = diff > 0 && originalPrice > 0;
+        const isSurcharge = diff < 0 && originalPrice > 0;
+        const effectiveQty = editingPriceItem.quantity || 1;
+        const totalSavings = isDiscount ? diff * effectiveQty : 0;
+
+        const bodyContent = (
+          <div className="space-y-4">
+            {/* Item Info Box */}
+            <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t('directSales.standardPrice', 'Standard Catalog Price')}
+                </span>
+                <span className="text-xs font-bold text-foreground font-mono bg-background px-2.5 py-0.5 rounded-md border border-border">
+                  {formatCurrency(originalPrice)}
+                </span>
+              </div>
+              <div className="font-bold text-sm text-foreground break-words leading-snug">
+                {editingPriceItem.materialName}
+                {editingPriceItem.brandLabel && (
+                  <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    {editingPriceItem.brandLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Sale Price Input */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="direct-sale-unit-price" className="text-xs font-semibold text-foreground">
+                  {t('directSales.saleUnitPrice', 'Sale Unit Price (Per Item)')}
+                </Label>
+                {originalPrice > 0 && parsedPrice !== originalPrice && (
+                  <button
+                    type="button"
+                    onClick={handleResetPrice}
+                    className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                  >
+                    {t('directSales.resetToStandard', 'Reset to Standard')}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="direct-sale-unit-price"
+                  type="text"
+                  className="font-mono font-bold pr-14 text-lg h-12 rounded-xl"
+                  value={editingPriceItem.priceInput}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
+                    if (/^\d*\.?\d*$/.test(val)) {
+                      setEditingPriceItem((prev) => (prev ? { ...prev, priceInput: val } : null));
+                    }
+                  }}
+                  placeholder="0.00"
+                  autoFocus={!isMobileOrTablet}
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
+                  ETB
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Discount Presets */}
+            {originalPrice > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-semibold text-muted-foreground">
+                  {t('orders.quickDiscountPresets', 'Quick Discount Presets:')}
+                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[5, 10, 15, 20].map((pct) => {
+                    const discountedPrice = Math.round(originalPrice * (1 - pct / 100));
+                    const isSelected = parsedPrice === discountedPrice;
+                    return (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => {
+                          setEditingPriceItem((prev) =>
+                            prev ? { ...prev, priceInput: String(discountedPrice) } : null
+                          );
+                        }}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold ring-1 ring-emerald-500/30'
+                            : 'bg-background hover:bg-muted border-border text-foreground hover:border-border/80'
+                        }`}
+                      >
+                        -{pct}% ({formatCurrency(discountedPrice)})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Live Discount/Surcharge Feedback */}
+            {isPriceValid && (
+              <div
+                className={`p-3 rounded-xl border text-xs flex flex-col gap-1 ${
+                  isDiscount
+                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400'
+                    : isSurcharge
+                      ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                      : 'bg-muted/40 border-border/70 text-muted-foreground'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 flex-wrap font-medium">
+                  <span>
+                    {isDiscount
+                      ? t('directSales.customerDiscount', 'Customer Discount:')
+                      : isSurcharge
+                        ? t('directSales.priceSurcharge', 'Price Surcharge:')
+                        : t('directSales.standardPricing', 'Standard Pricing:')}
+                  </span>
+                  <span className="font-mono font-bold shrink-0">
+                    {isDiscount
+                      ? `-${formatCurrency(diff)} (-${Math.round((diff / originalPrice) * 100)}%)`
+                      : isSurcharge
+                        ? `+${formatCurrency(-diff)} (+${Math.round((-diff / originalPrice) * 100)}%)`
+                        : formatCurrency(originalPrice)}
+                  </span>
+                </div>
+                {isDiscount && effectiveQty > 1 && (
+                  <div className="text-[11px] opacity-90 border-t border-emerald-500/20 pt-1 flex justify-between font-mono">
+                    <span>{t('orders.totalLineSavings', 'Total Savings for this line')}:</span>
+                    <span className="font-bold">-{formatCurrency(totalSavings)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+        if (isMobileOrTablet) {
+          return (
+            <Sheet open={!!editingPriceItem} onOpenChange={(open) => !open && setEditingPriceItem(null)}>
+              <SheetContent
+                side="bottom"
+                showCloseButton={false}
+                className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+              >
+                <SheetTitle className="sr-only">
+                  {t('directSales.adjustPrice', 'Adjust Item Price / Discount')}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  {editingPriceItem.materialName}
+                </SheetDescription>
+
+                {/* Drag Handle Indicator */}
+                <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+                {/* Header */}
+                <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                      <Tag className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
+                        {t('directSales.adjustPrice', 'Adjust Item Price / Discount')}
+                      </h3>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {editingPriceItem.materialName} {editingPriceItem.brandLabel ? `• ${editingPriceItem.brandLabel}` : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingPriceItem(null)}
+                    className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+                    title={t('common.close', 'Close')}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Scrollable Body */}
+                <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 min-h-0">
+                  {bodyContent}
+                </div>
+
+                {/* Docked Footer */}
+                <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-end gap-3 sm:gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingPriceItem(null)}
+                    className="rounded-xl flex-1 sm:flex-initial"
+                  >
+                    {t('common.cancel', 'Cancel')}
+                  </Button>
+                  <Button
+                    onClick={handleSavePrice}
+                    disabled={!isPriceValid}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl flex-1 sm:flex-initial"
+                  >
+                    {t('common.save', 'Apply Price')}
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          );
+        }
+
+        return (
+          <Dialog open={!!editingPriceItem} onOpenChange={(open) => !open && setEditingPriceItem(null)}>
+            <DialogContent showCloseButton={false} className="sm:max-w-[460px] bg-card text-card-foreground border border-border p-0 gap-0 overflow-hidden rounded-2xl shadow-2xl">
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <DialogTitle className="text-sm sm:text-base font-bold text-foreground leading-tight truncate">
+                      {t('directSales.adjustPrice', 'Adjust Item Price / Discount')}
+                    </DialogTitle>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                      {editingPriceItem.materialName} {editingPriceItem.brandLabel ? `• ${editingPriceItem.brandLabel}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingPriceItem(null)}
+                  className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+                  title={t('common.close', 'Close')}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Body */}
+              <div className="p-4 sm:p-6 space-y-4">
+                {bodyContent}
+              </div>
+
+              {/* Docked Footer */}
+              <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 flex items-center justify-end gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingPriceItem(null)}
+                  className="rounded-xl"
+                >
+                  {t('common.cancel', 'Cancel')}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSavePrice}
+                  disabled={!isPriceValid}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-sm"
+                >
+                  {t('common.save', 'Apply Price')}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       <ConfirmDialog
         isOpen={isVatConfirmOpen}

@@ -20,12 +20,15 @@
     "create": "ፍጠር",
     "actions": "ድርጊቶች",
     "builtBy": "የተገነባው በ",
+    "expandSidebar": "የጎን አሞሌን ዘርጋ",
+    "collapseSidebar": "የጎን አሞሌን አሳንስ",
     "search": "ፈልግ...",
     "language": "ቋንቋ",
     "english": "እንግሊዝኛ",
     "amharic": "አማርኛ",
     "confirm": "አረጋግጥ",
     "close": "ዝጋ",
+    "dailyWorkload": "ዕለታዊ የስራ ጫና",
     "loading": "በማውረድ ላይ...",
     "noResults": "ምንም ውጤት አልተገኘም",
     "total": "ድምር",
@@ -79,6 +82,7 @@
     "to": "እስከ",
     "sales": "ሽያጮች",
     "rows": "ረድፎች",
+    "rowsPerPage": "በአንድ ገጽ ረድፎች",
     "records": "መረጃዎች",
     "noItemsToDisplay": "ምንም {{item}} የለም",
     "firstPage": "መጀመሪያ ገጽ",
@@ -127,7 +131,19 @@
     "processing": "በማስኬድ ላይ...",
     "modifiable": "የሚቀየር",
     "other": "ሌሎች አገልግሎቶች",
-    "saveChanges": "ለውጦችን መዝግብ"
+    "saveChanges": "ለውጦችን መዝግብ",
+    "error": "ስህተት",
+    "success": "ተሳክቷል",
+    "retry": "እንደገና ሞክር",
+    "share": "አጋራ",
+    "update": "አሻሽል",
+    "confirmDelete": "እርግጠኛ ነዎት ይህን መሰረዝ ይፈልጋሉ?",
+    "cash": "ጥሬ ገንዘብ",
+    "telebirr": "ቴሌብር",
+    "cbeBirr": "ሲቢኢ ብር",
+    "bankTransfer": "የባንክ ዝውውር",
+    "chooseFromGallery": "ከጋለሪ ይምረጡ",
+    "takePhoto": "ፎቶ አንሳ"
   },
   "dashboard": {
     "totalOrders": "አጠቃላይ ትዕዛዞች",
@@ -226,7 +242,12 @@
       "directPosSales": "የቀጥታ ቆጣሪ ሽያጮች",
       "storedLedger": "የተከማቸ የውሂብ ጎታ መዝገብ",
       "storedLedgerSub": "ትዕዛዞች እና ቀጥታ ሽያጮች በየግብይቱ በራሳቸው ይቀመጣሉ"
-    }
+    },
+    "quickSale": "ፈጣን የቆጣሪ ሽያጭ",
+    "todaySales": "ቀጥታ ሽያጭ",
+    "allStocked": "ሁሉም ዕቃዎች በበቂ ሁኔታ ተሟልተዋል",
+    "outInMini": "በሚኒ መጋዘን አልቋል",
+    "outInMain": "በዋና መጋዘን አልቋል"
   },
   "orders": {
     "createNew": "አዲስ ትዕዛዝ ፍጠር",
@@ -532,7 +553,10 @@
       "unpaid": "ያልተከፈለ",
       "partiallyPaid": "በከፊል የተከፈለ",
       "paid": "ሙሉ በሙሉ የተከፈለ"
-    }
+    },
+    "addAssignment": "ሰራተኛ መድብ",
+    "selectEmployee": "ሰራተኛ / ቴክኒሻን ይምረጡ",
+    "role": "የስራ ድርሻ / ማስታወሻ"
   },
   "directSales": {
     "confirmEnableVatDefault": "ለወደፊት ለሚደረጉ ሁሉ ሽያጮች ቫት በርቶ እንዲቀር ይፈልጋሉ?",
@@ -581,7 +605,26 @@
     "confirmSaleDesc": "እባክዎን ሽያጩን ከማጠናቀቅዎ በፊት የዕቃዎችን እና የክፍያውን ዝርዝር ያረጋግጡ።",
     "confirmAndProceed": "አረጋግጥ እና ሽያጩን ጨርስ",
     "stockDeductNotice": "ሽያጩ እንደተረጋገጠ የዕቃ ክምችት ወዲያውኑ ከሚኒ ስቶር ይቀነሳል።",
-    "title": "ቀጥታ ቆጣሪ ሽያጭ"
+    "title": "ቀጥታ ቆጣሪ ሽያጭ",
+    "pos": "የሽያጭ ማስተናገጃ (POS)",
+    "emptyCart": "ጋሪው ባዶ ነው",
+    "paymentMethod": "የክፍያ ዘዴ",
+    "refund": "ተመላሽ / ገንዘብ መመለሻ",
+    "refundConfirm": "እርግጠኛ ነዎት ይህን ሽያጭ መመለስ ይፈልጋሉ?",
+    "searchMaterials": "ዕቃዎችን በስም ወይም በኮድ ይፈልጉ...",
+    "adjustPrice": "የእቃ ዋጋ / ቅናሽ ማስተካከል",
+    "editPrice": "ዋጋ / ቅናሽ ማስተካከል",
+    "saleUnitPrice": "የሽያጭ ነጠላ ዋጋ (በእቃ)",
+    "standardPrice": "መደበኛ የካታሎግ ዋጋ",
+    "resetToStandard": "ወደ መደበኛ መልስ",
+    "discountApplied": "ቅናሽ ተደርጓል፦ -{{amount}} (-{{pct}}%)",
+    "customPriceApplied": "ልዩ ዋጋ ተተግብሯል",
+    "standardPriceRestored": "ወደ መደበኛ የካታሎግ ዋጋ ተመልሷል",
+    "customerDiscount": "የደንበኛ ቅናሽ፦",
+    "priceSurcharge": "የዋጋ ጭማሪ፦",
+    "standardPricing": "መደበኛ ዋጋ፦",
+    "totalSavings": "ጠቅላላ ቅናሽ",
+    "clickToEditPrice": "ዋጋን ወይም ቅናሽን ለማስተካከል ይጫኑ"
   },
   "storage": {
     "restock": "እቃ ሙላ",
@@ -590,8 +633,8 @@
     "transfer": "አስተላልፍ",
     "availableStock": "ያለ ክምችት",
     "outOfStock": "እቃ አልቋል",
-    "miniStore": "ሚኒ ስቶር",
-    "mainStore": "ዋና ስቶር / መጋዘን",
+    "miniStore": "ሚኒ መጋዘን",
+    "mainStore": "ዋና መጋዘን",
     "miniShort": "ሚኒ",
     "mainShort": "ዋና",
     "title": "የዕቃ ክምችትና ማከማቻ",
@@ -756,8 +799,6 @@
     "allMaterials": "ሁሉም ዕቃዎች",
     "allTypes": "ሁሉም ዓይነት ዝውውሮች",
     "allStores": "ሁሉም መጋዘኖች",
-    "mainStore": "ዋና መጋዘን",
-    "miniStore": "ሚኒ መጋዘን",
     "allTime": "የሁሉም ጊዜ",
     "singleDay": "አንድ ቀን",
     "dateRange": "የቀናት ክልል",
@@ -786,7 +827,17 @@
     "presetMonth": "በዚህ ወር",
     "presetCustom": "የተመረጠ",
     "itemsPerPage": "በገጽ",
-    "showingResults": "ከ{{total}} እንቅስቃሴዎች ውስጥ {{from}} እስከ {{to}} በማሳየት ላይ"
+    "showingResults": "ከ{{total}} እንቅስቃሴዎች ውስጥ {{from}} እስከ {{to}} በማሳየት ላይ",
+    "actions": {
+      "restock": "ክምችት ጨምር",
+      "transfer": "አዘዋውር"
+    },
+    "addStock": "ክምችት ጨምር",
+    "adjust": "ክምችት አስተካክል",
+    "brandVariant": "ብራንድ / አይነት",
+    "brandVariants": "የብራንድ አይነቶች",
+    "note": "ማስታወሻ (አማራጭ)",
+    "threshold": "ዝቅተኛ ገደብ"
   },
   "alerts": {
     "success": "ተሳክቷል",
@@ -829,7 +880,10 @@
     "partially_paid": "በከፊል የተከፈለ",
     "active": "ንቁ",
     "inactive": "ቦዝኗል",
-    "refunded": "የተመለሰ"
+    "refunded": "የተመለሰ",
+    "pending": "በመጠባበቅ ላይ",
+    "approved": "የጸደቀ",
+    "rejected": "ውድቅ የተደረገ"
   },
   "carStatus": {
     "scratchLeftFrontDoor": "በግራ የፊት በር ላይ ጭረት",
@@ -918,7 +972,9 @@
     "table": {
       "customer": "የደንበኛ ስም",
       "phone": "ስልክ ቁጥር"
-    }
+    },
+    "searchPlaceholder": "በደንበኛ ስም ወይም ስልክ ይፈልጉ...",
+    "vehicles": "ተሽከርካሪዎች"
   },
   "plate": {
     "configuration": "የሰሌዳ ቁጥር ማስተካከያ",
@@ -1108,7 +1164,13 @@
     },
     "selectSize": "መጠን ይምረጡ",
     "selectSizeDesc": "ለዚህ ዕቃ የሚፈልጉትን መጠን ይምረጡ፦",
-    "subtitle": "የወርክሾፕ ጨርቆችን፣ የሌዘር ጥቅሎችን፣ ቪናይሎችን እና ሌሎች የዕቃ ዝርዝሮችን ያስተዳድሩ።"
+    "subtitle": "የወርክሾፕ ጨርቆችን፣ የሌዘር ጥቅሎችን፣ ቪናይሎችን እና ሌሎች የዕቃ ዝርዝሮችን ያስተዳድሩ።",
+    "bulkTracked": "በጅምላ የሚከታተል",
+    "standaloneSellable": "በቀጥታ የሚሸጥ (POS)",
+    "min": "ዝቅተኛ",
+    "deleteConfirm": "እርግጠኛ ነዎት ይህን ዕቃ መሰረዝ ይፈልጋሉ?",
+    "selectMaterial": "ዕቃ ይምረጡ",
+    "tapToUpload": "ፎቶ ለመጫን ይጫኑ"
   },
   "services": {
     "title": "አገልግሎቶች",
@@ -1183,7 +1245,18 @@
       "serviceDesc": "ለምሳሌ ሙሉ የመስኮት ጥቁር ፌሮ",
       "catNameEn": "ለምሳሌ Sedan",
       "catNameAm": "ለምሳሌ ሰዳን"
-    }
+    },
+    "addService": "አዲስ አገልግሎት አክል",
+    "categories": "ምድቦች",
+    "categoryNameEn": "የምድብ ስም (እንግሊዝኛ) *",
+    "categoryNameAm": "የምድብ ስም (አማርኛ) *",
+    "description": "ዝርዝር መግለጫ",
+    "price": "መነሻ ዋጋ (ብር) *",
+    "nameEn": "የአገልግሎቱ ስም (እንግሊዝኛ) *",
+    "nameAm": "የአገልግሎቱ ስም (አማርኛ) *",
+    "materialUsage": "የሚያስፈልጉ ዕቃዎች (መጠኖች)",
+    "deleteConfirm": "እርግጠኛ ነዎት ይህን አገልግሎት መሰረዝ ይፈልጋሉ?",
+    "deleteCategoryConfirm": "እርግጠኛ ነዎት ይህን የምድብ ደረጃ መሰረዝ ይፈልጋሉ?"
   },
   "cars": {
     "title": "የመኪና ካታሎግ",
@@ -1377,7 +1450,10 @@
       "nameRequired": "ስም ማስገባት ግዴታ ነው",
       "phoneRequired": "ስልክ ቁጥር ማስገባት ግዴታ ነው",
       "passwordRequired": "የይለፍ ቃል ማስገባት ግዴታ ነው"
-    }
+    },
+    "searchPlaceholder": "ተጠቃሚዎችን በስም ወይም በስልክ ይፈልጉ...",
+    "edit": "ተጠቃሚ አሻሽል",
+    "role": "የስራ ድርሻ / ሚና"
   },
   "reports": {
     "title": "ሪፖርቶች እና ትንተናዎች",
@@ -1481,7 +1557,14 @@
       "pos": "ቀጥታ ቆጣሪ ሽያጮች",
       "total": "ድምር",
       "liveFinancials": "የፋይናንስ ገቢ ዝርዝር"
-    }
+    },
+    "totalRevenue": "ጠቅላላ ገቢ",
+    "orderRevenue": "የትዕዛዞች ገቢ",
+    "directSalesRevenue": "የቀጥታ ሽያጭ ገቢ",
+    "revenueChart": "የገቢ አዝማሚያ እና የፋይናንስ ዝርዝር",
+    "orders": "ትዕዛዞች",
+    "directSales": "ቀጥታ ሽያጮች",
+    "topMaterials": "በብዛት የተሸጡ ዕቃዎች እና መለዋወጫዎች"
   },
   "assets": {
     "title": "የድርጅት ንብረቶች",
@@ -1622,6 +1705,50 @@
       "authFailed": "መግባት አልተሳካም",
       "serverErrorTitle": "የግንኙነት ስህተት",
       "serverError": "ከሰርቨሩ ጋር መገናኘት አልተቻለም። እባክዎን ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።"
+    }
+  },
+  "catalog": {
+    "selectVariant": "የብራንድ / መጠን አይነት ይምረጡ"
+  },
+  "labor": {
+    "title": "ዕለታዊ የስራ ጫና",
+    "subtitle": "ለዕለታዊ ክፍያ የቴክኒሻኖች ዕለታዊ የስራ አፈፃፀምና የሰሩባቸው ተሽከርካሪዎች መከታተያ",
+    "technicians": "የሰሩ ቴክኒሻኖች",
+    "carsWorked": "የተሰሩ መኪኖች",
+    "totalTasks": "አጠቃላይ የተከናወኑ ስራዎች",
+    "topTechnician": "ከፍተኛ የሰራ ቴክኒሻን",
+    "cars": "መኪኖች",
+    "car": "መኪና",
+    "tasks": "ስራዎች",
+    "carsCount": "{{count}} መኪኖች",
+    "tasksCount": "{{count}} ስራዎች",
+    "searchPlaceholder": "ቴክኒሻኖችን በስም፣ ስልክ ወይም የስራ ዘርፍ ይፈልጉ...",
+    "noActivityTitle": "ምንም የተመዘገበ የቴክኒሻን ስራ የለም",
+    "noActivityDesc": "በተመረጠው ጊዜ ውስጥ በስራ ትዕዛዝ ላይ የተመደበ ቴክኒሻን የለም። በስራ ትዕዛዝ ላይ ሲመደቡ እዚህ በራሱ ይታያሉ።",
+    "noMatchTitle": "ምንም ቴክኒሻን አልተገኘም",
+    "noMatchDesc": "በፍለጋው መሰረት የተገኘ ቴክኒሻን የለም።",
+    "selectTechnician": "የተሰሩ ተሽከርካሪዎችን ዝርዝር ለማየት ቴክኒሻን ይምረጡ",
+    "vehiclesWorkedOn": "የተሰሩ ተሽከርካሪዎች",
+    "assignedRoles": "የተሰሩ ስራዎች",
+    "assignedAt": "የተመደበበት ሰዓት",
+    "order": "የትዕዛዝ ቁጥር",
+    "viewOrder": "ትዕዛዙን እይ",
+    "customer": "ደንበኛ",
+    "phone": "ስልክ",
+    "status": "ሁኔታ",
+    "allRoles": "ሁሉም ዘርፎች",
+    "allTimeframe": "ሁሉንም ጊዜ",
+    "timeframe": {
+      "today": "ዛሬ",
+      "yesterday": "ትናንት",
+      "week": "ያለፉት 7 ቀናት",
+      "month": "በዚህ ወር",
+      "custom": "የተመረጠ ቀን",
+      "singleDay": "ነጠላ ቀን",
+      "dateRange": "የቀን ክልል",
+      "from": "ከ",
+      "to": "እስከ",
+      "selectSingleDay": "ቀን"
     }
   }
 }

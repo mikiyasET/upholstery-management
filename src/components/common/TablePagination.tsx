@@ -4,7 +4,6 @@ import { Group, Pagination, Select, Text, Box } from "@mantine/core";
 import {
   FileText,
   Layers,
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -96,7 +95,7 @@ export function TablePagination({
     <Box className="table-pagination-bar">
       {/* Top/Left Metadata: Summary and Per-page selector */}
       <Box className="table-pagination-meta-row">
-        {/* Explanatory records and page summary card */}
+        {/* Explanatory records and page summary */}
         <Box className="table-pagination-summary-card">
           {total === 0 ? (
             <Group gap={8} align="center">
@@ -113,8 +112,8 @@ export function TablePagination({
                 <FileText size={14} />
               </Box>
 
-              {i18n.language === 'am' ? (
-                <Group gap={4} align="center" wrap="nowrap">
+              {i18n.language === "am" ? (
+                <Group gap={4} align="center" wrap="nowrap" className="text-xs">
                   <Text size="xs" fw={700} style={{ color: "var(--text-main)" }}>
                     {startItem.toLocaleString()} – {endItem.toLocaleString()}
                   </Text>
@@ -132,7 +131,7 @@ export function TablePagination({
                   </Text>
                 </Group>
               ) : (
-                <Group gap={4} align="center" wrap="nowrap">
+                <Group gap={4} align="center" wrap="nowrap" className="text-xs">
                   <Text size="xs" fw={500} c="dimmed" visibleFrom="xs">
                     {t("common.showing", "Showing")}
                   </Text>
@@ -151,22 +150,11 @@ export function TablePagination({
                 </Group>
               )}
 
-              <Box className="table-pagination-divider" visibleFrom="sm" />
-
-              <Box visibleFrom="sm">
-                <Group gap={5} align="center" wrap="nowrap">
-                  <Layers size={13} style={{ color: "var(--text-muted)" }} />
-                  <Text size="xs" c="dimmed" style={{ whiteSpace: "nowrap" }}>
-                    {t("common.page", "Page")}{" "}
-                    <Text span fw={700} style={{ color: "var(--text-main)" }}>
-                      {page}
-                    </Text>{" "}
-                    {t("common.of", "of")}{" "}
-                    <Text span fw={700} style={{ color: "var(--text-main)" }}>
-                      {calculatedTotalPages}
-                    </Text>
-                  </Text>
-                </Group>
+              <Box className="table-pagination-page-pill" visibleFrom="sm">
+                <Layers size={12} className="shrink-0" />
+                <span>
+                  {t("common.page", "Page")} <strong>{page}</strong> / <strong>{calculatedTotalPages}</strong>
+                </span>
               </Box>
             </>
           )}
@@ -174,9 +162,8 @@ export function TablePagination({
 
         {onPageSizeChange && (
           <Group gap={6} align="center" className="table-pagination-per-page-group">
-            <CheckSquare size={15} style={{ color: "var(--text-muted)" }} />
             <Text size="xs" fw={500} c="dimmed" visibleFrom="xs" style={{ whiteSpace: "nowrap" }}>
-              {t("common.rows", "Rows")}:
+              {t("common.rowsPerPage", "Rows per page")}:
             </Text>
             <Select
               size="xs"
@@ -197,7 +184,7 @@ export function TablePagination({
         )}
       </Box>
 
-      {/* Page navigation controls */}
+      {/* Page navigation controls (Bottom Tier covering full width by default) */}
       <Box className="table-pagination-controls">
         <Pagination.Root
           total={calculatedTotalPages}
@@ -207,65 +194,85 @@ export function TablePagination({
           radius="md"
           color="amber"
           disabled={disabled || total === 0}
+          style={{ width: "100%" }}
         >
-          <Group gap={4} align="center" wrap="nowrap" justify="center">
-            <Box visibleFrom="sm">
-              <Pagination.First
-                icon={() => <ChevronsLeft size={15} />}
-                aria-label={t("common.firstPage", "First page")}
-                className="table-page-btn table-page-edge-btn"
+          <Group justify="space-between" align="center" wrap="nowrap" style={{ width: "100%" }}>
+            {/* Left anchor: Previous page */}
+            <Group gap={6} align="center" wrap="nowrap">
+              <Box className="table-page-edge-btn">
+                <Pagination.First
+                  icon={() => <ChevronsLeft size={16} />}
+                  aria-label={t("common.firstPage", "First page")}
+                  className="table-page-btn"
+                  disabled={disabled || page <= 1 || total === 0}
+                  onClick={() => onPageChange(1)}
+                />
+              </Box>
+              <Pagination.Previous
+                icon={() => (
+                  <Group gap={5} wrap="nowrap" align="center">
+                    <ChevronLeft size={16} />
+                    <span className="hidden sm:inline text-xs font-semibold">{t("common.previousPage", "Previous")}</span>
+                  </Group>
+                )}
+                aria-label={t("common.previousPage", "Previous page")}
+                className="table-page-btn table-page-nav-btn"
                 disabled={disabled || page <= 1 || total === 0}
-                onClick={() => onPageChange(1)}
+                onClick={() => onPageChange(Math.max(1, page - 1))}
               />
-            </Box>
-            <Pagination.Previous
-              icon={() => <ChevronLeft size={15} />}
-              aria-label={t("common.previousPage", "Previous page")}
-              className="table-page-btn"
-              disabled={disabled || page <= 1 || total === 0}
-              onClick={() => onPageChange(Math.max(1, page - 1))}
-            />
+            </Group>
 
-            {paginationRange.map((item, idx) => {
-              if (item === "dots") {
+            {/* Center anchor: Numeric page controls */}
+            <Group gap={5} align="center" wrap="nowrap" justify="center" className="table-page-numbers-group">
+              {paginationRange.map((item, idx) => {
+                if (item === "dots") {
+                  return (
+                    <Pagination.Dots
+                      key={`dots-${idx}`}
+                      icon={() => <MoreHorizontal size={14} />}
+                      className="table-page-dots"
+                    />
+                  );
+                }
+                const isActive = item === page;
                 return (
-                  <Pagination.Dots
-                    key={`dots-${idx}`}
-                    icon={() => <MoreHorizontal size={14} />}
-                    className="table-page-dots"
-                  />
+                  <Pagination.Control
+                    key={item}
+                    active={isActive}
+                    onClick={() => onPageChange(item)}
+                    className={`table-page-btn ${isActive ? "table-page-btn-active" : ""}`}
+                    disabled={disabled}
+                  >
+                    {item}
+                  </Pagination.Control>
                 );
-              }
-              const isActive = item === page;
-              return (
-                <Pagination.Control
-                  key={item}
-                  active={isActive}
-                  onClick={() => onPageChange(item)}
-                  className={`table-page-btn ${isActive ? "table-page-btn-active" : ""}`}
-                  disabled={disabled}
-                >
-                  {item}
-                </Pagination.Control>
-              );
-            })}
+              })}
+            </Group>
 
-            <Pagination.Next
-              icon={() => <ChevronRight size={15} />}
-              aria-label={t("common.nextPage", "Next page")}
-              className="table-page-btn"
-              disabled={disabled || page >= calculatedTotalPages || total === 0}
-              onClick={() => onPageChange(Math.min(calculatedTotalPages, page + 1))}
-            />
-            <Box visibleFrom="sm">
-              <Pagination.Last
-                icon={() => <ChevronsRight size={15} />}
-                aria-label={t("common.lastPage", "Last page")}
-                className="table-page-btn table-page-edge-btn"
+            {/* Right anchor: Next page */}
+            <Group gap={6} align="center" wrap="nowrap">
+              <Pagination.Next
+                icon={() => (
+                  <Group gap={5} wrap="nowrap" align="center">
+                    <span className="hidden sm:inline text-xs font-semibold">{t("common.nextPage", "Next")}</span>
+                    <ChevronRight size={16} />
+                  </Group>
+                )}
+                aria-label={t("common.nextPage", "Next page")}
+                className="table-page-btn table-page-nav-btn"
                 disabled={disabled || page >= calculatedTotalPages || total === 0}
-                onClick={() => onPageChange(calculatedTotalPages)}
+                onClick={() => onPageChange(Math.min(calculatedTotalPages, page + 1))}
               />
-            </Box>
+              <Box className="table-page-edge-btn">
+                <Pagination.Last
+                  icon={() => <ChevronsRight size={16} />}
+                  aria-label={t("common.lastPage", "Last page")}
+                  className="table-page-btn"
+                  disabled={disabled || page >= calculatedTotalPages || total === 0}
+                  onClick={() => onPageChange(calculatedTotalPages)}
+                />
+              </Box>
+            </Group>
           </Group>
         </Pagination.Root>
       </Box>

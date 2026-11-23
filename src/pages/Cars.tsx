@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Car } from 'lucide-react';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
@@ -71,6 +71,13 @@ export default function Cars() {
     },
     enabled: !!selectedBrand,
   });
+
+  // Auto-select first brand on load if none selected
+  useEffect(() => {
+    if (!selectedBrand && brands && brands.length > 0) {
+      setSelectedBrand(brands[0]);
+    }
+  }, [brands, selectedBrand]);
 
   // Client-side filtering from fetched data
   const filteredBrands = useMemo(() => {
@@ -203,7 +210,7 @@ export default function Cars() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col md:h-[calc(100dvh-7.25rem)] md:min-h-[580px] space-y-4">
       <PageHeader
         title={t('cars.title', 'Car & Vehicle Catalog')}
         subtitle={t('cars.subtitle', 'Manage vehicle manufacturers, brand logos, and model profiles')}
@@ -227,9 +234,9 @@ export default function Cars() {
         }
       />
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0">
         {/* BRANDS SIDEBAR */}
-        <div className="md:col-span-1 border border-border rounded-xl bg-card flex flex-col h-[600px] overflow-hidden shadow-sm">
+        <div className="md:col-span-5 lg:col-span-4 xl:col-span-3 border border-border rounded-xl bg-card flex flex-col h-[400px] md:h-full overflow-hidden shadow-xs">
           {showBrandSearch ? (
             <div className="p-2.5 border-b border-border bg-muted/30 flex items-center gap-1.5 min-h-[52px] animate-in fade-in duration-200">
               <div className="relative flex-1">
@@ -366,9 +373,9 @@ export default function Cars() {
         </div>
 
         {/* MODELS PANE */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-7 lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col">
           {selectedBrand ? (
-            <Card className="h-[600px] flex flex-col rounded-xl overflow-hidden shadow-sm">
+            <Card className="h-full flex flex-col rounded-xl overflow-hidden shadow-xs border-border">
               {showModelSearch ? (
                 <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3 pt-3 px-4 border-b bg-muted/10 min-h-[57px] animate-in fade-in duration-200">
                   <div className="relative flex-1 max-w-sm">
@@ -516,8 +523,13 @@ export default function Cars() {
               </CardContent>
             </Card>
           ) : (
-            <div className="h-[600px] flex items-center justify-center border rounded-xl bg-muted/10 text-muted-foreground p-6 text-center">
-              {t('cars.selectBrandPrompt', 'Select a brand to view its models')}
+            <div className="h-full flex flex-col items-center justify-center border border-border/80 rounded-xl bg-card/60 text-muted-foreground p-6 text-center">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3">
+                <Car className="w-6 h-6" />
+              </div>
+              <h4 className="font-heading font-semibold text-foreground text-sm sm:text-base mb-1">
+                {t('cars.selectBrandPrompt', 'Select a brand to view its models')}
+              </h4>
             </div>
           )}
         </div>

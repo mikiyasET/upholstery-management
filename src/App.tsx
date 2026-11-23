@@ -20,6 +20,7 @@ const Receipt = lazy(() => import("./pages/Receipt"));
 const DirectSales = lazy(() => import("./pages/DirectSales"));
 const DirectSalesHistory = lazy(() => import("./pages/DirectSalesHistory"));
 const Reports = lazy(() => import("./pages/Reports"));
+const DailyWorkload = lazy(() => import("./pages/DailyWorkload"));
 const Users = lazy(() => import("./pages/Users"));
 const Assets = lazy(() => import("./pages/Assets"));
 const LowStockAlerts = lazy(() => import("./pages/LowStockAlerts"));
@@ -201,6 +202,14 @@ export default function App() {
             element={
               <PermissionRoute permission="reports.view">
                 <Reports />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="daily-workload"
+            element={
+              <PermissionRoute permission={["reports.view", "orders.view"]}>
+                <DailyWorkload />
               </PermissionRoute>
             }
           />

@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { usePermission } from '../../lib/permissions';
 import { formatCurrency, formatShortDate, formatAppDate } from '../../lib/utils';
 
 interface DailyRevenueChartProps {
@@ -27,6 +28,7 @@ interface DailyRevenueChartProps {
 
 export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
   const { t, i18n } = useTranslation();
+  const canViewReports = usePermission('reports.view');
   const [timeframe, setTimeframe] = useState<string>('14');
   const [metricMode, setMetricMode] = useState<string>('revenue');
 
@@ -40,18 +42,19 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
       });
       return res.data;
     },
+    enabled: canViewReports,
     staleTime: 60 * 1000,
   });
 
   useEffect(() => {
-    if (isRefreshing) {
+    if (isRefreshing && canViewReports) {
       refetch();
     }
-  }, [isRefreshing, refetch]);
+  }, [isRefreshing, canViewReports, refetch]);
 
   // Transform data for Mantine BarChart
   const chartData = useMemo(() => {
-    if (!Array.isArray(rawStats)) return [];
+    if (!canViewReports || !Array.isArray(rawStats)) return [];
     return rawStats.map((item: any) => ({
       ...item,
       displayDate: formatShortDate(item.date, false, i18n.language),
@@ -90,6 +93,10 @@ export function DailyRevenueChart({ isRefreshing }: DailyRevenueChartProps) {
   }, [rawStats]);
 
   const hasAnyActivity = summary.totalRevenue > 0 || summary.totalOrders > 0;
+
+  if (!canViewReports) {
+    return null;
+  }
 
   return (
     <Box className="premium-card p-4 sm:p-6 animate-in fade-in duration-300">

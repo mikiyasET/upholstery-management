@@ -6,6 +6,7 @@ import { parsePlateNumber } from '../utils/plate';
 import opentype from 'opentype.js';
 import { ModernSelect } from './ui/modern-select';
 import { ModernInput } from './ui/modern-input';
+import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'qrcode';
 import {
@@ -49,53 +50,6 @@ const createWatermarkedPattern = (ctx: CanvasRenderingContext2D, color: string) 
   return pattern || color;
 };
 
-const CargoTextOverlay = ({ text, font, className = '' }: { text: string, font: opentype.Font | null, className?: string }) => {
-  const [svgPath, setSvgPath] = useState<any>(null);
-
-  useEffect(() => {
-    if (!font || !text) {
-      setSvgPath(null);
-      return;
-    }
-    try {
-      const fontSize = 36;
-      const scale = fontSize / (font.unitsPerEm || 1000);
-      const ascender = (font.ascender || 800) * scale;
-      const descender = (font.descender || -200) * scale;
-      
-      const advanceWidth = font.getAdvanceWidth(text, fontSize);
-      
-      const path = font.getPath(text, 0, ascender, fontSize);
-      
-      const calculatedWidth = advanceWidth;
-      const calculatedHeight = (ascender - descender);
-
-      setSvgPath({
-        d: path.toPathData(2),
-        width: calculatedWidth,
-        height: calculatedHeight
-      });
-    } catch (err) {
-      setSvgPath(null);
-    }
-  }, [text, font]);
-
-  if (!svgPath) return <div className={`absolute inset-0 flex items-center justify-center pointer-events-none opacity-50 text-gray-900 dark:text-gray-100 ${className}`}>{text}</div>;
-
-  return (
-    <div className={`absolute inset-0 flex items-center justify-center pointer-events-none ${className}`}>
-      <svg 
-        width={svgPath.width} 
-        height={svgPath.height} 
-        viewBox={`0 0 ${svgPath.width} ${svgPath.height}`}
-        className="fill-current text-gray-900 dark:text-gray-100"
-      >
-        <path d={svgPath.d} />
-      </svg>
-    </div>
-  );
-};
-
 export const PLATE_PRESETS = [
   { id: '1', name: 'Code 1 - Taxi', amharic: 'ኢ.አ', english: 'AA', code: '1', fg: '#B91C1C', bg: '#FFFFFF', serialOld: 'A12345', serialNew: 'AAA0000' },
   { id: '2', name: 'Code 2 - Private', amharic: 'ኢ.አ', english: 'AA', code: '2', fg: '#1E50BC', bg: '#FFFFFF', serialOld: 'A12345', serialNew: 'AAA0000' },
@@ -128,7 +82,11 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
       serial: 'AAA0000'
     };
   });
-  const [interactedParts, setInteractedParts] = useState({ letters: false, numbers: false });
+  const [interactedParts, setInteractedParts] = useState(() => {
+    const parsed = parsePlateNumber(value);
+    const isDefault = !parsed || parsed.serial === 'AAA0000' || parsed.serial === 'A12345' || parsed.serial === '0001';
+    return { letters: !isDefault, numbers: !isDefault };
+  });
   const [cargoFont, setCargoFont] = useState<opentype.Font | null>(() => getCachedCargoFont());
   const [efpLogo, setEfpLogo] = useState<HTMLImageElement | null>(() => getCachedEfpLogo());
   const [holoFoil, setHoloFoil] = useState<HTMLImageElement | null>(() => getCachedHoloFoil());
@@ -171,6 +129,7 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
   }, [holoFoil]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const policeInputRef = useRef<HTMLInputElement>(null);
   const newLettersInputRef = useRef<HTMLInputElement>(null);
   const newDigitsInputRef = useRef<HTMLInputElement>(null);
   const oldLettersInputRef = useRef<HTMLInputElement>(null);
@@ -178,7 +137,11 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
 
   const handlePreviewClick = () => {
     if (data.system === 'new') {
-      newLettersInputRef.current?.focus();
+      if (data.category === 'police') {
+        policeInputRef.current?.focus();
+      } else {
+        newLettersInputRef.current?.focus();
+      }
     } else {
       oldLettersInputRef.current?.focus();
     }
@@ -757,43 +720,47 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
         </div>
         
         <div className="max-w-lg mx-auto">
-          <div className="flex bg-white dark:bg-[#101012] p-1.5 rounded-xl border border-slate-300 dark:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+          <div className="flex bg-white dark:bg-[#101012] p-2 rounded-xl border border-slate-300 dark:border-zinc-700 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all min-h-[72px] sm:min-h-[84px] items-center">
             {data.system === 'new' ? (
               data.category === 'police' ? (
                 <div className="relative w-full flex items-center justify-center">
-                  <CargoTextOverlay text={data.serial.replace(/[^A-Z0-9]/ig, '').toUpperCase().substring(0, 4)} font={cargoFont} className={!data.serial ? 'opacity-0' : ''} />
                   <input
+                    ref={policeInputRef}
                     type="text"
                     value={data.serial.replace(/[^A-Z0-9]/ig, '').toUpperCase().substring(0, 4)}
                     onChange={e => {
                       setField('serial', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 4));
                     }}
                     maxLength={4}
-                    className="w-full bg-transparent py-3 text-center uppercase tracking-widest text-transparent selection:bg-primary/30 selection:text-transparent caret-primary z-10 text-4xl outline-none"
+                    placeholder="0001"
+                    className="w-full bg-transparent py-3 text-center uppercase tracking-wider text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-700 selection:bg-primary/20 selection:text-slate-900 dark:selection:text-white caret-black dark:caret-white outline-none font-extrabold text-4xl sm:text-5xl leading-none"
+                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif", fontWeight: 800, fontSize: 'clamp(38px, 5.5vw, 48px)', lineHeight: 1 }}
+                    onKeyDown={e => {
+                      const input = e.currentTarget;
+                      const start = input.selectionStart || 0;
+                      const end = input.selectionEnd || 0;
+                      if (start === end && input.value.length === 4 && /^[0-9A-Za-z]$/.test(e.key) && start < 4) {
+                        e.preventDefault();
+                        const val = input.value;
+                        const newVal = (val.slice(0, start) + e.key.toUpperCase() + val.slice(start + 1)).substring(0, 4);
+                        setField('serial', newVal);
+                        setTimeout(() => input.setSelectionRange(start + 1, start + 1), 0);
+                      }
+                    }}
                   />
                 </div>
               ) : (
               <>
                 <div className="relative w-2/5 flex items-center justify-center">
-                  <CargoTextOverlay text={(data.serial.match(/^[A-Z]+/i) || [''])[0].substring(0, 3)} font={cargoFont} className={!(data.serial.match(/^[A-Z]+/i) || [''])[0] ? 'opacity-0' : ''} />
                   <input 
                     ref={newLettersInputRef}
                     type="text" 
+                    placeholder="AAA"
                     onFocus={() => {
                       if (!interactedParts.letters) {
                         const n = data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '');
                         setField('serial', n);
                         setInteractedParts(prev => ({ ...prev, letters: true }));
-                      }
-                    }}
-                    onClick={e => {
-                      const input = e.currentTarget;
-                      if (input.value.length === 3) {
-                        const start = input.selectionStart || 0;
-                        if (start === input.selectionEnd) {
-                          if (start > 0) input.setSelectionRange(start - 1, start);
-                          else input.setSelectionRange(0, 1);
-                        }
                       }
                     }}
                     value={(data.serial.match(/^[A-Z]+/i) || [''])[0].substring(0, 3)} 
@@ -825,30 +792,21 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
                         }, 0);
                       }
                     }}
-                    className="w-full bg-transparent py-3 text-center uppercase tracking-widest text-transparent selection:bg-primary/30 selection:text-transparent caret-primary z-10 text-4xl outline-none"
+                    className="w-full bg-transparent py-3 text-center uppercase tracking-wider text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-700 selection:bg-primary/20 selection:text-slate-900 dark:selection:text-white caret-black dark:caret-white outline-none font-extrabold text-4xl sm:text-5xl leading-none"
+                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif", fontWeight: 800, fontSize: 'clamp(38px, 5.5vw, 48px)', lineHeight: 1 }}
                   />
                 </div>
-                <div className="w-px bg-slate-200 dark:bg-zinc-800 my-2"></div>
+                <div className="w-px bg-slate-200 dark:bg-zinc-800 my-2 self-stretch"></div>
                 <div className="relative w-3/5 flex items-center justify-center">
-                  <CargoTextOverlay text={data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '').substring(0, 4)} font={cargoFont} className={!data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '') ? 'opacity-0' : ''} />
                   <input 
                     ref={newDigitsInputRef}
                     type="text" 
+                    placeholder="0000"
                     onFocus={() => {
                       if (!interactedParts.numbers) {
                         const l = (data.serial.match(/^[A-Z]+/i) || [''])[0];
                         setField('serial', l);
                         setInteractedParts(prev => ({ ...prev, numbers: true }));
-                      }
-                    }}
-                    onClick={e => {
-                      const input = e.currentTarget;
-                      if (input.value.length === 4) {
-                        const start = input.selectionStart || 0;
-                        if (start === input.selectionEnd) {
-                          if (start > 0) input.setSelectionRange(start - 1, start);
-                          else input.setSelectionRange(0, 1);
-                        }
                       }
                     }}
                     value={data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '').substring(0, 4)} 
@@ -862,6 +820,11 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
                       const input = e.currentTarget;
                       const start = input.selectionStart || 0;
                       const end = input.selectionEnd || 0;
+                      if (e.key === 'Backspace' && start === 0 && end === 0) {
+                        e.preventDefault();
+                        newLettersInputRef.current?.focus();
+                        return;
+                      }
                       if (start === end && input.value.length === 4 && /^[0-9]$/.test(e.key) && start < 4) {
                         e.preventDefault();
                         const val = input.value;
@@ -871,7 +834,8 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
                         setTimeout(() => input.setSelectionRange(start + 1, start + 1), 0);
                       }
                     }}
-                    className="w-full bg-transparent py-3 text-center uppercase tracking-widest text-transparent selection:bg-primary/30 selection:text-transparent caret-primary z-10 text-4xl outline-none"
+                    className="w-full bg-transparent py-3 text-center uppercase tracking-wider text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-700 selection:bg-primary/20 selection:text-slate-900 dark:selection:text-white caret-black dark:caret-white outline-none font-extrabold text-4xl sm:text-5xl leading-none"
+                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif", fontWeight: 800, fontSize: 'clamp(38px, 5.5vw, 48px)', lineHeight: 1 }}
                   />
                 </div>
               </>
@@ -879,25 +843,15 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
             ) : (
               <>
                 <div className="relative w-1/4 flex items-center justify-center">
-                  <CargoTextOverlay text={(data.serial.match(/^[A-Z]+/i) || [''])[0].substring(0, 1)} font={cargoFont} className={!(data.serial.match(/^[A-Z]+/i) || [''])[0] ? 'opacity-0' : ''} />
                   <input 
                     ref={oldLettersInputRef}
                     type="text" 
+                    placeholder="A"
                     onFocus={() => {
                       if (!interactedParts.letters) {
                         const n = data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '');
                         setField('serial', n);
                         setInteractedParts(prev => ({ ...prev, letters: true }));
-                      }
-                    }}
-                    onClick={e => {
-                      const input = e.currentTarget;
-                      if (input.value.length === 1) {
-                        const start = input.selectionStart || 0;
-                        if (start === input.selectionEnd) {
-                          if (start > 0) input.setSelectionRange(start - 1, start);
-                          else input.setSelectionRange(0, 1);
-                        }
                       }
                     }}
                     value={(data.serial.match(/^[A-Z]+/i) || [''])[0].substring(0, 1)} 
@@ -923,30 +877,21 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
                         setTimeout(() => oldDigitsInputRef.current?.focus(), 0);
                       }
                     }}
-                    className="w-full bg-transparent py-3 text-center uppercase tracking-widest text-transparent selection:bg-primary/30 selection:text-transparent caret-primary z-10 text-4xl outline-none"
+                    className="w-full bg-transparent py-3 text-center uppercase tracking-wider text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-700 selection:bg-primary/20 selection:text-slate-900 dark:selection:text-white caret-black dark:caret-white outline-none font-extrabold text-4xl sm:text-5xl leading-none"
+                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif", fontWeight: 800, fontSize: 'clamp(38px, 5.5vw, 48px)', lineHeight: 1 }}
                   />
                 </div>
-                <div className="w-px bg-slate-200 dark:bg-zinc-800 my-2"></div>
+                <div className="w-px bg-slate-200 dark:bg-zinc-800 my-2 self-stretch"></div>
                 <div className="relative w-3/4 flex items-center justify-center">
-                  <CargoTextOverlay text={data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '').substring(0, 5)} font={cargoFont} className={!data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '') ? 'opacity-0' : ''} />
                   <input 
                     ref={oldDigitsInputRef}
                     type="text" 
+                    placeholder="12345"
                     onFocus={() => {
                       if (!interactedParts.numbers) {
                         const l = (data.serial.match(/^[A-Z]+/i) || [''])[0];
                         setField('serial', l);
                         setInteractedParts(prev => ({ ...prev, numbers: true }));
-                      }
-                    }}
-                    onClick={e => {
-                      const input = e.currentTarget;
-                      if (input.value.length === 5) {
-                        const start = input.selectionStart || 0;
-                        if (start === input.selectionEnd) {
-                          if (start > 0) input.setSelectionRange(start - 1, start);
-                          else input.setSelectionRange(0, 1);
-                        }
                       }
                     }}
                     value={data.serial.replace(/^[A-Z]+/i, '').replace(/[^0-9]/g, '').substring(0, 5)} 
@@ -960,6 +905,11 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
                       const input = e.currentTarget;
                       const start = input.selectionStart || 0;
                       const end = input.selectionEnd || 0;
+                      if (e.key === 'Backspace' && start === 0 && end === 0) {
+                        e.preventDefault();
+                        oldLettersInputRef.current?.focus();
+                        return;
+                      }
                       if (start === end && input.value.length === 5 && /^[0-9]$/.test(e.key) && start < 5) {
                         e.preventDefault();
                         const val = input.value;
@@ -969,7 +919,8 @@ export function EthiopianPlateConfigurator({ value, onChange }: Props) {
                         setTimeout(() => input.setSelectionRange(start + 1, start + 1), 0);
                       }
                     }}
-                    className="w-full bg-transparent py-3 text-center uppercase tracking-widest text-transparent selection:bg-primary/30 selection:text-transparent caret-primary z-10 text-4xl outline-none"
+                    className="w-full bg-transparent py-3 text-center uppercase tracking-wider text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-700 selection:bg-primary/20 selection:text-slate-900 dark:selection:text-white caret-black dark:caret-white outline-none font-extrabold text-4xl sm:text-5xl leading-none"
+                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif", fontWeight: 800, fontSize: 'clamp(38px, 5.5vw, 48px)', lineHeight: 1 }}
                   />
                 </div>
               </>
@@ -1486,17 +1437,29 @@ export default function EthiopianPlateInput({ value, onChange, isSearching, inpu
           readOnly
           value={displayText}
           icon={Car}
-          inputSize={inputSize}
-          className={`cursor-pointer pr-24 ${displayData ? 'font-mono font-semibold text-xs text-foreground' : 'font-medium text-xs text-muted-foreground'}`}
+          inputSize={inputSize === 'sm' ? 'default' : inputSize}
+          style={{
+            fontFamily: displayData ? "'Plus Jakarta Sans', 'Inter', sans-serif" : undefined,
+            fontWeight: displayData ? 800 : 600,
+            fontSize: displayData ? '1.25rem' : '0.95rem'
+          }}
+          className={cn(
+            "cursor-pointer pr-28 transition-all h-11 sm:h-12 !text-lg sm:!text-xl",
+            displayData 
+              ? "font-sans font-extrabold text-foreground tracking-wide" 
+              : "font-medium text-muted-foreground"
+          )}
         />
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
           {isSearching ? (
-            <span className="flex items-center gap-1.5 text-[8.5px] text-blue-600 dark:text-blue-400 font-bold px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded uppercase tracking-wider shadow-xs">
-              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+            <span className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-blue-600 dark:text-blue-400 font-bold px-2 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg uppercase tracking-wider shadow-xs">
+              <Loader2 className="w-3 h-3 animate-spin" />
               {t('orders.create.searching', 'Searching...')}
             </span>
           ) : (
-            <span className="text-[9px] text-primary font-bold px-2 py-0.5 bg-primary/10 rounded uppercase tracking-wider shadow-2xs">{t('plate.configureBadge', 'Configure')}</span>
+            <span className="text-[10px] sm:text-xs text-primary font-bold px-2.5 py-1 bg-primary/10 rounded-lg uppercase tracking-wider shadow-2xs border border-primary/20">
+              {t('plate.configureBadge', 'Configure')}
+            </span>
           )}
         </div>
       </div>

@@ -1,4 +1,15 @@
-import { ScrollArea, Stack, Text, Box, UnstyledButton, Group, Badge, ActionIcon } from "@mantine/core";
+import {
+  ScrollArea,
+  Stack,
+  Text,
+  Box,
+  UnstyledButton,
+  Group,
+  Badge,
+  ActionIcon,
+  Divider,
+  Tooltip,
+} from "@mantine/core";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -17,6 +28,9 @@ import {
   Settings,
   History,
   ArrowUpRight,
+  PanelLeftOpen,
+  PanelLeftClose,
+  UserCheck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { checkPermission, type PermissionKey } from "../../lib/permissions";
@@ -46,9 +60,17 @@ interface NavSection {
 
 interface AppSidebarProps {
   onNavigate?: () => void;
+  isCollapsed?: boolean;
+  isOverlayExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-export function AppSidebar({ onNavigate }: AppSidebarProps) {
+export function AppSidebar({
+  onNavigate,
+  isCollapsed = false,
+  isOverlayExpanded = false,
+  onToggleExpand,
+}: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -222,6 +244,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
           permission: "users.view",
         },
         {
+          labelKey: "labor.title",
+          defaultLabel: "Daily Workload",
+          icon: UserCheck,
+          activeIcon: UserCheck,
+          path: "/daily-workload",
+          permission: ["reports.view", "orders.view"],
+        },
+        {
           labelKey: "reports.title",
           defaultLabel: "Reports & Analytics",
           icon: BarChart3,
@@ -291,10 +321,73 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         </ActionIcon>
       </Box>
 
+      {/* Tablet / Collapsed Header Bar */}
+      {isCollapsed && (
+        <Box
+          visibleFrom="sm"
+          py="sm"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            borderBottom: "1px solid var(--surface-border)",
+            backgroundColor: "var(--sidebar-bg)",
+            minHeight: 52,
+          }}
+        >
+          <ActionIcon
+            variant="subtle"
+            size="lg"
+            radius="md"
+            onClick={onToggleExpand}
+            aria-label="Expand sidebar"
+            style={{
+              color: "var(--text-muted)",
+              transition: "all 0.15s ease",
+            }}
+            className="cursor-pointer hover:text-[var(--primary-accent)] hover:bg-[var(--surface-border-subtle)]"
+          >
+            <PanelLeftOpen size={20} />
+          </ActionIcon>
+        </Box>
+      )}
+
+      {/* Tablet / Overlay Expanded Header Bar */}
+      {isOverlayExpanded && (
+        <Box
+          visibleFrom="sm"
+          px="md"
+          py="sm"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            borderBottom: "1px solid var(--surface-border)",
+            backgroundColor: "var(--sidebar-bg)",
+            minHeight: 52,
+          }}
+        >
+          <ActionIcon
+            variant="subtle"
+            size="lg"
+            radius="md"
+            onClick={onToggleExpand}
+            aria-label="Collapse sidebar"
+            style={{
+              color: "var(--text-muted)",
+              transition: "all 0.15s ease",
+            }}
+            className="cursor-pointer hover:text-[var(--primary-accent)] hover:bg-[var(--surface-border-subtle)]"
+          >
+            <PanelLeftClose size={20} />
+          </ActionIcon>
+        </Box>
+      )}
+
       {/* Nav List */}
-      <ScrollArea style={{ flex: 1 }} scrollbars="y" px="sm" py="md">
-        <Stack gap="lg">
-          {navSections.map((section) => {
+      <ScrollArea style={{ flex: 1 }} scrollbars="y" px={isCollapsed ? 6 : "sm"} py="md">
+        <Stack gap={isCollapsed ? 8 : "lg"}>
+          {navSections.map((section, sIdx) => {
             // Filter items by user permission
             const visibleItems = section.items.filter((item) => {
               if (!item.permission) return true;
@@ -308,22 +401,85 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
             return (
               <Box key={section.defaultTitle}>
-                <Text
-                  size="10px"
-                  fw={700}
-                  c="dimmed"
-                  tt="uppercase"
-                  mb={6}
-                  px="xs"
-                  style={{ letterSpacing: "0.08em" }}
-                >
-                  {t(section.titleKey, section.defaultTitle)}
-                </Text>
+                {isCollapsed ? (
+                  sIdx > 0 && <Divider my={4} style={{ borderColor: "var(--surface-border-subtle)" }} />
+                ) : (
+                  <Text
+                    size="10px"
+                    fw={700}
+                    c="dimmed"
+                    tt="uppercase"
+                    mb={6}
+                    px="xs"
+                    style={{ letterSpacing: "0.08em" }}
+                  >
+                    {t(section.titleKey, section.defaultTitle)}
+                  </Text>
+                )}
 
-                <Stack gap={3}>
+                <Stack gap={isCollapsed ? 4 : 3}>
                   {visibleItems.map((item) => {
                     const active = isActive(item.path);
                     const Icon = active ? item.activeIcon : item.icon;
+                    const labelText = t(item.labelKey, item.defaultLabel);
+
+                    if (isCollapsed) {
+                      return (
+                        <Tooltip
+                          key={item.path}
+                          label={
+                            <Group gap="xs">
+                              <span>{labelText}</span>
+                              {item.badge !== undefined && (
+                                <Badge size="xs" color={item.badgeColor || "amber"}>
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </Group>
+                          }
+                          position="right"
+                          withArrow
+                          withinPortal
+                        >
+                          <UnstyledButton
+                            className={`nav-item-btn-collapsed ${active ? "active" : ""}`}
+                            onClick={() => {
+                              navigate(item.path);
+                              onNavigate?.();
+                            }}
+                            aria-label={labelText}
+                          >
+                            <Box
+                              style={{
+                                position: "relative",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 24,
+                                height: 24,
+                                color: active ? "var(--primary-accent)" : "inherit",
+                              }}
+                            >
+                              <Icon size={20} />
+                              {item.badge !== undefined && (
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    top: -2,
+                                    right: -2,
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    backgroundColor: item.badgeColor === "red" ? "#EF4444" : "#F59E0B",
+                                    border: "2px solid var(--sidebar-bg)",
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          </UnstyledButton>
+                        </Tooltip>
+                      );
+                    }
 
                     return (
                       <UnstyledButton
@@ -354,7 +510,7 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
                             truncate
                             style={{ flex: 1 }}
                           >
-                            {t(item.labelKey, item.defaultLabel)}
+                            {labelText}
                           </Text>
                         </Group>
 
@@ -379,87 +535,137 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       </ScrollArea>
 
       {/* CodeAbay Attribution Footer (Always Visible at Bottom) */}
-      <Box
-        px="sm"
-        py="xs"
-        style={{
-          borderTop: "1px solid var(--surface-border)",
-          backgroundColor: "var(--sidebar-bg)",
-          flexShrink: 0,
-        }}
-      >
-        <a
-          href="https://codeabay.com"
-          target="_blank"
-          rel="noopener noreferrer"
+      {isCollapsed ? (
+        <Box
+          px="xs"
+          py="sm"
           style={{
-            textDecoration: "none",
-            color: "inherit",
+            borderTop: "1px solid var(--surface-border)",
+            backgroundColor: "var(--sidebar-bg)",
             display: "flex",
+            justifyContent: "center",
             alignItems: "center",
-            justifyContent: "space-between",
-            padding: "5px 8px",
-            borderRadius: 8,
-            transition: "all 0.15s ease",
+            flexShrink: 0,
           }}
-          className="hover:bg-accent/60 transition-colors group"
-          title="CodeAbay - Software Development Solutions"
         >
-          <Group gap="xs" wrap="nowrap" align="center" style={{ minWidth: 0 }}>
-            {/* CodeAbay Logo Mark (Theme Aware) */}
-            <Box
+          <Tooltip
+            label={`${t("common.builtBy", "Built by")} CodeAbay`}
+            position="right"
+            withArrow
+            withinPortal
+          >
+            <a
+              href="https://codeabay.com"
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
-                width: 26,
-                height: 22,
-                flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                transition: "all 0.15s ease",
               }}
+              className="hover:bg-accent/60 transition-colors"
+              title="CodeAbay"
             >
               <img
                 src={logoBlack}
                 alt="CodeAbay Logo"
-                className="dark:hidden w-full h-full object-contain"
+                className="dark:hidden w-5 h-5 object-contain"
               />
               <img
                 src={logoWhite}
                 alt="CodeAbay Logo"
-                className="hidden dark:block w-full h-full object-contain"
+                className="hidden dark:block w-5 h-5 object-contain"
               />
-            </Box>
-
-            <Box style={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
-              <Text
-                size="9px"
-                fw={700}
-                c="dimmed"
-                tt="uppercase"
-                style={{ letterSpacing: "0.06em", lineHeight: 1.1 }}
-              >
-                {t("common.builtBy", "Built by")}
-              </Text>
-              <Text
-                size="xs"
-                fw={700}
+            </a>
+          </Tooltip>
+        </Box>
+      ) : (
+        <Box
+          px="sm"
+          py="xs"
+          style={{
+            borderTop: "1px solid var(--surface-border)",
+            backgroundColor: "var(--sidebar-bg)",
+            flexShrink: 0,
+          }}
+        >
+          <a
+            href="https://codeabay.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "5px 8px",
+              borderRadius: 8,
+              transition: "all 0.15s ease",
+            }}
+            className="hover:bg-accent/60 transition-colors group"
+            title="CodeAbay - Software Development Solutions"
+          >
+            <Group gap="xs" wrap="nowrap" align="center" style={{ minWidth: 0 }}>
+              {/* CodeAbay Logo Mark (Theme Aware) */}
+              <Box
                 style={{
-                  letterSpacing: "-0.01em",
-                  lineHeight: 1.2,
-                  color: "var(--text-main)",
+                  width: 26,
+                  height: 22,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-                className="group-hover:text-primary transition-colors"
               >
-                CodeAbay
-              </Text>
-            </Box>
-          </Group>
+                <img
+                  src={logoBlack}
+                  alt="CodeAbay Logo"
+                  className="dark:hidden w-full h-full object-contain"
+                />
+                <img
+                  src={logoWhite}
+                  alt="CodeAbay Logo"
+                  className="hidden dark:block w-full h-full object-contain"
+                />
+              </Box>
 
-          <ArrowUpRight
-            size={13}
-            className="text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0"
-          />
-        </a>
-      </Box>
+              <Box style={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
+                <Text
+                  size="9px"
+                  fw={700}
+                  c="dimmed"
+                  tt="uppercase"
+                  style={{ letterSpacing: "0.06em", lineHeight: 1.1 }}
+                >
+                  {t("common.builtBy", "Built by")}
+                </Text>
+                <Text
+                  size="xs"
+                  fw={700}
+                  style={{
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.2,
+                    color: "var(--text-main)",
+                  }}
+                  className="group-hover:text-primary transition-colors"
+                >
+                  CodeAbay
+                </Text>
+              </Box>
+            </Group>
+
+            <ArrowUpRight
+              size={13}
+              className="text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0"
+            />
+          </a>
+        </Box>
+      )}
     </Box>
   );
 }

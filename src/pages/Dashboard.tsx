@@ -69,7 +69,7 @@ export default function Dashboard() {
   const canCreateOrder = usePermission("orders.create");
   const canCreateDirectSale = usePermission("directSales.create");
   const canViewReports = usePermission("reports.view");
-  const canViewRevenueChart = canViewOrders || canViewDirectSales || canViewReports;
+  const canViewRevenueChart = canViewReports;
 
   const { data: orders = [], refetch: refetchOrders } = useQuery({
     queryKey: ["active-orders"],

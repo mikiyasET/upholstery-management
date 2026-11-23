@@ -36,11 +36,17 @@ import {
   Tag,
   Boxes,
   ArrowRight,
+  Minus,
+  X,
+  Wrench,
+  Package,
 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '../components/ui/sheet';
+import { ModernSelect } from '../components/ui/modern-select';
+import { useMediaQuery } from '@mantine/hooks';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
@@ -86,6 +92,134 @@ const getPaymentColor = (status: string) => {
   }
 };
 
+interface ResponsiveModalProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  isMobileOrTablet: boolean;
+}
+
+function ResponsiveModal({
+  isOpen,
+  onOpenChange,
+  title,
+  description,
+  icon: Icon,
+  children,
+  footer,
+  isMobileOrTablet,
+}: ResponsiveModalProps) {
+  if (isMobileOrTablet) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="rounded-t-2xl sm:rounded-t-3xl max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none bottom-0 gap-0 focus:outline-none"
+        >
+          <SheetTitle className="sr-only">{title}</SheetTitle>
+          {description && <SheetDescription className="sr-only">{description}</SheetDescription>}
+
+          {/* Drag Handle Indicator */}
+          <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+          {/* Header */}
+          <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {Icon && (
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
+                  {title}
+                </h3>
+                {description && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {description}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Scrollable Body */}
+          <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 min-h-0">
+            {children}
+          </div>
+
+          {/* Docked Footer */}
+          {footer && (
+            <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-end gap-3 sm:gap-4">
+              {footer}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} className="sm:max-w-[520px] bg-card text-card-foreground border border-border p-0 gap-0 overflow-hidden rounded-2xl shadow-2xl">
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {Icon && (
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <DialogTitle className="text-sm sm:text-base font-bold text-foreground leading-tight truncate">
+                {title}
+              </DialogTitle>
+              {description && (
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                  {description}
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Scrollable Body */}
+        <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-6 space-y-4">
+          {children}
+        </div>
+
+        {/* Docked Footer */}
+        {footer && (
+          <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 flex items-center justify-end gap-3">
+            {footer}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -93,6 +227,7 @@ export default function OrderDetail() {
   const getLocName = (item: any) =>
     i18n?.language === 'am' && item?.nameAm ? item.nameAm : (item?.nameEn || item?.name || '');
   const queryClient = useQueryClient();
+  const isMobileOrTablet = useMediaQuery('(max-width: 74.99em)');
 
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
@@ -114,8 +249,10 @@ export default function OrderDetail() {
     standardPrice: number;
     currentPrice: number;
     quantity?: number;
+    unit?: string;
   } | null>(null);
   const [editLinePriceInput, setEditLinePriceInput] = useState('');
+  const [editLineQtyInput, setEditLineQtyInput] = useState('1');
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -131,7 +268,7 @@ export default function OrderDetail() {
       const res = await api.get('/catalog/services');
       return res.data;
     },
-    enabled: isAddServiceOpen,
+    staleTime: 60000,
   });
 
   const selectedService = allServices?.find((s) => s.id === selectedServiceId);
@@ -143,8 +280,19 @@ export default function OrderDetail() {
       const res = await api.get('/catalog/materials');
       return res.data;
     },
-    enabled: isAddMaterialOpen || isAddServiceOpen,
+    staleTime: 60000,
   });
+
+  const getMiniStoreStock = (matId: string) => {
+    const m = allMaterials?.find((x: any) => x.id === matId);
+    const stock = m?.materialStocks?.find((s: any) => s.store?.type === 'MINI');
+    return stock ? Number(stock.quantity) : 0;
+  };
+
+  const getBrandMiniStock = (brand: any) => {
+    const stock = brand?.brandStocks?.find((s: any) => s.store?.type === 'MINI');
+    return stock ? Number(stock.quantity) : 0;
+  };
 
   const updateFsrMutation = useMutation({
     mutationFn: async (newFsr: string) => {
@@ -222,9 +370,60 @@ export default function OrderDetail() {
     if (cats.length === 1) {
       setSelectedCategoryId(cats[0].id);
       setServicePriceInput(String(cats[0].price));
+      const initSelections: Record<string, string> = {};
+      cats[0].materialUsages?.forEach((u: any) => {
+        const mat = allMaterials?.find((m: any) => m.id === u.materialId);
+        if (mat?.brands?.length === 1) {
+          initSelections[u.materialId] = mat.brands[0].id;
+        }
+      });
+      setServiceMaterialBrandSelections(initSelections);
     } else {
       setSelectedCategoryId('');
       setServicePriceInput('');
+      setServiceMaterialBrandSelections({});
+    }
+  };
+
+  const handleCategoryChange = (catId: string) => {
+    setSelectedCategoryId(catId);
+    const cat = categoriesForSelectedService?.find((x: any) => x.id === catId);
+    if (cat) {
+      setServicePriceInput(String(cat.price));
+      const initSelections: Record<string, string> = {};
+      cat.materialUsages?.forEach((u: any) => {
+        const mat = allMaterials?.find((m: any) => m.id === u.materialId);
+        if (mat?.brands?.length === 1) {
+          initSelections[u.materialId] = mat.brands[0].id;
+        }
+      });
+      setServiceMaterialBrandSelections(initSelections);
+    } else {
+      setServicePriceInput('');
+      setServiceMaterialBrandSelections({});
+    }
+  };
+
+  const handleMaterialChange = (matId: string) => {
+    setSelectedMaterialId(matId);
+    const m = allMaterials?.find((x: any) => x.id === matId);
+    if (m?.brands && m.brands.length > 0) {
+      const firstBrand = m.brands[0];
+      setSelectedMaterialBrandId(firstBrand.id);
+      setMaterialPriceInput(String(firstBrand.price ?? m.currentPrice ?? ''));
+    } else {
+      setSelectedMaterialBrandId('');
+      setMaterialPriceInput(m?.currentPrice ? String(m.currentPrice) : '');
+    }
+    setMaterialQty('1');
+  };
+
+  const handleMaterialBrandChange = (brandId: string) => {
+    setSelectedMaterialBrandId(brandId);
+    const m = allMaterials?.find((x: any) => x.id === selectedMaterialId);
+    const b = m?.brands?.find((x: any) => x.id === brandId);
+    if (b) {
+      setMaterialPriceInput(String(b.price));
     }
   };
 
@@ -974,8 +1173,10 @@ export default function OrderDetail() {
                                     name: `${serviceName}${categoryTier ? ` (${categoryTier})` : ''}`,
                                     standardPrice: stdPrice,
                                     currentPrice,
+                                    quantity: 1,
                                   });
                                   setEditLinePriceInput(currentPrice > 0 ? String(currentPrice) : '');
+                                  setEditLineQtyInput('1');
                                 }} 
                                 title={t('orders.adjustPrice', 'Adjust Price / Discount')}
                                 className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20"
@@ -1060,8 +1261,10 @@ export default function OrderDetail() {
                                     standardPrice: stdPrice,
                                     currentPrice,
                                     quantity: qty,
+                                    unit: ml.material?.unit,
                                   });
                                   setEditLinePriceInput(currentPrice > 0 ? String(currentPrice) : '');
+                                  setEditLineQtyInput(String(qty));
                                 }} 
                                 title={t('orders.adjustPrice', 'Adjust Price / Discount')}
                                 className="h-8 w-8 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
@@ -1473,227 +1676,37 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      {/* Add Service Dialog */}
-      <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white">
-          <DialogHeader>
-            <DialogTitle>{t('orders.create.addService')}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="service-select">{t('common.service')}</Label>
-              <Select value={selectedServiceId} onValueChange={(val) => handleServiceChange(val || '')}>
-                <SelectTrigger id="service-select" className="border-gray-200 dark:border-gray-800">
-                  <SelectValue placeholder={t('orders.create.placeholder.service', 'Select a service')}>
-                    {(val: string) => {
-                      if (!val) return <span className="text-muted-foreground">{t('orders.create.placeholder.service', 'Select a service')}</span>;
-                      const s = allServices?.find((x: any) => x.id === val);
-                      return s ? (
-                        <span>
-                          {s.serviceGroup && (
-                            <span className="text-amber-600 dark:text-amber-400 font-semibold mr-1">
-                              [{getLocName(s.serviceGroup)}]
-                            </span>
-                          )}
-                          {getLocName(s)}
-                        </span>
-                      ) : val;
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800">
-                  {allServices?.map((s: any) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.serviceGroup ? `[${getLocName(s.serviceGroup)}] ${getLocName(s)}` : getLocName(s)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="category-select">{t('common.category')}</Label>
-              <Select 
-                value={selectedCategoryId} 
-                onValueChange={(val) => {
-                  const cId = val || '';
-                  setSelectedCategoryId(cId);
-                  const c = categoriesForSelectedService?.find((x: any) => x.id === cId);
-                  if (c) {
-                    setServicePriceInput(String(c.price));
-                    const initSelections: Record<string, string> = {};
-                    c.materialUsages?.forEach((u: any) => {
-                      const mat = allMaterials?.find((m: any) => m.id === u.materialId);
-                      if (mat?.brands?.length === 1) {
-                        initSelections[u.materialId] = mat.brands[0].id;
-                      }
-                    });
-                    setServiceMaterialBrandSelections(initSelections);
-                  } else {
-                    setServicePriceInput('');
-                    setServiceMaterialBrandSelections({});
-                  }
-                }} 
-                disabled={!selectedServiceId}
-              >
-                <SelectTrigger id="category-select" className="border-gray-200 dark:border-gray-800">
-                  <SelectValue placeholder={t('orders.create.placeholder.category', 'Select a category')}>
-                    {(val: string) => {
-                      if (!val) return <span className="text-muted-foreground">{t('orders.create.placeholder.category', 'Select a category')}</span>;
-                      const c = categoriesForSelectedService?.find((x: any) => x.id === val);
-                      return c ? `${getLocName(c)} (${Number(c.price).toLocaleString()} ${t('common.birr', 'Birr')})` : val;
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800">
-                  {categoriesForSelectedService?.map((cat: any) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {getLocName(cat)} ({Number(cat.price).toLocaleString()} {t('common.birr', 'Birr')})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Add Service Modal / Bottom Sheet */}
+      <ResponsiveModal
+        isOpen={isAddServiceOpen}
+        onOpenChange={setIsAddServiceOpen}
+        title={t('orders.create.addService')}
+        description={t('orders.create.addServiceDesc', 'Select a service and package tier to add to this order.')}
+        icon={Wrench}
+        isMobileOrTablet={isMobileOrTablet}
+        footer={
+          (() => {
+            const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
+            const hasUnallocatedUsage = Boolean(cat?.materialUsages?.some((u: any) => {
+              const mat = allMaterials?.find((m: any) => m.id === u.materialId);
+              return mat && getMaterialUnallocatedStock(mat, 'MINI') > 0;
+            }));
+            const missingBrandSelection = Boolean(cat?.materialUsages?.some((u: any) => {
+              const mat = allMaterials?.find((m: any) => m.id === u.materialId);
+              return mat?.brands && mat.brands.length > 0 && !serviceMaterialBrandSelections[mat.id];
+            }));
+            const currentPriceVal = Number(servicePriceInput) || Number(cat?.price || 0);
 
-            {selectedCategoryId && (
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="service-price">{t('orders.create.unitPrice', 'Service Price (Birr)')}</Label>
-                  {(() => {
-                    const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
-                    if (!cat) return null;
-                    const std = Number(cat.price);
-                    const custom = Number(servicePriceInput);
-                    if (!isNaN(custom) && custom < std && custom > 0) {
-                      return (
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
-                          -{formatCurrency(std - custom)} ({Math.round(((std - custom) / std) * 100)}% off)
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-                <Input
-                  id="service-price"
-                  type="text"
-                  value={servicePriceInput}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (/^\d*\.?\d*$/.test(val)) setServicePriceInput(val);
-                  }}
-                  placeholder="0.00"
-                  className="font-mono font-bold border-gray-200 dark:border-gray-800"
-                />
-              </div>
-            )}
-
-            {/* Required Materials & Variant Selectors */}
-            {(() => {
-              const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
-              const hasBrandedUsages = cat?.materialUsages?.some((u: any) => {
-                const m = allMaterials?.find((x: any) => x.id === u.materialId);
-                return m?.brands && m.brands.length > 0;
-              });
-              if (!hasBrandedUsages) return null;
-
-              return (
-                <div className="p-3 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-2">
-                  <div className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                    <Boxes className="w-3.5 h-3.5" />
-                    <span>{t('orders.create.requiredMaterials', 'Required Materials & Parts')}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {cat.materialUsages.map((usage: any) => {
-                      const mat = allMaterials?.find((x: any) => x.id === usage.materialId);
-                      if (!mat || !mat.brands || mat.brands.length === 0) return null;
-                      const selectedBrandId = serviceMaterialBrandSelections[mat.id] || '';
-                      return (
-                        <div key={usage.id || usage.materialId} className="space-y-1">
-                          <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                            <span className="truncate">{getLocName(mat)}</span>
-                            <span className="text-[11px] text-muted-foreground font-mono font-normal">
-                              ({usage.quantityUsed} {mat.unit || ''})
-                            </span>
-                          </div>
-                          <Select
-                            value={selectedBrandId}
-                            onValueChange={(val) => {
-                              setServiceMaterialBrandSelections(prev => ({ ...prev, [mat.id]: val }));
-                            }}
-                          >
-                            <SelectTrigger className="border-gray-200 dark:border-gray-800 text-xs h-9">
-                              <SelectValue placeholder={t('materials.selectBrand', 'Select brand / variant...')}>
-                                {(val: string) => {
-                                  const b = mat.brands.find((x: any) => x.id === val);
-                                  if (!b) return <span className="text-muted-foreground">{t('materials.selectBrand', 'Select brand / variant...')}</span>;
-                                  const stock = Number(b.brandStocks?.find((s: any) => s.store?.type === 'MINI')?.quantity ?? 0);
-                                  return (
-                                    <span className="text-xs font-semibold truncate block">
-                                      {formatBrandSizeLabel({ name: b.name, size: b.size, color: b.color, type: b.type })} ({stock} in stock)
-                                    </span>
-                                  );
-                                }}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800">
-                              {mat.brands.map((b: any) => {
-                                const stock = Number(b.brandStocks?.find((s: any) => s.store?.type === 'MINI')?.quantity ?? 0);
-                                const label = formatBrandSizeLabel({ name: b.name, size: b.size, color: b.color, type: b.type });
-                                const isInsufficient = stock < Number(usage.quantityUsed);
-                                return (
-                                  <SelectItem key={b.id} value={b.id} disabled={isInsufficient} className="text-xs">
-                                    {label} ({stock} {t('orders.create.inStock', 'in stock')}) {isInsufficient ? ' - Insufficient' : ''}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-            {(() => {
-              const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
-              const unallocatedUsage = cat?.materialUsages?.find((u: any) => {
-                const mat = allMaterials?.find((m: any) => m.id === u.materialId);
-                return mat && getMaterialUnallocatedStock(mat, 'MINI') > 0;
-              });
-              if (!unallocatedUsage) return null;
-              const unallocatedMat = allMaterials?.find((m: any) => m.id === unallocatedUsage.materialId);
-              const unallocatedQty = unallocatedMat ? getMaterialUnallocatedStock(unallocatedMat, 'MINI') : 0;
-
-              return (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">{t('storage.needsAllocation', 'Needs Allocation')}</p>
-                    <p>
-                      {t('storage.unallocatedServiceBlocked', {
-                        serviceName: `${getLocName(selectedService)} - ${getLocName(cat)}`,
-                        materialName: getLocName(unallocatedMat),
-                        unallocated: unallocatedQty,
-                        defaultValue: `Cannot add service: Required material "${getLocName(unallocatedMat)}" has ${unallocatedQty} unallocated stock in Mini Store. Please allocate it first in Storage.`
-                      })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddServiceOpen(false)} className="border-gray-200 dark:border-gray-800">{t('common.cancel')}</Button>
-            {(() => {
-              const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
-              const hasUnallocatedUsage = Boolean(cat?.materialUsages?.some((u: any) => {
-                const mat = allMaterials?.find((m: any) => m.id === u.materialId);
-                return mat && getMaterialUnallocatedStock(mat, 'MINI') > 0;
-              }));
-
-              return (
-                <Button 
+            return (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddServiceOpen(false)}
+                  className="border-gray-200 dark:border-gray-800"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
                   onClick={() => {
                     if (!selectedCategoryId) return;
                     if (cat && cat.materialUsages) {
@@ -1720,7 +1733,7 @@ export default function OrderDetail() {
                               return;
                             }
                             const brand = mat.brands.find((b: any) => b.id === selectedBrandId);
-                            const brandStock = Number(brand?.brandStocks?.find((s: any) => s.store?.type === 'MINI')?.quantity ?? 0);
+                            const brandStock = getBrandMiniStock(brand);
                             const needed = Number(usage.quantityUsed);
                             if (needed > brandStock) {
                               toast.error(t('orders.validation.notEnoughStockForBrand', {
@@ -1752,279 +1765,624 @@ export default function OrderDetail() {
                         materialBrandId: serviceMaterialBrandSelections[u.materialId] || undefined,
                       })),
                     });
-                  }} 
+                  }}
                   disabled={
                     !selectedCategoryId || 
                     hasUnallocatedUsage || 
-                    Boolean(cat?.materialUsages?.some((u: any) => {
-                      const mat = allMaterials?.find((m: any) => m.id === u.materialId);
-                      return mat?.brands && mat.brands.length > 0 && !serviceMaterialBrandSelections[mat.id];
-                    })) ||
+                    missingBrandSelection ||
                     addServiceMutation.isPending
                   }
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
                 >
-                  {addServiceMutation.isPending ? t('common.adding') : t('orders.create.addService')}
+                  {addServiceMutation.isPending ? t('common.adding') : `${t('orders.create.addService')} ${selectedCategoryId ? `(${formatCurrency(currentPriceVal)})` : ''}`}
                 </Button>
-              );
-            })()}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              </>
+            );
+          })()
+        }
+      >
+        <div className="space-y-4">
+          {/* Service Selector with ModernSelect */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-foreground">
+              {t('common.service')}
+            </Label>
+            <ModernSelect
+              sheetTitle={t('orders.create.placeholder.service', 'Select Service')}
+              placeholder={t('orders.create.placeholder.service', 'Select service...')}
+              showCategoryFilter={true}
+              value={selectedServiceId}
+              onValueChange={(val) => handleServiceChange(val || '')}
+              options={allServices?.length ? allServices.map((s: any) => ({
+                value: s.id,
+                label: getLocName(s),
+                category: s.serviceGroup ? getLocName(s.serviceGroup) : undefined
+              })) : [{ value: 'no-services', label: t('orders.create.noServices', 'No services available'), disabled: true }]}
+              valueRender={(val: string) => {
+                if (!val || val === 'no-services') return <span className="text-muted-foreground text-xs">{t('orders.create.placeholder.service', 'Select service...')}</span>;
+                const s = allServices?.find((x: any) => x.id === val);
+                return s ? (
+                  <span className="text-xs font-semibold flex items-center gap-1.5 truncate">
+                    {s.serviceGroup && (
+                      <span className="text-amber-600 dark:text-amber-400 font-bold text-[10px] px-1 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 shrink-0">
+                        {getLocName(s.serviceGroup)}
+                      </span>
+                    )}
+                    <span className="truncate">{getLocName(s)}</span>
+                  </span>
+                ) : val;
+              }}
+            />
+          </div>
 
-      {/* Add Material Dialog */}
-      <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white">
-          <DialogHeader>
-            <DialogTitle>{t('orders.detail.addMaterial')}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="material">{t('orders.detail.materialItem')}</Label>
-              <Select
-                value={selectedMaterialId}
-                onValueChange={(val) => {
-                  const id = val || '';
-                  setSelectedMaterialId(id);
-                  const m = allMaterials?.find((x: any) => x.id === id);
-                  if (m?.brands && m.brands.length > 0) {
-                    setSelectedMaterialBrandId(m.brands[0].id);
-                    setMaterialPriceInput(String(m.brands[0].price));
-                  } else {
-                    setSelectedMaterialBrandId('');
-                    setMaterialPriceInput(m?.currentPrice ? String(m.currentPrice) : '');
-                  }
-                }}
-              >
-                <SelectTrigger id="material" className="border-gray-200 dark:border-gray-800">
-                  <SelectValue placeholder={t('orders.create.placeholder.material', 'Select a material')}>
-                    {(val: string) => {
-                      if (!val) return <span className="text-muted-foreground">{t('orders.create.placeholder.material', 'Select a material')}</span>;
-                      const m = allMaterials?.find((x: any) => x.id === val);
-                      return m ? `${m.itemCode ? `[${m.itemCode}] ` : ''}${getLocName(m)}` : val;
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800">
-                  {allMaterials?.filter((m: any) => m.isStandaloneSellable).map((m: any) => {
-                    const unalloc = getMaterialUnallocatedStock(m, 'MINI');
+          {/* Category Selector with ModernSelect */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-foreground">
+              {t('common.category')}
+            </Label>
+            <ModernSelect
+              sheetTitle={t('orders.create.selectCategory', 'Select Category')}
+              placeholder={t('orders.create.selectCategory', 'Select category...')}
+              value={selectedCategoryId}
+              onValueChange={(val) => handleCategoryChange(val || '')}
+              disabled={!selectedServiceId}
+              options={categoriesForSelectedService?.length ? categoriesForSelectedService.map((c: any) => ({
+                value: c.id,
+                label: `${getLocName(c)} (${formatCurrency(c.price)})`
+              })) : [{ value: 'no-categories', label: t('orders.create.noCategories', 'No categories available'), disabled: true }]}
+              valueRender={(val: string) => {
+                if (!val || val === 'no-categories') return <span className="text-muted-foreground text-xs">{t('orders.create.selectCategory', 'Select category...')}</span>;
+                const c = categoriesForSelectedService?.find((x: any) => x.id === val);
+                return c ? <span className="text-xs font-semibold truncate block">{getLocName(c)} ({formatCurrency(c.price)})</span> : val;
+              }}
+            />
+          </div>
+
+          {/* Required Materials & Variant Selectors */}
+          {(() => {
+            const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
+            const brandedUsages = cat?.materialUsages?.filter((u: any) => {
+              const m = allMaterials?.find((x: any) => x.id === u.materialId);
+              return m?.brands && m.brands.length > 0;
+            });
+            if (!brandedUsages || brandedUsages.length === 0) return null;
+
+            return (
+              <div className="p-3 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-2.5">
+                <div className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <Boxes className="w-3.5 h-3.5" />
+                  <span>{t('orders.create.requiredMaterials', 'Required Materials & Parts')}</span>
+                </div>
+                <div className="space-y-2.5">
+                  {brandedUsages.map((usage: any) => {
+                    const mat = allMaterials?.find((x: any) => x.id === usage.materialId);
+                    if (!mat) return null;
+                    const selectedBrandId = serviceMaterialBrandSelections[mat.id] || '';
                     return (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.itemCode ? `[${m.itemCode}] ` : ''}{getLocName(m)} {m.brands && m.brands.length > 0 ? `(${m.brands.length} ${t('materials.brands', 'Brands')})` : `(${Number(m.currentPrice || 0).toLocaleString()} ${t('common.birr', 'Birr')})`}{unalloc > 0 ? ` (⚠️ ${t('storage.needsAllocation', 'Needs Allocation')})` : ''}
-                      </SelectItem>
+                      <div key={usage.id || usage.materialId} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                          <span className="truncate">{getLocName(mat)}</span>
+                          <span className="text-[11px] text-muted-foreground font-mono font-normal">
+                            ({usage.quantityUsed} {mat.unit || ''})
+                          </span>
+                        </div>
+                        <ModernSelect
+                          sheetTitle={t('materials.selectBrand', 'Select Brand / Variant')}
+                          placeholder={t('materials.selectBrand', 'Select brand / variant...')}
+                          inputSize="sm"
+                          value={selectedBrandId}
+                          onValueChange={(val) => {
+                            setServiceMaterialBrandSelections(prev => ({ ...prev, [mat.id]: val as string }));
+                          }}
+                          options={mat.brands.map((b: any) => {
+                            const stock = getBrandMiniStock(b);
+                            const label = formatBrandSizeLabel({ name: b.name, size: b.size, color: b.color, type: b.type });
+                            const isInsufficient = stock < Number(usage.quantityUsed);
+                            return {
+                              value: b.id,
+                              label: `${label} (${stock} ${t('orders.create.inStock', 'in stock')})${isInsufficient ? ' - Insufficient' : ''}`,
+                              disabled: isInsufficient,
+                            };
+                          })}
+                          valueRender={(val) => {
+                            const b = mat.brands.find((x: any) => x.id === val);
+                            if (!b) return <span className="text-muted-foreground text-xs">{t('materials.selectBrand', 'Select brand / variant...')}</span>;
+                            const stock = getBrandMiniStock(b);
+                            return (
+                              <span className="text-xs font-semibold truncate block">
+                                {formatBrandSizeLabel({ name: b.name, size: b.size, color: b.color, type: b.type })} ({stock} {t('orders.create.inStock', 'in stock')})
+                              </span>
+                            );
+                          }}
+                        />
+                      </div>
                     );
                   })}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </div>
+            );
+          })()}
 
-            {(() => {
-              const activeMat = allMaterials?.find((x: any) => x.id === selectedMaterialId);
-              const unalloc = activeMat ? getMaterialUnallocatedStock(activeMat, 'MINI') : 0;
-              if (unalloc <= 0) return null;
-              return (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex items-start justify-between gap-2.5">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">{t('storage.needsAllocation', 'Needs Allocation')}</p>
-                      <p>
-                        {t('storage.unallocatedOrderBlocked', {
-                          unallocated: unalloc,
-                          defaultValue: `This material has ${unalloc} unallocated stock in Mini Store. It must be allocated across brands in Storage before it can be added to an order.`
-                        })}
-                      </p>
-                    </div>
+          {/* Unallocated stock warning */}
+          {(() => {
+            const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
+            const unallocatedUsage = cat?.materialUsages?.find((u: any) => {
+              const mat = allMaterials?.find((m: any) => m.id === u.materialId);
+              return mat && getMaterialUnallocatedStock(mat, 'MINI') > 0;
+            });
+            if (!unallocatedUsage) return null;
+            const unallocatedMat = allMaterials?.find((m: any) => m.id === unallocatedUsage.materialId);
+            const unallocatedQty = unallocatedMat ? getMaterialUnallocatedStock(unallocatedMat, 'MINI') : 0;
+
+            return (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-start justify-between gap-2.5">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">{t('storage.needsAllocation', 'Needs Allocation')}</p>
+                    <p className="mt-0.5">
+                      {t('storage.unallocatedServiceBlocked', {
+                        serviceName: `${getLocName(selectedService)} - ${getLocName(cat)}`,
+                        materialName: getLocName(unallocatedMat),
+                        unallocated: unallocatedQty,
+                        defaultValue: `Cannot add service: Required material "${getLocName(unallocatedMat)}" has ${unallocatedQty} unallocated stock in Mini Store. Please allocate it first in Storage.`
+                      })}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const searchTarget = (i18n.language === 'am' && activeMat?.nameAm) ? activeMat.nameAm : (activeMat?.nameEn || activeMat?.itemCode || '');
-                      setIsAddMaterialOpen(false);
-                      navigate(`/storage?search=${encodeURIComponent(searchTarget)}&store=MINI&allocate=true&materialId=${activeMat?.id}`);
-                    }}
-                    className="shrink-0 font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 text-xs flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 mt-0.5"
-                  >
-                    <span>{t('storage.allocate', 'Allocate')}</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
                 </div>
-              );
-            })()}
-
-            {(() => {
-              const activeMat = allMaterials?.find((x: any) => x.id === selectedMaterialId);
-              if (!activeMat?.brands || activeMat.brands.length === 0) return null;
-              return (
-                <div className="grid gap-2">
-                  <Label htmlFor="brand">{t('materials.brands', 'Brand')}</Label>
-                  <Select 
-                    value={selectedMaterialBrandId} 
-                    onValueChange={(val) => {
-                      const bId = val || '';
-                      setSelectedMaterialBrandId(bId);
-                      const b = activeMat.brands?.find((x: any) => x.id === bId);
-                      if (b) {
-                        setMaterialPriceInput(String(b.price));
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="brand" className="border-gray-200 dark:border-gray-800">
-                      <SelectValue placeholder={t('materials.selectBrand', 'Select a brand')}>
-                        {(val: string) => {
-                          if (!val) return <span className="text-muted-foreground">{t('materials.selectBrand', 'Select a brand')}</span>;
-                          const b = activeMat.brands?.find((x: any) => x.id === val);
-                          return b ? formatBrandSizeLabel(b) : val;
-                        }}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-[#161616] border border-gray-200 dark:border-gray-800">
-                      {activeMat.brands.map((b: any) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {formatBrandSizeLabel(b)} ({Number(b.price || 0).toLocaleString()} {t('common.birr', 'Birr')})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              );
-            })()}
-
-            <div className="grid gap-2">
-              <Label htmlFor="qty">
-                {t('orders.detail.quantity')} {(() => {
-                  const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
-                  return mat?.unit ? `(${formatUnit(mat.unit)})` : '';
-                })()}
-              </Label>
-              <Input
-                id="qty"
-                type="text"
-                value={materialQty}
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => {
-                  let val = e.target.value;
-                  if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
-                  const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
-                  const isInt = isUnitIntegerOnly(mat?.unit);
-                  const regex = isInt ? /^\d*$/ : /^\d*\.?\d*$/;
-                  if (regex.test(val)) {
-                    setMaterialQty(val);
-                  }
-                }}
-                placeholder="—"
-                className="border-gray-200 dark:border-gray-800"
-              />
-            </div>
-
-            {selectedMaterialId && (
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="material-price">{t('orders.create.unitPrice', 'Unit Price (Birr)')}</Label>
-                  {(() => {
-                    const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
-                    const brand = mat?.brands?.find((b: any) => b.id === selectedMaterialBrandId);
-                    const std = Number(brand?.price ?? mat?.currentPrice ?? 0);
-                    const custom = Number(materialPriceInput);
-                    if (std > 0 && !isNaN(custom) && custom < std && custom > 0) {
-                      return (
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
-                          -{formatCurrency(std - custom)} ({Math.round(((std - custom) / std) * 100)}% off)
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-                <Input
-                  id="material-price"
-                  type="text"
-                  value={materialPriceInput}
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => {
-                    let val = e.target.value;
-                    if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
-                    if (/^\d*\.?\d*$/.test(val)) setMaterialPriceInput(val);
+                <button
+                  type="button"
+                  onClick={() => {
+                    const searchTarget = (i18n.language === 'am' && unallocatedMat?.nameAm) ? unallocatedMat.nameAm : (unallocatedMat?.nameEn || unallocatedMat?.itemCode || '');
+                    setIsAddServiceOpen(false);
+                    navigate(`/storage?search=${encodeURIComponent(searchTarget)}&store=MINI&allocate=true&materialId=${unallocatedMat?.id}`);
                   }}
-                  placeholder="—"
-                  className="font-mono font-bold border-gray-200 dark:border-gray-800"
+                  className="shrink-0 font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 text-xs flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 mt-0.5"
+                >
+                  <span>{t('storage.allocate', 'Allocate')}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Editable Service Price Input */}
+          {selectedCategoryId && (() => {
+            const cat = categoriesForSelectedService?.find((c: any) => c.id === selectedCategoryId);
+            if (!cat) return null;
+            const std = Number(cat.price);
+            const custom = Number(servicePriceInput);
+            const isValid = !isNaN(custom) && custom >= 0;
+            const diff = isValid ? std - custom : 0;
+            const isDiscount = diff > 0 && std > 0;
+            const isSurcharge = diff < 0 && std > 0;
+
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="service-price" className="text-xs font-semibold text-foreground">
+                    {t('orders.create.unitPrice', 'Service Price (Birr)')}
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {Number(servicePriceInput) !== std && (
+                      <button
+                        type="button"
+                        onClick={() => setServicePriceInput(String(std))}
+                        className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        Reset to Standard
+                      </button>
+                    )}
+                    {isDiscount && (
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                        -{formatCurrency(diff)} ({Math.round((diff / std) * 100)}% off)
+                      </span>
+                    )}
+                    {isSurcharge && (
+                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                        +{formatCurrency(Math.abs(diff))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="service-price"
+                    type="text"
+                    value={servicePriceInput}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (/^\d*\.?\d*$/.test(val)) setServicePriceInput(val);
+                    }}
+                    placeholder="0.00"
+                    className="font-mono font-bold border-gray-200 dark:border-gray-800 pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
+                    ETB
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </ResponsiveModal>
+
+      {/* Add Material Modal / Bottom Sheet */}
+      <ResponsiveModal
+        isOpen={isAddMaterialOpen}
+        onOpenChange={setIsAddMaterialOpen}
+        title={t('orders.detail.addMaterial')}
+        description={t('orders.create.addMaterialDesc', 'Select a standalone material, select variant brand if needed, adjust quantity and unit price.')}
+        icon={Package}
+        isMobileOrTablet={isMobileOrTablet}
+        footer={
+          (() => {
+            const activeMat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
+            const activeBrand = activeMat?.brands?.find((b: any) => b.id === selectedMaterialBrandId);
+            const stdUnitPrice = Number(activeBrand?.price ?? activeMat?.currentPrice ?? 0);
+            const effectiveUnitPrice = Number(materialPriceInput) || stdUnitPrice;
+            const effectiveQty = Number(materialQty) || 1;
+            const lineTotal = effectiveUnitPrice * effectiveQty;
+            const unalloc = activeMat ? getMaterialUnallocatedStock(activeMat, 'MINI') : 0;
+            const isPcs = isUnitIntegerOnly(activeMat?.unit);
+            const qtyVal = Number(materialQty);
+            const isQtyValid = Boolean(materialQty && !isNaN(qtyVal) && qtyVal > 0 && (!isPcs || Number.isInteger(qtyVal)));
+            const availableStock = activeMat?.brands?.length ? getBrandMiniStock(activeBrand) : getMiniStoreStock(activeMat?.id);
+
+            return (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddMaterialOpen(false)}
+                  className="border-gray-200 dark:border-gray-800"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={() => {
+                    const qtyNeeded = Number(materialQty);
+                    const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
+                    const isPcsMat = isUnitIntegerOnly(mat?.unit);
+
+                    if (!materialQty || isNaN(qtyNeeded) || qtyNeeded <= 0) {
+                      return;
+                    }
+
+                    if (mat) {
+                      const unallocated = getMaterialUnallocatedStock(mat, 'MINI');
+                      if (unallocated > 0) {
+                        toast.error(
+                          t('storage.unallocatedOrderBlocked', {
+                            name: getLocName(mat),
+                            unallocated,
+                            defaultValue: `This material has ${unallocated} unallocated stock in Mini Store. It must be allocated across brands in Storage before it can be added to an order.`
+                          })
+                        );
+                        return;
+                      }
+                    }
+
+                    if (isPcsMat && !Number.isInteger(qtyNeeded)) {
+                      toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
+                      return;
+                    }
+
+                    const brand = mat?.brands?.find((b: any) => b.id === selectedMaterialBrandId);
+                    const stockAvailable = mat?.brands?.length ? getBrandMiniStock(brand) : getMiniStoreStock(mat?.id);
+                    if (qtyNeeded > stockAvailable) {
+                      toast.error(t('orders.validation.notEnoughStock', { needed: qtyNeeded, available: stockAvailable }));
+                      return;
+                    }
+
+                    if (mat?.brands && mat.brands.length > 0 && !selectedMaterialBrandId) {
+                      toast.error(t('materials.brandRequired', 'Please select a brand'));
+                      return;
+                    }
+
+                    addMaterialMutation.mutate({
+                      materialId: selectedMaterialId,
+                      materialBrandId: brand?.id,
+                      brandName: brand?.name,
+                      sizeName: brand?.size || null,
+                      colorName: brand?.color || null,
+                      typeName: brand?.type || null,
+                      quantity: qtyNeeded,
+                      unitPrice: materialPriceInput && !isNaN(Number(materialPriceInput)) && Number(materialPriceInput) >= 0
+                        ? Number(materialPriceInput)
+                        : undefined,
+                    });
+                  }}
+                  disabled={
+                    !selectedMaterialId ||
+                    !isQtyValid ||
+                    unalloc > 0 ||
+                    availableStock <= 0 ||
+                    qtyVal > availableStock ||
+                    (Boolean(activeMat?.brands?.length) && !selectedMaterialBrandId) ||
+                    addMaterialMutation.isPending
+                  }
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  {addMaterialMutation.isPending ? t('common.adding') : `${t('orders.detail.addMaterial')} ${selectedMaterialId ? `(${formatCurrency(lineTotal)})` : ''}`}
+                </Button>
+              </>
+            );
+          })()
+        }
+      >
+        <div className="space-y-4">
+          {/* Material Selector with ModernSelect */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-foreground">
+              {t('orders.detail.materialItem')}
+            </Label>
+            <ModernSelect
+              sheetTitle={t('orders.create.selectMaterial', 'Select Material')}
+              placeholder={t('orders.create.placeholder.material', 'Select a material...')}
+              value={selectedMaterialId}
+              onValueChange={(val) => handleMaterialChange(val || '')}
+              options={allMaterials?.filter((m: any) => m.isStandaloneSellable).length ? allMaterials.filter((m: any) => m.isStandaloneSellable).map((m: any) => {
+                const stock = getMiniStoreStock(m.id);
+                const unalloc = getMaterialUnallocatedStock(m, 'MINI');
+                const needsAlloc = unalloc > 0;
+                return {
+                  value: m.id,
+                  label: `${getLocName(m)}${m.itemCode ? ` (${m.itemCode})` : ''} (${formatCurrency(m.currentPrice)})${needsAlloc ? ` (⚠️ ${t('storage.needsAllocation', 'Needs Allocation')})` : ''}`,
+                  labelNode: (
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 truncate">
+                        <span className="truncate">{getLocName(m)}</span>
+                        {m.itemCode && (
+                          <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground border border-border/60 shrink-0">
+                            {m.itemCode}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {needsAlloc && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                            ⚠️ {t('storage.needsAllocation', 'Needs Allocation')}
+                          </span>
+                        )}
+                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${stock > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 font-bold'}`}>
+                          {stock > 0 ? `${t('orders.create.stock', 'Stock')}: ${stock}` : t('orders.create.out', 'Out')}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                };
+              }) : [{ value: 'no-materials', label: t('orders.create.noMaterials', 'No materials available'), disabled: true }]}
+              valueRender={(val: string) => {
+                if (!val || val === 'no-materials') return <span className="text-muted-foreground text-xs">{t('orders.create.placeholder.material', 'Select a material...')}</span>;
+                const m = allMaterials?.find((x: any) => x.id === val);
+                return m ? (
+                  <span className="text-xs font-semibold flex items-center gap-1.5 truncate">
+                    <span className="truncate">{getLocName(m)}</span>
+                    {m.itemCode && (
+                      <span className="text-[9px] font-mono font-normal px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border/50 shrink-0">
+                        {m.itemCode}
+                      </span>
+                    )}
+                  </span>
+                ) : val;
+              }}
+            />
+          </div>
+
+          {/* Unallocated stock warning */}
+          {(() => {
+            const activeMat = allMaterials?.find((x: any) => x.id === selectedMaterialId);
+            const unalloc = activeMat ? getMaterialUnallocatedStock(activeMat, 'MINI') : 0;
+            if (unalloc <= 0) return null;
+            return (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-start justify-between gap-2.5">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">{t('storage.needsAllocation', 'Needs Allocation')}</p>
+                    <p className="mt-0.5">
+                      {t('storage.unallocatedOrderBlocked', {
+                        unallocated: unalloc,
+                        defaultValue: `This material has ${unalloc} unallocated stock in Mini Store. It must be allocated across brands in Storage before it can be added to an order.`
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const searchTarget = (i18n.language === 'am' && activeMat?.nameAm) ? activeMat.nameAm : (activeMat?.nameEn || activeMat?.itemCode || '');
+                    setIsAddMaterialOpen(false);
+                    navigate(`/storage?search=${encodeURIComponent(searchTarget)}&store=MINI&allocate=true&materialId=${activeMat?.id}`);
+                  }}
+                  className="shrink-0 font-bold underline text-amber-600 hover:text-amber-700 dark:text-amber-400 text-xs flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 mt-0.5"
+                >
+                  <span>{t('storage.allocate', 'Allocate')}</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Brand Selector if material has brands */}
+          {(() => {
+            const activeMat = allMaterials?.find((x: any) => x.id === selectedMaterialId);
+            if (!activeMat?.brands || activeMat.brands.length === 0) return null;
+            return (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {t('materials.brands', 'Brand / Variant')}
+                </Label>
+                <ModernSelect
+                  sheetTitle={t('materials.selectBrand', 'Select Brand')}
+                  placeholder={t('materials.selectBrand', 'Select Brand')}
+                  value={selectedMaterialBrandId}
+                  onValueChange={(val) => handleMaterialBrandChange(val || '')}
+                  options={activeMat.brands.map((b: any) => {
+                    const bStock = getBrandMiniStock(b);
+                    const label = formatBrandSizeLabel(b);
+                    return {
+                      value: b.id,
+                      label: `${label} (${formatCurrency(b.price)})`,
+                      labelNode: (
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span className="truncate">{label} ({formatCurrency(b.price)})</span>
+                          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${bStock > 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500 font-bold'}`}>
+                            {bStock > 0 ? `${t('orders.create.stock', 'Stock')}: ${bStock}` : t('orders.create.out', 'Out')}
+                          </span>
+                        </div>
+                      )
+                    };
+                  })}
+                  valueRender={(val: string) => {
+                    if (!val) return <span className="text-muted-foreground text-xs">{t('materials.selectBrand', 'Select Brand')}</span>;
+                    const b = activeMat.brands?.find((x: any) => x.id === val);
+                    return b ? <span className="text-xs font-semibold truncate block">{formatBrandSizeLabel(b)} ({formatCurrency(b.price)})</span> : val;
+                  }}
                 />
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddMaterialOpen(false)} className="border-gray-200 dark:border-gray-800">{t('common.cancel')}</Button>
-            <Button
-              onClick={() => {
-                const qtyNeeded = Number(materialQty);
-                const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
-                const isPcs = isUnitIntegerOnly(mat?.unit);
+            );
+          })()}
 
-                if (!materialQty || isNaN(qtyNeeded) || qtyNeeded <= 0) {
-                  return;
-                }
+          {/* Quantity Stepper & Input */}
+          {selectedMaterialId && (() => {
+            const activeMat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
+            const isInt = isUnitIntegerOnly(activeMat?.unit);
+            const activeBrand = activeMat?.brands?.find((b: any) => b.id === selectedMaterialBrandId);
+            const availableStock = activeMat?.brands?.length
+              ? getBrandMiniStock(activeBrand)
+              : getMiniStoreStock(activeMat?.id);
 
-                if (mat) {
-                  const unallocated = getMaterialUnallocatedStock(mat, 'MINI');
-                  if (unallocated > 0) {
-                    toast.error(
-                      t('storage.unallocatedOrderBlocked', {
-                        name: getLocName(mat),
-                        unallocated,
-                        defaultValue: `This material has ${unallocated} unallocated stock in Mini Store. It must be allocated across brands in Storage before it can be added to an order.`
-                      })
-                    );
-                    return;
-                  }
-                }
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="material-qty" className="text-xs font-semibold text-foreground">
+                    {t('orders.detail.quantity')} {activeMat?.unit ? `(${formatUnit(activeMat.unit)})` : ''}
+                  </Label>
+                  <span className={`text-xs font-mono font-semibold ${availableStock > 0 ? 'text-muted-foreground' : 'text-red-500'}`}>
+                    {t('orders.create.available', 'Available')}: {availableStock} {activeMat?.unit ? formatUnit(activeMat.unit) : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-card border border-input rounded-xl px-2 h-10 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMaterialQty((prev) => {
+                          const cur = Number(prev || 1);
+                          const next = isInt
+                            ? Math.max(1, Math.floor(cur) - 1)
+                            : Math.max(0.1, Math.round((cur - 1) * 100) / 100);
+                          return String(next);
+                        });
+                      }}
+                      className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer"
+                      title="Decrease quantity"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <input
+                      id="material-qty"
+                      type="text"
+                      className="w-14 text-center bg-transparent text-sm font-bold font-mono focus:outline-none text-foreground"
+                      value={materialQty}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
+                        const regex = isInt ? /^\d*$/ : /^\d*\.?\d*$/;
+                        if (regex.test(val)) setMaterialQty(val);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMaterialQty((prev) => {
+                          const cur = Number(prev || 0);
+                          const next = isInt
+                            ? cur + 1
+                            : Math.round((cur + 1) * 100) / 100;
+                          return String(next);
+                        });
+                      }}
+                      className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer"
+                      title="Increase quantity"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-                if (isPcs && !Number.isInteger(qtyNeeded)) {
-                  toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
-                  return;
-                }
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {isInt ? t('orders.create.wholeUnitsOnly', 'Whole units only') : t('orders.create.decimalAllowed', 'Decimals allowed')}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
-                const stock = mat?.materialStocks?.find((s: any) => s.store.type === 'MINI');
-                const available = stock ? Number(stock.quantity) : 0;
-                
-                if (qtyNeeded > available) {
-                  toast.error(t('orders.validation.notEnoughStock', { needed: qtyNeeded, available }));
-                  return;
-                }
+          {/* Unit Price Input with Live Discount */}
+          {selectedMaterialId && (() => {
+            const mat = allMaterials?.find((m: any) => m.id === selectedMaterialId);
+            const brand = mat?.brands?.find((b: any) => b.id === selectedMaterialBrandId);
+            const std = Number(brand?.price ?? mat?.currentPrice ?? 0);
+            const custom = Number(materialPriceInput);
+            const isValid = !isNaN(custom) && custom >= 0;
+            const diff = isValid ? std - custom : 0;
+            const isDiscount = diff > 0 && std > 0;
+            const isSurcharge = diff < 0 && std > 0;
 
-                if (mat?.brands && mat.brands.length > 0 && !selectedMaterialBrandId) {
-                  toast.error(t('materials.brandRequired', 'Please select a brand'));
-                  return;
-                }
-
-                const brand = mat?.brands?.find((b: any) => b.id === selectedMaterialBrandId);
-                
-                addMaterialMutation.mutate({
-                  materialId: selectedMaterialId,
-                  materialBrandId: brand?.id,
-                  brandName: brand?.name,
-                  sizeName: brand?.size || null,
-                  colorName: brand?.color || null,
-                  typeName: brand?.type || null,
-                  quantity: qtyNeeded,
-                  unitPrice: materialPriceInput && !isNaN(Number(materialPriceInput)) && Number(materialPriceInput) >= 0
-                    ? Number(materialPriceInput)
-                    : undefined,
-                });
-              }}
-              disabled={
-                !selectedMaterialId || 
-                !materialQty || 
-                Number(materialQty) <= 0 || 
-                (Boolean(allMaterials?.find((m: any) => m.id === selectedMaterialId)) && getMaterialUnallocatedStock(allMaterials?.find((m: any) => m.id === selectedMaterialId), 'MINI') > 0) ||
-                (isUnitIntegerOnly(allMaterials?.find((m: any) => m.id === selectedMaterialId)?.unit) && !Number.isInteger(Number(materialQty))) ||
-                (Boolean(allMaterials?.find((m: any) => m.id === selectedMaterialId)?.brands?.length) && !selectedMaterialBrandId) ||
-                addMaterialMutation.isPending
-              }
-            >
-              {addMaterialMutation.isPending ? t('common.adding') : t('orders.detail.addMaterial')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="material-price" className="text-xs font-semibold text-foreground">
+                    {t('orders.create.unitPrice', 'Unit Price (Birr)')}
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    {std > 0 && Number(materialPriceInput) !== std && (
+                      <button
+                        type="button"
+                        onClick={() => setMaterialPriceInput(String(std))}
+                        className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        Reset to Standard
+                      </button>
+                    )}
+                    {isDiscount && (
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                        -{formatCurrency(diff)} ({Math.round((diff / std) * 100)}% off)
+                      </span>
+                    )}
+                    {isSurcharge && (
+                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                        +{formatCurrency(Math.abs(diff))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="material-price"
+                    type="text"
+                    value={materialPriceInput}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
+                      if (/^\d*\.?\d*$/.test(val)) setMaterialPriceInput(val);
+                    }}
+                    placeholder="0.00"
+                    className="font-mono font-bold border-gray-200 dark:border-gray-800 pr-12"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
+                    ETB
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </ResponsiveModal>
 
       <UpdateOrderStatusDialog
         isOpen={isStatusModalOpen}
@@ -2102,209 +2460,304 @@ export default function OrderDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Adjust Service Fee Dialog */}
-      <Dialog open={isServiceFeeModalOpen} onOpenChange={setIsServiceFeeModalOpen}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Receipt className="w-5 h-5 text-amber-500" />
-              {Number(order?.serviceFee || 0) > 0 
-                ? t('orders.detail.editServiceFee', 'Edit Service Fee') 
-                : t('orders.detail.addServiceFee', 'Add Service Fee')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {t('orders.detail.adjustServiceFeeDesc', 'Set or adjust the custom service/labor fee for this order. It will immediately update the order total, net price, and balance due.')}
-            </p>
-
-            <div className="space-y-1.5">
-              <Label>{t('orders.detail.serviceFee', 'Service Fee Amount')}</Label>
-              <div className="relative">
-                <Input
-                  placeholder="0.00"
-                  value={serviceFeeInput}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (/^\d*\.?\d*$/.test(val)) setServiceFeeInput(val);
-                  }}
-                  className="font-mono font-bold pr-11"
-                  autoFocus
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
-                  ETB
-                </span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setIsServiceFeeModalOpen(false)}
-            >
-              {t('common.cancel')}
-            </Button>
-            {Number(order?.serviceFee || 0) > 0 && (
+      {/* Adjust Service Fee Dialog / Bottom Sheet */}
+      <ResponsiveModal
+        isOpen={isServiceFeeModalOpen}
+        onOpenChange={setIsServiceFeeModalOpen}
+        title={
+          Number(order?.serviceFee || 0) > 0 
+            ? t('orders.detail.editServiceFee', 'Edit Service Fee') 
+            : t('orders.detail.addServiceFee', 'Add Service Fee')
+        }
+        description={t(
+          'orders.detail.adjustServiceFeeDesc',
+          'Set or adjust the custom service/labor fee for this order. It will immediately update the order total, net price, and balance due.'
+        )}
+        icon={Receipt}
+        isMobileOrTablet={isMobileOrTablet}
+        footer={
+          <div className="flex items-center justify-between w-full gap-2">
+            {Number(order?.serviceFee || 0) > 0 ? (
               <Button
                 variant="destructive"
+                size={isMobileOrTablet ? 'default' : 'sm'}
                 onClick={() => updateServiceFeeMutation.mutate(0)}
                 disabled={updateServiceFeeMutation.isPending}
-                className="mr-auto"
+                className="rounded-xl"
               >
                 {t('orders.detail.removeServiceFee', 'Remove Fee')}
               </Button>
-            )}
-            <Button
-              onClick={() => updateServiceFeeMutation.mutate(Number(serviceFeeInput) || 0)}
-              disabled={updateServiceFeeMutation.isPending}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-            >
-              {updateServiceFeeMutation.isPending ? t('common.saving') : t('common.save')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Adjust Line Price / Discount Dialog */}
-      <Dialog 
-        open={!!editingLine} 
-        onOpenChange={(open) => !open && setEditingLine(null)}
-        hasUnsavedChanges={editingLine ? Number(editLinePriceInput) !== (editingLine.standardPrice || editingLine.currentPrice) : false}
-      >
-        <DialogContent className="sm:max-w-[440px] p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-          <div className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <Tag className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <DialogTitle className="text-sm sm:text-base font-bold text-foreground leading-tight truncate">
-                  {t('orders.adjustPrice', 'Adjust Item Price / Discount')}
-                </DialogTitle>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  {t('orders.adjustPriceDesc', 'Override standard catalog pricing for this item or offer a customer-specific discount.')}
-                </p>
-              </div>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size={isMobileOrTablet ? 'default' : 'sm'}
+                onClick={() => setIsServiceFeeModalOpen(false)}
+                className="rounded-xl"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                size={isMobileOrTablet ? 'default' : 'sm'}
+                onClick={() => updateServiceFeeMutation.mutate(Number(serviceFeeInput) || 0)}
+                disabled={updateServiceFeeMutation.isPending}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-sm"
+              >
+                {updateServiceFeeMutation.isPending ? t('common.saving') : t('common.save')}
+              </Button>
             </div>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t('orders.detail.serviceFee', 'Service Fee Amount')}
+            </Label>
+            <div className="relative flex items-center">
+              <Input
+                placeholder="0.00"
+                value={serviceFeeInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) setServiceFeeInput(val);
+                }}
+                className="font-mono font-bold pr-14 text-lg h-12 rounded-xl"
+                autoFocus={!isMobileOrTablet}
+              />
+              <span className="absolute right-4 text-xs font-bold text-muted-foreground select-none pointer-events-none">
+                ETB
+              </span>
+            </div>
+          </div>
+        </div>
+      </ResponsiveModal>
 
-          {editingLine && (() => {
-            const parsed = Number(editLinePriceInput);
-            const isValid = !isNaN(parsed) && parsed >= 0;
-            const diff = isValid ? editingLine.standardPrice - parsed : 0;
-            const isDiscount = diff > 0;
-            const isSurcharge = diff < 0;
+      {/* Adjust Line Price / Discount & Quantity Dialog / Bottom Sheet */}
+      <ResponsiveModal
+        isOpen={!!editingLine}
+        onOpenChange={(open) => !open && setEditingLine(null)}
+        title={t('orders.adjustPrice', 'Adjust Item Price / Discount')}
+        description={t('orders.adjustPriceDesc', 'Override standard catalog pricing for this item or offer a customer-specific discount.')}
+        icon={Tag}
+        isMobileOrTablet={isMobileOrTablet}
+        footer={
+          editingLine ? (() => {
+            const parsedPrice = Number(editLinePriceInput);
+            const parsedQty = Number(editLineQtyInput);
+            const isPriceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+            const isMaterial = editingLine.type === 'material';
+            const isPcs = isMaterial && isUnitIntegerOnly(editingLine.unit);
+            const isQtyValid = !isMaterial || (!isNaN(parsedQty) && parsedQty > 0 && (!isPcs || Number.isInteger(parsedQty)));
+            const isValid = isPriceValid && isQtyValid;
             const isPending = updateServiceLinePriceMutation.isPending || updateStandaloneLineMutation.isPending;
 
             return (
               <>
-                <div className="p-4 sm:p-5 space-y-4">
-                  {/* Item Info Box */}
-                  <div className="p-3 rounded-xl bg-muted/30 border border-border/60 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                        {editingLine.type === 'service' ? t('common.service', 'Service') : t('common.material', 'Material')}
-                      </span>
-                      <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                        {t('orders.standardPrice', 'Standard')}: {formatCurrency(editingLine.standardPrice)}
-                      </span>
-                    </div>
-                    <div className="font-bold text-sm text-foreground break-words leading-snug">
-                      {editingLine.name}
-                    </div>
-                  </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingLine(null)}
+                  disabled={isPending}
+                  className="border-gray-200 dark:border-gray-800"
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!isValid) return;
+                    if (editingLine.type === 'service') {
+                      updateServiceLinePriceMutation.mutate({
+                        lineId: editingLine.id,
+                        priceAtOrderTime: parsedPrice,
+                      });
+                    } else {
+                      updateStandaloneLineMutation.mutate({
+                        lineId: editingLine.id,
+                        priceAtOrderTime: parsedPrice,
+                        quantity: parsedQty,
+                      });
+                    }
+                  }}
+                  disabled={!isValid || isPending}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  {isPending ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
+            );
+          })() : null
+        }
+      >
+        {editingLine && (() => {
+          const parsedPrice = Number(editLinePriceInput);
+          const parsedQty = Number(editLineQtyInput);
+          const isPriceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+          const isMaterial = editingLine.type === 'material';
+          const isPcs = isMaterial && isUnitIntegerOnly(editingLine.unit);
+          const isQtyValid = !isMaterial || (!isNaN(parsedQty) && parsedQty > 0 && (!isPcs || Number.isInteger(parsedQty)));
+          const isValid = isPriceValid && isQtyValid;
+          const diff = isPriceValid ? editingLine.standardPrice - parsedPrice : 0;
+          const isDiscount = diff > 0 && editingLine.standardPrice > 0;
+          const isSurcharge = diff < 0 && editingLine.standardPrice > 0;
+          const effectiveQty = isMaterial ? parsedQty || 1 : 1;
+          const lineTotal = (isPriceValid ? parsedPrice : editingLine.currentPrice) * effectiveQty;
+          const totalDiff = diff * effectiveQty;
 
-                  {/* Price input box */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-semibold text-foreground">
-                        {t('orders.agreedPrice', 'Agreed Custom Price')}
-                      </Label>
-                      {Number(editLinePriceInput) !== editingLine.standardPrice && (
-                        <button
-                          type="button"
-                          onClick={() => setEditLinePriceInput(String(editingLine.standardPrice))}
-                          className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
-                        >
-                          Reset to Standard
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <Input
+          return (
+            <div className="space-y-4">
+              {/* Item Info Box */}
+              <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className={editingLine.type === 'service' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'}>
+                    {editingLine.type === 'service' ? t('common.service', 'Service') : t('common.material', 'Material')}
+                  </Badge>
+                  <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                    {t('orders.standardPrice', 'Standard')}: {formatCurrency(editingLine.standardPrice)}
+                  </span>
+                </div>
+                <div className="font-bold text-sm text-foreground break-words leading-snug">
+                  {editingLine.name}
+                </div>
+              </div>
+
+              {/* If material: Quantity Stepper & Input */}
+              {isMaterial && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-line-qty" className="text-xs font-semibold text-foreground">
+                      {t('orders.detail.quantity', 'Quantity')} {editingLine.unit ? `(${formatUnit(editingLine.unit)})` : ''}
+                    </Label>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {isPcs ? t('orders.create.wholeUnitsOnly', 'Whole units only') : t('orders.create.decimalAllowed', 'Decimals allowed')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-card border border-input rounded-xl px-2 h-10 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditLineQtyInput((prev) => {
+                            const cur = Number(prev || 1);
+                            const next = isPcs
+                              ? Math.max(1, Math.floor(cur) - 1)
+                              : Math.max(0.1, Math.round((cur - 1) * 100) / 100);
+                            return String(next);
+                          });
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer"
+                        title="Decrease quantity"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <input
+                        id="edit-line-qty"
                         type="text"
-                        className="font-mono font-bold pr-11"
-                        value={editLinePriceInput}
+                        className="w-14 text-center bg-transparent text-sm font-bold font-mono focus:outline-none text-foreground"
+                        value={editLineQtyInput}
                         onFocus={(e) => e.target.select()}
                         onChange={(e) => {
                           let val = e.target.value;
                           if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
-                          if (/^\d*\.?\d*$/.test(val)) setEditLinePriceInput(val);
+                          const regex = isPcs ? /^\d*$/ : /^\d*\.?\d*$/;
+                          if (regex.test(val)) setEditLineQtyInput(val);
                         }}
-                        placeholder="—"
-                        autoFocus
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
-                        ETB
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditLineQtyInput((prev) => {
+                            const cur = Number(prev || 0);
+                            const next = isPcs
+                              ? cur + 1
+                              : Math.round((cur + 1) * 100) / 100;
+                            return String(next);
+                          });
+                        }}
+                        className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer"
+                        title="Increase quantity"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
                     </div>
+                    {isPriceValid && isValid && (
+                      <span className="text-xs text-muted-foreground font-mono">
+                        = {formatCurrency(lineTotal)}
+                      </span>
+                    )}
                   </div>
+                </div>
+              )}
 
-                  {/* Live Discount/Surcharge Feedback */}
-                  {isValid && (
-                    <div className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-2 flex-wrap ${
-                      isDiscount 
-                        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400' 
-                        : isSurcharge 
-                          ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
-                          : 'bg-muted/40 border-border/70 text-muted-foreground'
-                    }`}>
-                      <span className="font-medium">
-                        {isDiscount ? t('orders.customerDiscount', 'Customer Discount:') : isSurcharge ? t('orders.priceSurcharge', 'Price Surcharge:') : t('orders.standardPricing', 'Standard Pricing:')}
-                      </span>
-                      <span className="font-mono font-bold shrink-0">
-                        {isDiscount && `-${formatCurrency(diff)} (${Math.round((diff / editingLine.standardPrice) * 100)}% off)`}
-                        {isSurcharge && `+${formatCurrency(Math.abs(diff))}`}
-                        {!isDiscount && !isSurcharge && t('common.noChange', 'No change')}
-                      </span>
-                    </div>
+              {/* Price input box */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-line-price" className="text-xs font-semibold text-foreground">
+                    {t('orders.agreedPrice', 'Agreed Custom Price')}
+                  </Label>
+                  {editingLine.standardPrice > 0 && Number(editLinePriceInput) !== editingLine.standardPrice && (
+                    <button
+                      type="button"
+                      onClick={() => setEditLinePriceInput(String(editingLine.standardPrice))}
+                      className="text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      Reset to Standard
+                    </button>
                   )}
                 </div>
-
-                <div className="p-4 sm:p-5 border-t border-border/60 bg-muted/20 flex items-center justify-end gap-2.5">
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditingLine(null)}
-                    disabled={isPending}
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (!isValid) return;
-                      if (editingLine.type === 'service') {
-                        updateServiceLinePriceMutation.mutate({
-                          lineId: editingLine.id,
-                          priceAtOrderTime: parsed,
-                        });
-                      } else {
-                        updateStandaloneLineMutation.mutate({
-                          lineId: editingLine.id,
-                          priceAtOrderTime: parsed,
-                        });
-                      }
+                <div className="relative">
+                  <Input
+                    id="edit-line-price"
+                    type="text"
+                    className="font-mono font-bold pr-12"
+                    value={editLinePriceInput}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (/^0[0-9]/.test(val)) val = val.replace(/^0+/, '');
+                      if (/^\d*\.?\d*$/.test(val)) setEditLinePriceInput(val);
                     }}
-                    disabled={!isValid || isPending}
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-semibold"
-                  >
-                    {isPending ? t('common.saving') : t('common.save')}
-                  </Button>
+                    placeholder="0.00"
+                    autoFocus
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground select-none pointer-events-none">
+                    ETB
+                  </span>
                 </div>
-              </>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+              </div>
+
+              {/* Live Discount/Surcharge Feedback */}
+              {isValid && (
+                <div className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-2 flex-wrap ${
+                  isDiscount 
+                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-400' 
+                    : isSurcharge 
+                      ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                      : 'bg-muted/40 border-border/70 text-muted-foreground'
+                }`}>
+                  <span className="font-medium">
+                    {isDiscount ? t('orders.customerDiscount', 'Customer Discount:') : isSurcharge ? t('orders.priceSurcharge', 'Price Surcharge:') : t('orders.standardPricing', 'Standard Pricing:')}
+                  </span>
+                  <span className="font-mono font-bold shrink-0">
+                    {isDiscount && (
+                      <>
+                        -{formatCurrency(diff)} ({Math.round((diff / editingLine.standardPrice) * 100)}% off)
+                        {isMaterial && effectiveQty > 1 && ` • Total: -${formatCurrency(totalDiff)}`}
+                      </>
+                    )}
+                    {isSurcharge && (
+                      <>
+                        +{formatCurrency(Math.abs(diff))}
+                        {isMaterial && effectiveQty > 1 && ` • Total: +${formatCurrency(Math.abs(totalDiff))}`}
+                      </>
+                    )}
+                    {!isDiscount && !isSurcharge && t('common.noChange', 'No change')}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </ResponsiveModal>
     </div>
   );
 }

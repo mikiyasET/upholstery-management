@@ -943,7 +943,7 @@ export default function CreateOrder() {
 
                 {plateNumber && (
                   <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                    <PlateBadge plate={plateNumber} size="xs" />
+                    <PlateBadge plate={plateNumber} size="sm" />
                   </div>
                 )}
               </div>
@@ -953,7 +953,7 @@ export default function CreateOrder() {
                 {/* Plate Input with Ethiopian Plate canvas modal untouched */}
                 <div className="space-y-0.5 relative z-50">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t('orders.create.plateNumberLabel')}
                     </Label>
                     {searchStatus === 'searching' && (
@@ -968,7 +968,6 @@ export default function CreateOrder() {
                       value={plateNumber} 
                       onChange={setPlateNumber} 
                       isSearching={searchStatus === 'searching'}
-                      inputSize="sm"
                     />
                   </div>
                   
@@ -1054,11 +1053,13 @@ export default function CreateOrder() {
                     <ModernSelect
                       icon={Car}
                       inputSize="sm"
+                      sheetTitle={t('orders.create.carModel', 'Car Model')}
                       placeholder={t('orders.create.selectCarModel')}
                       value={carModelId}
                       onValueChange={v => setCarModelId(v as string)}
                       cacheKey="carModels"
                       maxRecentCount={5}
+                      showCategoryFilter={true}
                       options={carModels?.length ? carModels.map((c: any) => ({
                         value: c.id,
                         label: c.name, 
@@ -1462,24 +1463,21 @@ export default function CreateOrder() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div className="min-w-0">
                     <ModernSelect 
+                      sheetTitle={t('orders.create.placeholder.service', 'Select Service')}
                       placeholder={t('orders.create.placeholder.service', 'Select service...')}
                       inputSize="sm"
                       value={selectedServiceId} 
                       onValueChange={(v) => handleServiceChange(v || '')}
                       options={services?.length ? services.map((s: any) => ({
                         value: s.id,
-                        label: s.serviceGroup ? `[${getLocName(s.serviceGroup)}] ${getLocName(s)}` : getLocName(s)
+                        label: getLocName(s),
+                        category: s.serviceGroup ? getLocName(s.serviceGroup) : undefined
                       })) : [{ value: 'no-services', label: t('orders.create.noServices', 'No services available'), disabled: true }]}
                       valueRender={(val: string) => {
                         if (!val || val === 'no-services') return <span className="text-gray-400 font-normal text-xs">{t('orders.create.placeholder.service', 'Select service...')}</span>;
                         const s = services?.find((x: any) => x.id === val);
                         return s ? (
                           <span className="text-xs font-medium truncate block">
-                            {s.serviceGroup && (
-                              <span className="text-amber-600 dark:text-amber-400 font-semibold mr-1">
-                                [{getLocName(s.serviceGroup)}]
-                              </span>
-                            )}
                             {getLocName(s)}
                           </span>
                         ) : val;
@@ -1489,6 +1487,7 @@ export default function CreateOrder() {
 
                   <div className="min-w-0">
                     <ModernSelect 
+                      sheetTitle={t('orders.create.selectCategory', 'Select Category')}
                       placeholder={t('orders.create.selectCategory', 'Select category...')}
                       inputSize="sm"
                       value={selectedCategoryId} 
@@ -1531,6 +1530,7 @@ export default function CreateOrder() {
                               </span>
                             </div>
                             <ModernSelect
+                              sheetTitle={t('materials.selectBrand', 'Select Brand / Variant')}
                               placeholder={t('materials.selectBrand', 'Select brand / variant...')}
                               inputSize="sm"
                               value={selectedBrandId}
@@ -1655,6 +1655,7 @@ export default function CreateOrder() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="min-w-0">
                         <ModernSelect 
+                          sheetTitle={t('orders.create.selectMaterial', 'Select Material')}
                           placeholder={t('orders.create.selectMaterial', 'Select standalone part...')}
                           inputSize="sm"
                           value={materialSelect} 
@@ -1665,10 +1666,17 @@ export default function CreateOrder() {
                             const needsAlloc = unalloc > 0;
                             return {
                               value: m.id,
-                              label: `${m.itemCode ? `[${m.itemCode}] ` : ''}${getLocName(m)} (${formatCurrency(m.currentPrice)})${needsAlloc ? ` (⚠️ ${t('storage.needsAllocation', 'Needs Allocation')})` : ''}`,
+                              label: `${getLocName(m)}${m.itemCode ? ` (${m.itemCode})` : ''} (${formatCurrency(m.currentPrice)})${needsAlloc ? ` (⚠️ ${t('storage.needsAllocation', 'Needs Allocation')})` : ''}`,
                               labelNode: (
                                 <div className="flex items-center justify-between w-full gap-2">
-                                  <span className="truncate">{m.itemCode ? `[${m.itemCode}] ` : ''}{getLocName(m)}</span>
+                                  <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                    <span className="truncate">{getLocName(m)}</span>
+                                    {m.itemCode && (
+                                      <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground border border-border/60 shrink-0">
+                                        {m.itemCode}
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="flex items-center gap-1.5 shrink-0">
                                     {needsAlloc && (
                                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">
@@ -1686,13 +1694,23 @@ export default function CreateOrder() {
                           valueRender={(val: string) => {
                             if (!val || val === 'no-materials') return <span className="text-gray-400 font-normal text-xs">{t('orders.create.selectMaterial', 'Select standalone part...')}</span>;
                             const m = materials?.find((x: any) => x.id === val);
-                            return m ? <span className="text-xs font-semibold">{`${m.itemCode ? `[${m.itemCode}] ` : ''}${getLocName(m)}`}</span> : val;
+                            return m ? (
+                              <span className="text-xs font-semibold flex items-center gap-1.5 truncate">
+                                <span className="truncate">{getLocName(m)}</span>
+                                {m.itemCode && (
+                                  <span className="text-[9px] font-mono font-normal px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border/50 shrink-0">
+                                    {m.itemCode}
+                                  </span>
+                                )}
+                              </span>
+                            ) : val;
                           }}
                         />
                       </div>
 
                       <div className="min-w-0">
                         <ModernSelect
+                          sheetTitle={t('materials.selectBrand', 'Select Brand')}
                           placeholder={t('materials.selectBrand', 'Select Brand')}
                           inputSize="sm"
                           value={materialBrandSelect}
@@ -1852,6 +1870,7 @@ export default function CreateOrder() {
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <ModernSelect 
+                        sheetTitle={t('orders.create.selectMaterial', 'Select Material')}
                         placeholder={t('orders.create.selectMaterial', 'Select standalone part...')}
                         inputSize="sm"
                         value={materialSelect} 
@@ -1862,10 +1881,17 @@ export default function CreateOrder() {
                           const needsAlloc = unalloc > 0;
                           return {
                             value: m.id,
-                            label: `${m.itemCode ? `[${m.itemCode}] ` : ''}${getLocName(m)} (${formatCurrency(m.currentPrice)})${needsAlloc ? ` (⚠️ ${t('storage.needsAllocation', 'Needs Allocation')})` : ''}`,
+                            label: `${getLocName(m)}${m.itemCode ? ` (${m.itemCode})` : ''} (${formatCurrency(m.currentPrice)})${needsAlloc ? ` (⚠️ ${t('storage.needsAllocation', 'Needs Allocation')})` : ''}`,
                             labelNode: (
                               <div className="flex items-center justify-between w-full gap-2">
-                                <span className="truncate">{m.itemCode ? `[${m.itemCode}] ` : ''}{getLocName(m)}</span>
+                                <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                  <span className="truncate">{getLocName(m)}</span>
+                                  {m.itemCode && (
+                                    <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-muted/80 text-muted-foreground border border-border/60 shrink-0">
+                                      {m.itemCode}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   {needsAlloc && (
                                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/20">
@@ -1883,7 +1909,16 @@ export default function CreateOrder() {
                         valueRender={(val: string) => {
                           if (!val || val === 'no-materials') return <span className="text-gray-400 font-normal text-xs">{t('orders.create.selectMaterial', 'Select standalone part...')}</span>;
                           const m = materials?.find((x: any) => x.id === val);
-                          return m ? <span className="text-xs font-semibold">{`${m.itemCode ? `[${m.itemCode}] ` : ''}${getLocName(m)}`}</span> : val;
+                          return m ? (
+                            <span className="text-xs font-semibold flex items-center gap-1.5 truncate">
+                              <span className="truncate">{getLocName(m)}</span>
+                              {m.itemCode && (
+                                <span className="text-[9px] font-mono font-normal px-1 py-0.2 rounded bg-muted text-muted-foreground border border-border/50 shrink-0">
+                                  {m.itemCode}
+                                </span>
+                              )}
+                            </span>
+                          ) : val;
                         }}
                       />
                     </div>
@@ -2030,13 +2065,15 @@ export default function CreateOrder() {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <div className="flex-1">
                     <ModernSelect 
+                      sheetTitle={t('orders.create.placeholder.employee', 'Select Employee')}
                       placeholder={t('orders.create.placeholder.employee', 'Select employee...')}
                       inputSize="sm"
                       value={employeeSelect} 
                       onValueChange={v => setEmployeeSelect(v as string)}
                       options={employees?.filter((e: any) => e.employee && !selectedAssignments.some(a => a.employeeId === e.employee.id)).length ? employees.filter((e: any) => e.employee && !selectedAssignments.some(a => a.employeeId === e.employee.id)).map((e: any) => ({
                         value: e.employee.id,
-                        label: `${e.name} (${e.role})`
+                        label: `${e.name} (${e.role})`,
+                        category: e.role || undefined
                       })) : [{ value: 'no-employees', label: t('orders.create.noEmployees', 'No employees available'), disabled: true }]}
                       valueRender={(val: string) => {
                         if (!val || val === 'no-employees') return <span className="text-gray-400 font-normal text-xs">{t('orders.create.selectEmployee')}</span>;
@@ -2398,6 +2435,7 @@ export default function CreateOrder() {
                 {/* 2. Payment Method Select */}
                 <div className="min-w-0 sm:w-[160px] shrink-0">
                   <ModernSelect
+                    sheetTitle={t('orders.paymentMethod', 'Payment Method')}
                     inputSize="sm"
                     icon={getPaymentMethodIcon(downPaymentMethod)}
                     options={paymentMethodOptions}
@@ -2434,9 +2472,9 @@ export default function CreateOrder() {
             )}
 
             {/* Row 2: Financial tally & Action Buttons */}
-            <div className="space-y-2 pt-1.5 border-t border-border/50">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1.5 border-t border-border/50">
               {/* Financial Breakdown Tally */}
-              <div className="flex items-center justify-between gap-2.5 sm:gap-3 text-xs w-full flex-wrap">
+              <div className="flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 text-xs w-full sm:w-auto flex-wrap">
                 {/* Total */}
                 <div className="min-w-0">
                   <span className="text-[9px] uppercase font-bold text-muted-foreground block leading-none">
@@ -2498,26 +2536,26 @@ export default function CreateOrder() {
                 )}
               </div>
 
-              {/* Action Buttons: Add Fee & Submit Order on DIFFERENT lines covering full space */}
-              <div className="flex flex-col gap-2 w-full pt-0.5">
-                {/* Service Fee on its own line covering full space */}
+              {/* Action Buttons: Side by side on big screens (sm+), own line covering full space on mobile (<sm) */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+                {/* Service Fee on its own line on mobile, auto on big screens */}
                 {!showServiceFee && (!serviceFee || Number(serviceFee) === 0) ? (
                   <button
                     type="button"
                     onClick={() => setShowServiceFee(true)}
-                    className="w-full h-[38px] px-3 rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:border-amber-500/70 shadow-2xs"
+                    className="w-full sm:w-auto h-[38px] px-3 rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:border-amber-500/70 shadow-2xs shrink-0"
                     title={t('orders.create.addServiceFee', 'Add Service Fee')}
                   >
                     <Plus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>{t('orders.create.addServiceFee', 'Add Service Fee')}</span>
                   </button>
                 ) : (
-                  <div className="w-full flex items-center justify-between gap-2 h-[38px] px-3 rounded-md bg-card border border-amber-500/50 shadow-2xs animate-in fade-in zoom-in-95 duration-150">
+                  <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 h-[38px] px-3 rounded-md bg-card border border-amber-500/50 shadow-2xs animate-in fade-in zoom-in-95 duration-150 shrink-0">
                     <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 select-none shrink-0">
                       <Receipt className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                       <span>{t('orders.create.serviceFee', 'Fee')}:</span>
                     </div>
-                    <div className="relative flex-1 max-w-[200px]">
+                    <div className="relative flex-1 sm:flex-initial sm:w-20">
                       <input
                         type="text"
                         placeholder="0.00"
@@ -2533,7 +2571,7 @@ export default function CreateOrder() {
                             (e.target as HTMLInputElement).blur();
                           }
                         }}
-                        className="w-full h-7 px-2 pr-6 text-xs font-mono font-bold bg-muted/60 hover:bg-muted focus:bg-background border border-input rounded text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors"
+                        className="w-full sm:w-20 h-7 px-2 pr-6 text-xs font-mono font-bold bg-muted/60 hover:bg-muted focus:bg-background border border-input rounded text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors"
                       />
                       <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] font-bold text-muted-foreground select-none pointer-events-none">
                         ETB
@@ -2553,24 +2591,25 @@ export default function CreateOrder() {
                   </div>
                 )}
 
-                {/* Submit Order Button on its own line covering full space */}
+                {/* Submit Order Button: own line covering full space on mobile, auto on big screens */}
                 <Button 
                   variant="gradient"
                   gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
                   radius="md"
                   size="sm"
-                  fullWidth
                   loading={submitOrderMutation.isPending}
                   disabled={!isFormValid || isDownPaymentInvalid || submitOrderMutation.isPending}
                   onClick={() => submitOrderMutation.mutate()} 
                   leftSection={<Check className="w-4 h-4 shrink-0" />}
+                  className="w-full sm:w-auto shrink-0"
                   style={{
                     boxShadow: (!isFormValid || isDownPaymentInvalid || submitOrderMutation.isPending) ? "none" : "0 2px 10px rgba(245, 158, 11, 0.25)",
                     fontWeight: 600,
                     fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
                     letterSpacing: "-0.01em",
-                    height: 40,
-                    width: '100%',
+                    height: 38,
+                    paddingLeft: 20,
+                    paddingRight: 20,
                   }}
                 >
                   {t('orders.create.submitOrder', 'Submit Order')}
