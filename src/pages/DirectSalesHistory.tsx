@@ -13,6 +13,21 @@ import { ActionIcon, Tooltip, Box, TextInput, Select, Button as MantineButton, B
 import { ModernInput } from '../components/ui/modern-input';
 import { toast } from 'sonner';
 
+export const getSaleTotal = (sale: any) => {
+  if (sale?.totalAmount !== undefined && sale?.totalAmount !== null && !isNaN(Number(sale.totalAmount)) && Number(sale.totalAmount) > 0) {
+    return Number(sale.totalAmount);
+  }
+  const subtotal = sale?.lines?.reduce((sum: number, line: any) =>
+    sum + (Number(line.priceAtSaleTime || 0) * Number(line.quantity || 0)), 0) || 0;
+  const discount = Number(sale?.discountAmount || 0);
+  const tax = Number(sale?.taxAmount || 0);
+  const calculated = Math.max(0, subtotal - discount + tax);
+  if (calculated > 0) return calculated;
+  const paymentsTotal = sale?.payments?.reduce((s: number, p: any) => s + Number(p.amount || 0), 0) || 0;
+  if (paymentsTotal > 0) return paymentsTotal;
+  return Number(sale?.totalAmount || 0);
+};
+
 export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -279,7 +294,7 @@ export default function DirectSalesHistory() {
                       {sale.createdBy?.name || '-'}
                     </td>
                     <td className="px-6 py-4 font-semibold text-foreground whitespace-nowrap">
-                      {formatCurrency(sale.totalAmount)}
+                      {formatCurrency(getSaleTotal(sale))}
                     </td>
                     <td className="px-6 py-4 text-center font-medium whitespace-nowrap">
                       {sale._count?.lines || 0}
@@ -452,42 +467,84 @@ export default function DirectSalesHistory() {
 
               {/* Payment Summary */}
               <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
-                {Number(fullSaleDetails.taxAmount) > 0 && (
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{t('receipt.vat', 'VAT (15%)')}</span>
-                    <span>{formatCurrency(fullSaleDetails.taxAmount)}</span>
-                  </div>
-                )}
-                
-                {fullSaleDetails.payments?.length > 0 && (
-                  <div className="pt-2 border-t">
-                    <h3 className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">{t('receipt.paymentsRecorded', 'Payments Recorded')}</h3>
-                    <div className="space-y-2">
-                      {fullSaleDetails.payments.map((p: any) => (
-                        <div key={p.id} className="flex justify-between text-sm items-center">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-background border rounded text-xs font-medium">
-                              {formatPaymentMethod(p.method)}
-                            </span>
-                            {p.methodDetails && (
-                              <span className="text-xs text-muted-foreground" title={p.methodDetails}>
-                                {t('orders.referenceNumber', 'Ref')}: {p.methodDetails.length > 15 ? p.methodDetails.slice(0, 15) + '...' : p.methodDetails}
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-medium">{formatCurrency(p.amount)}</span>
+                {(() => {
+                  const saleSubtotal = fullSaleDetails.subtotal !== undefined
+                    ? Number(fullSaleDetails.subtotal)
+                    : (fullSaleDetails.lines?.reduce((sum: number, line: any) =>
+                        sum + (Number(line.priceAtSaleTime || 0) * Number(line.quantity || 0)), 0) || 0);
+                  const saleDiscount = Number(fullSaleDetails.discountAmount || 0);
+                  const saleTax = Number(fullSaleDetails.taxAmount || 0);
+                  const grandTotal = getSaleTotal(fullSaleDetails);
+                  const totalPaid = fullSaleDetails.payments?.reduce((s: number, p: any) => s + Number(p.amount || 0), 0) || 0;
+                  const balanceDue = Math.max(0, grandTotal - totalPaid);
+
+                  return (
+                    <>
+                      {(saleDiscount > 0 || saleTax > 0) && (
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>{t('receipt.subtotal', 'Subtotal')}</span>
+                          <span>{formatCurrency(saleSubtotal)}</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-center pt-3 border-t mt-3">
-                  <span className="font-bold">{t('receipt.totalPaid', 'Amount Paid')}</span>
-                  <span className="text-xl font-bold text-primary">
-                    {formatCurrency(fullSaleDetails.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0)}
-                  </span>
-                </div>
+                      )}
+
+                      {saleDiscount > 0 && (
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>{t('orders.discount', 'Discount')}</span>
+                          <span className="text-red-500">-{formatCurrency(saleDiscount)}</span>
+                        </div>
+                      )}
+
+                      {saleTax > 0 && (
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span>{t('receipt.vat', 'VAT (15%)')}</span>
+                          <span>{formatCurrency(saleTax)}</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between text-sm font-semibold pt-1 border-t">
+                        <span>{t('receipt.totalAmount', 'Total Amount')}</span>
+                        <span className="font-bold text-foreground">{formatCurrency(grandTotal)}</span>
+                      </div>
+
+                      {fullSaleDetails.payments?.length > 0 && (
+                        <div className="pt-2 border-t">
+                          <h3 className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">{t('receipt.paymentsRecorded', 'Payments Recorded')}</h3>
+                          <div className="space-y-2">
+                            {fullSaleDetails.payments.map((p: any) => (
+                              <div key={p.id} className="flex justify-between text-sm items-center">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 bg-background border rounded text-xs font-medium">
+                                    {formatPaymentMethod(p.method)}
+                                  </span>
+                                  {p.methodDetails && (
+                                    <span className="text-xs text-muted-foreground" title={p.methodDetails}>
+                                      {t('orders.referenceNumber', 'Ref')}: {p.methodDetails.length > 15 ? p.methodDetails.slice(0, 15) + '...' : p.methodDetails}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="font-medium">{formatCurrency(p.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center pt-3 border-t mt-3">
+                        <span className="font-bold">{t('receipt.totalPaid', 'Amount Paid')}</span>
+                        <span className="text-xl font-bold text-primary">
+                          {formatCurrency(totalPaid)}
+                        </span>
+                      </div>
+
+                      {balanceDue > 0 && (
+                        <div className="flex justify-between items-center text-sm font-semibold text-amber-600 dark:text-amber-400">
+                          <span>{t('receipt.balanceDue', 'Balance Due')}</span>
+                          <span>{formatCurrency(balanceDue)}</span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           ) : (
