@@ -1508,7 +1508,7 @@ export default function EthiopianPlateInput({ value, onChange, isSearching, inpu
                   onChange(tempValue);
                   setIsOpen(false);
                 }}
-                className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-primary hover:bg-primary/90 flex items-center gap-2 transition-all shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] hover:bg-[linear-gradient(135deg,#C46805_0%,#9F4807_100%)] flex items-center gap-2 transition-all shadow-[0_2px_10px_rgba(245,158,11,0.25)] hover:shadow-[0_4px_14px_rgba(245,158,11,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
               >
                 <Check size={18} />
                 {t('plate.confirmPlate', 'Confirm Plate')}

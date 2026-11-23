@@ -139,15 +139,15 @@
   }
 
   .header-btn-primary {
-    @apply h-[42px] px-4 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center gap-2 font-semibold transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
+    @apply h-9 px-4 rounded-lg bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] hover:bg-[linear-gradient(135deg,#C46805_0%,#9F4807_100%)] active:bg-[linear-gradient(135deg,#9F4807_0%,#78350F_100%)] text-white flex items-center justify-center gap-2 font-semibold font-['Plus_Jakarta_Sans','Inter',sans-serif] tracking-[-0.01em] transition-all duration-200 shadow-[0_2px_10px_rgba(245,158,11,0.25)] hover:shadow-[0_4px_14px_rgba(245,158,11,0.35)] active:shadow-none whitespace-nowrap cursor-pointer text-sm disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
   }
 
   .header-btn-secondary {
-    @apply h-[42px] px-4 py-2.5 rounded-lg bg-card border border-border text-foreground hover:bg-accent flex items-center justify-center gap-2 font-medium transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
+    @apply h-9 px-4 rounded-lg bg-card border border-border text-foreground hover:bg-accent flex items-center justify-center gap-2 font-medium font-['Plus_Jakarta_Sans','Inter',sans-serif] tracking-[-0.01em] transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
   }
 
   .header-btn-danger {
-    @apply h-[42px] px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 flex items-center justify-center gap-2 font-medium transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
+    @apply h-9 px-4 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 flex items-center justify-center gap-2 font-medium font-['Plus_Jakarta_Sans','Inter',sans-serif] tracking-[-0.01em] transition-all duration-200 shadow-sm whitespace-nowrap cursor-pointer text-sm disabled:opacity-50 disabled:pointer-events-none disabled:cursor-not-allowed;
   }
 
   /* Stat Icon Wrapper - Perfectly Centered with Rounded Radius */

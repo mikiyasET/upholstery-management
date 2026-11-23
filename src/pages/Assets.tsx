@@ -1034,7 +1034,7 @@ export default function Assets() {
               disabled={
                 saveMutation.isPending || !formData.nameEn.trim() || !formData.nameAm.trim()
               }
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="rounded-lg"
             >
               {saveMutation.isPending
                 ? t('common.loading', 'Saving...')

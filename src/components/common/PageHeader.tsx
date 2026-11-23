@@ -8,11 +8,11 @@ import {
   Tooltip,
   Breadcrumbs,
   Anchor,
-  Button,
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, RotateCw, Plus } from "lucide-react";
 import { FloatingRefreshButton } from "./FloatingRefreshButton";
+import { ExecutiveButton, type ExecutiveButtonProps } from "./ExecutiveButton";
 import { cn } from "../../lib/utils";
 import { type ReactNode } from "react";
 
@@ -31,56 +31,23 @@ export interface AddButtonConfig {
   loading?: boolean;
 }
 
-export interface ExecutiveAddButtonProps {
-  label: ReactNode;
-  onClick?: () => void;
-  to?: string;
-  icon?: ReactNode;
-  disabled?: boolean;
-  loading?: boolean;
-  className?: string;
-  style?: React.CSSProperties;
-}
+export type ExecutiveAddButtonProps = ExecutiveButtonProps;
 
 /**
  * Executive Add CTA Button matching Exporter-Docs luxury styling:
- * Warm Amber gradient, RiAddLine (18px), Plus Jakarta Sans font, 36px height.
+ * Warm Amber gradient, RiAddLine/Plus (18px), Plus Jakarta Sans font, 36px height.
  */
 export function ExecutiveAddButton({
-  label,
-  onClick,
-  to,
   icon,
-  disabled,
-  loading,
   className,
-  style,
+  ...props
 }: ExecutiveAddButtonProps) {
-  const navigate = useNavigate();
-
   return (
-    <Button
-      variant="gradient"
-      gradient={{ from: "amber.6", to: "amber.7", deg: 135 }}
-
-     //  gradient={{ from: "#F59E0B", to: "#D97706", deg: 135 }}
-      radius="md"
-      leftSection={icon !== undefined ? icon : <Plus size={18} />}
-      disabled={disabled}
-      loading={loading}
-      className={cn("!w-full sm:!w-auto justify-center", className)}
-      onClick={to ? () => navigate(to) : onClick}
-      style={{
-        boxShadow: disabled ? "none" : "0 2px 10px rgba(245, 158, 11, 0.25)",
-        fontWeight: 600,
-        fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-        letterSpacing: "-0.01em",
-        height: 36,
-        ...style,
-      }}
-    >
-      {label}
-    </Button>
+    <ExecutiveButton
+      icon={icon !== undefined ? icon : <Plus size={18} />}
+      className={cn("w-full sm:w-auto", className)}
+      {...props}
+    />
   );
 }
 

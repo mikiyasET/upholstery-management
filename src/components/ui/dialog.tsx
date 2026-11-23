@@ -125,7 +125,7 @@ function DiscardChangesConfirmationModal({
           <button
             type="button"
             onClick={onDiscard}
-            className="h-9 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold tracking-wide transition-all shadow-sm shadow-amber-600/30 cursor-pointer active:scale-[0.98]"
+            className="h-9 px-4 rounded-xl bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] hover:bg-[linear-gradient(135deg,#C46805_0%,#9F4807_100%)] active:bg-[linear-gradient(135deg,#9F4807_0%,#78350F_100%)] text-white text-xs font-bold tracking-[-0.01em] font-['Plus_Jakarta_Sans','Inter',sans-serif] transition-all shadow-[0_2px_10px_rgba(245,158,11,0.25)] hover:shadow-[0_4px_14px_rgba(245,158,11,0.35)] cursor-pointer active:scale-[0.98]"
           >
             {t("common.discardChanges", "Discard Changes")}
           </button>

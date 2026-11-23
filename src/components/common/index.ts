@@ -3,6 +3,8 @@ export type { TablePaginationProps } from "./TablePagination";
 export { StatCard } from "./StatCard";
 export { PageHeader, ExecutiveAddButton } from "./PageHeader";
 export type { AddButtonConfig, ExecutiveAddButtonProps, PageHeaderProps, BreadcrumbItem } from "./PageHeader";
+export { ExecutiveButton } from "./ExecutiveButton";
+export type { ExecutiveButtonProps } from "./ExecutiveButton";
 export { PlateBadge } from "./PlateBadge";
 export { BrandLogo } from "./BrandLogo";
 export { AppDatePicker } from "./AppDatePicker";

@@ -1063,7 +1063,7 @@ export default function Storage() {
                                   <Button 
                                     variant="default" 
                                     size="sm" 
-                                    className="h-8 px-2.5 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-xs disabled:pointer-events-none"
+                                    className="h-8 px-2.5 text-xs gap-1.5 disabled:pointer-events-none"
                                     onClick={() => handleOpenTransfer(m)}
                                     disabled={disableTransfer}
                                   >
@@ -1626,7 +1626,7 @@ export default function Storage() {
                 <Button
                   onClick={() => restockMutation.mutate()}
                   disabled={restockMutation.isPending || !isRestockValid}
-                  className="h-10 px-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm hover:shadow-md transition-all gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-10 px-6 rounded-lg gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {restockMutation.isPending ? (
                     <>
@@ -1791,7 +1791,7 @@ export default function Storage() {
                 <Button 
                   onClick={() => transferMutation.mutate()} 
                   disabled={transferMutation.isPending || isInvalidQty || isBrandInvalid || unallocatedInSource > 0}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  className="rounded-lg"
                 >
                   {transferMutation.isPending ? t('storage.transferring', 'Transferring...') : t('storage.confirmTransfer', 'Confirm Transfer')}
                 </Button>
@@ -1917,7 +1917,7 @@ export default function Storage() {
                 <Button 
                   onClick={() => adjustMutation.mutate()} 
                   disabled={adjustMutation.isPending || !isDeltaValid || ((adjustMaterial?.brands?.length ?? 0) > 0 && !adjustForm.materialBrandId)}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  className="rounded-lg"
                 >
                   {adjustMutation.isPending ? t('storage.adjusting', 'Adjusting...') : t('storage.confirmAdjustment', 'Confirm Adjustment')}
                 </Button>
@@ -2030,7 +2030,7 @@ export default function Storage() {
                 <Button 
                   onClick={() => countMutation.mutate()} 
                   disabled={countMutation.isPending || !isCountValid || ((countMaterial?.brands?.length ?? 0) > 0 && !countForm.materialBrandId)}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  className="rounded-lg"
                 >
                   {countMutation.isPending ? t('storage.recording', 'Recording...') : t('storage.recordCount', 'Record Count')}
                 </Button>
@@ -2404,7 +2404,7 @@ export default function Storage() {
                 <Button
                   onClick={() => allocateBrandStockMutation.mutate()}
                   disabled={allocateBrandStockMutation.isPending || hasFractionalAllocations || currentAllocTotal > currentStoreStock}
-                  className="h-10 px-6 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm hover:shadow-md transition-all gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-10 px-6 rounded-lg gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {allocateBrandStockMutation.isPending ? (
                     <>

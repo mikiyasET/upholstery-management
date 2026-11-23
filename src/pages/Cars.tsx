@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import { Plus, Pencil, Trash2, Search, X, Car } from 'lucide-react';
+import { Pencil, Trash2, Search, X, Car } from 'lucide-react';
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { LazyImage } from '../components/common/LazyImage';
 import { PermissionGate } from '../components/PermissionGate';
@@ -306,7 +306,7 @@ export default function Cars() {
                   }}
                   className={`p-3 rounded-lg cursor-pointer flex items-center justify-between gap-3 transition-colors group ${
                     selectedBrand?.id === brand.id 
-                      ? 'bg-amber-600 text-white shadow-sm font-semibold' 
+                      ? 'bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] text-white shadow-[0_2px_10px_rgba(245,158,11,0.25)] font-semibold' 
                       : 'hover:bg-muted/70 text-foreground'
                   }`}
                 >
@@ -410,19 +410,15 @@ export default function Cars() {
                       <X className="h-4 w-4" />
                     </Button>
                     <PermissionGate permission="catalog.cars.add">
-                      <Button 
-                        size="sm" 
-                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
+                      <ExecutiveAddButton 
+                        label={t('cars.addModel', 'Add Model')}
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
                           setModelFile(null);
                           setIsModelDialogOpen(true);
                         }}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> 
-                        <span className="hidden sm:inline">{t('cars.addModel', 'Add Model')}</span>
-                      </Button>
+                      />
                     </PermissionGate>
                   </div>
                 </CardHeader>
@@ -452,19 +448,15 @@ export default function Cars() {
                       <Search className="h-4 w-4" />
                     </Button>
                     <PermissionGate permission="catalog.cars.add">
-                      <Button 
-                        size="sm" 
-                        className="h-8 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-sm font-semibold"
+                      <ExecutiveAddButton 
+                        label={t('cars.addModel', 'Add Model')}
                         onClick={() => {
                           setEditingModelId(null);
                           setModelName('');
                           setModelFile(null);
                           setIsModelDialogOpen(true);
                         }}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> 
-                        <span className="hidden sm:inline">{t('cars.addModel', 'Add Model')}</span>
-                      </Button>
+                      />
                     </PermissionGate>
                   </div>
                 </CardHeader>

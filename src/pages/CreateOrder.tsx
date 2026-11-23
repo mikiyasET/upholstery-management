@@ -1210,7 +1210,7 @@ export default function CreateOrder() {
                           }}
                           className={`h-7 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center active:scale-95 select-none ${
                             isSelected
-                              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold border border-amber-600 shadow-2xs shadow-amber-500/30'
+                              ? 'bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] text-white font-extrabold border border-amber-600 shadow-2xs shadow-amber-500/30'
                               : 'bg-card hover:bg-background text-foreground/80 border border-border/70 hover:border-amber-500/40 hover:text-amber-600 dark:hover:text-amber-400 shadow-2xs'
                           }`}
                         >
@@ -1253,7 +1253,7 @@ export default function CreateOrder() {
                           }}
                           className={`h-7 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center active:scale-95 select-none ${
                             isSelected
-                              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold border border-amber-600 shadow-2xs shadow-amber-500/30'
+                              ? 'bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] text-white font-extrabold border border-amber-600 shadow-2xs shadow-amber-500/30'
                               : 'bg-card hover:bg-background text-foreground/80 border border-border/70 hover:border-amber-500/40 hover:text-amber-600 dark:hover:text-amber-400 shadow-2xs'
                           }`}
                         >

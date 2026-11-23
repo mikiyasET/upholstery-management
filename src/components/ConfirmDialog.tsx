@@ -31,8 +31,8 @@ export default function ConfirmDialog({
 
     const colors = {
         danger: 'bg-red-500 hover:bg-red-600 shadow-red-500/20',
-        warning: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20',
-        info: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20 text-white'
+        warning: 'bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] hover:bg-[linear-gradient(135deg,#C46805_0%,#9F4807_100%)] text-white shadow-[0_2px_10px_rgba(245,158,11,0.25)]',
+        info: 'bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] hover:bg-[linear-gradient(135deg,#C46805_0%,#9F4807_100%)] text-white shadow-[0_2px_10px_rgba(245,158,11,0.25)]'
     };
 
     const iconColors = {

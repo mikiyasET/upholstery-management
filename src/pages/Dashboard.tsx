@@ -45,7 +45,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { printOrderReceipt } from "../lib/receipt-printer";
-import { ExecutiveAddButton, TablePagination, PlateBadge, FloatingRefreshButton } from "../components/common";
+import { ExecutiveButton, ExecutiveAddButton, TablePagination, PlateBadge, FloatingRefreshButton } from "../components/common";
 import { DailyRevenueChart } from "../components/dashboard/DailyRevenueChart";
 
 export default function Dashboard() {
@@ -207,18 +207,13 @@ export default function Dashboard() {
             </Box>
 
             {canCreateDirectSale && (
-              <Button
-                variant="default"
-                radius="md"
-                leftSection={<ShoppingBag size={15} className="shrink-0" />}
+              <ExecutiveButton
+                icon={<ShoppingBag size={15} className="shrink-0" />}
                 onClick={() => navigate("/direct-sales")}
-                className="flex-1 lg:flex-initial h-9 text-xs sm:text-sm font-semibold whitespace-nowrap"
-                style={{
-                  fontFamily: "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-                }}
+                className="flex-1 lg:flex-initial h-9 text-xs sm:text-sm whitespace-nowrap"
               >
                 <span className="truncate">{t("dashboard.directSale", "Direct Sale POS")}</span>
-              </Button>
+              </ExecutiveButton>
             )}
 
             {canCreateOrder && (

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { cn, getImageUrl } from '../../lib/utils';
-import { ImageOff } from 'lucide-react';
+import { ImageOff, RotateCw } from 'lucide-react';
 
 export interface LazyImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
   src?: string | null;
@@ -27,16 +27,83 @@ export const LazyImage: React.FC<LazyImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryStartTimeRef = useRef<number>(0);
 
-  const resolvedSrc = src ? getImageUrl(src) : undefined;
+  const baseResolvedSrc = src ? getImageUrl(src) : undefined;
+
+  // Add cache-busting timestamp / query param when retrying to bypass browser error caching
+  const resolvedSrc = useMemo(() => {
+    if (!baseResolvedSrc) return undefined;
+    if (retryCount === 0) return baseResolvedSrc;
+    if (baseResolvedSrc.startsWith('data:') || baseResolvedSrc.startsWith('blob:')) {
+      return baseResolvedSrc;
+    }
+    const separator = baseResolvedSrc.includes('?') ? '&' : '?';
+    return `${baseResolvedSrc}${separator}_retry=${retryCount}`;
+  }, [baseResolvedSrc, retryCount]);
 
   useEffect(() => {
     setIsLoaded(false);
     setHasError(false);
-  }, [resolvedSrc]);
+    setIsRetrying(false);
+    setRetryCount(0);
+  }, [baseResolvedSrc]);
 
-  // If no source is provided or image failed to load, show fallback
-  if (!resolvedSrc || hasError) {
+  // Preload retry image with minimum spin feedback
+  useEffect(() => {
+    if (retryCount === 0 || !resolvedSrc) return;
+
+    let active = true;
+    const img = new Image();
+    img.src = resolvedSrc;
+
+    img.onload = () => {
+      if (!active) return;
+      setIsLoaded(true);
+      setHasError(false);
+      setIsRetrying(false);
+    };
+
+    img.onerror = () => {
+      if (!active) return;
+      const elapsed = Date.now() - retryStartTimeRef.current;
+      const remainingDelay = Math.max(0, 450 - elapsed);
+      setTimeout(() => {
+        if (!active) return;
+        setHasError(true);
+        setIsRetrying(false);
+      }, remainingDelay);
+    };
+
+    return () => {
+      active = false;
+    };
+  }, [retryCount, resolvedSrc]);
+
+  const handleRetry = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isRetrying || !baseResolvedSrc) return;
+
+    retryStartTimeRef.current = Date.now();
+    setIsRetrying(true);
+    setRetryCount((prev) => prev + 1);
+  };
+
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (onClick) {
+      onClick(e as unknown as React.MouseEvent<HTMLImageElement>);
+    } else {
+      handleRetry(e);
+    }
+  };
+
+  // If no source is provided at all
+  if (!resolvedSrc && !baseResolvedSrc) {
     if (fallback !== undefined) {
       return <>{fallback}</>;
     }
@@ -50,6 +117,49 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         style={style}
       >
         <ImageOff className="h-4 w-4" />
+      </div>
+    );
+  }
+
+  // If image failed to load due to network error, show broken image with clickable refresh icon inside
+  if (hasError) {
+    return (
+      <div
+        className={cn(
+          "relative flex items-center justify-center bg-muted/70 text-muted-foreground/50 shrink-0 overflow-hidden select-none group",
+          wrapperClassName || className
+        )}
+        onClick={handleContainerClick}
+        style={style}
+        title={isRetrying ? "Retrying..." : "Image failed to load. Click to reload"}
+      >
+        {/* Soft broken image watermark in center */}
+        <ImageOff
+          className={cn(
+            "h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground/25 absolute inset-0 m-auto pointer-events-none transition-opacity duration-200",
+            isRetrying && "opacity-15"
+          )}
+        />
+
+        {/* Centered Refresh Button */}
+        <button
+          type="button"
+          onClick={handleRetry}
+          disabled={isRetrying}
+          aria-label="Reload image"
+          title="Reload image"
+          className={cn(
+            "relative z-10 p-1.5 sm:p-2 rounded-full bg-card/90 hover:bg-amber-500 hover:text-white dark:hover:text-white text-muted-foreground border border-border/80 shadow-xs transition-all cursor-pointer active:scale-95 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500",
+            isRetrying && "bg-amber-500/15 text-amber-500 border-amber-500/30 cursor-wait"
+          )}
+        >
+          <RotateCw
+            className={cn(
+              "h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0",
+              isRetrying && "animate-spin text-amber-500"
+            )}
+          />
+        </button>
       </div>
     );
   }
@@ -90,6 +200,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
       {containWithBlur && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <img
+            key={`blur-${resolvedSrc}`}
             src={resolvedSrc}
             alt=""
             aria-hidden="true"
@@ -103,12 +214,20 @@ export const LazyImage: React.FC<LazyImageProps> = ({
 
       {/* Actual image: cleanly contained so the full product fits the space without being cropped */}
       <img
+        key={resolvedSrc}
         src={resolvedSrc}
         alt={alt}
-        loading="lazy"
+        loading={retryCount > 0 ? "eager" : "lazy"}
         decoding="async"
-        onLoad={() => setIsLoaded(true)}
-        onError={() => setHasError(true)}
+        onLoad={() => {
+          setIsLoaded(true);
+          setHasError(false);
+          setIsRetrying(false);
+        }}
+        onError={() => {
+          setHasError(true);
+          setIsRetrying(false);
+        }}
         className={cn(
           "w-full h-full relative z-10 transform-gpu transition-all duration-700 ease-out",
           containWithBlur && "object-contain p-[2px]",

@@ -912,7 +912,7 @@ export default function DirectSales() {
               <button
                 type="button"
                 onClick={() => setShowCustomerInfo(false)}
-                className="h-7 w-7 rounded bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
+                className="h-7 w-7 rounded-lg bg-[linear-gradient(135deg,#D97706_0%,#B45309_100%)] hover:bg-[linear-gradient(135deg,#C46805_0%,#9F4807_100%)] active:bg-[linear-gradient(135deg,#9F4807_0%,#78350F_100%)] text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-[0_2px_8px_rgba(245,158,11,0.25)] active:scale-95"
                 title="Done (Enter)"
               >
                 <Check className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -1213,7 +1213,7 @@ export default function DirectSales() {
           </div>
 
               <Button 
-                className="w-full h-11 sm:h-12 text-base sm:text-lg font-semibold bg-amber-600 text-white hover:bg-amber-700 shadow-sm" 
+                className="w-full h-11 sm:h-12 text-base sm:text-lg font-semibold" 
                 disabled={cart.length === 0 || checkoutMutation.isPending}
                 onClick={handleInitiateCheckout}
               >
@@ -1389,7 +1389,7 @@ export default function DirectSales() {
               <Button 
                 onClick={() => checkoutMutation.mutate()} 
                 disabled={checkoutMutation.isPending}
-                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 bg-amber-600 text-white hover:bg-amber-700 font-bold shadow-md transition-all cursor-pointer text-sm sm:text-base"
+                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 font-bold shadow-md transition-all cursor-pointer text-sm sm:text-base"
               >
                 {checkoutMutation.isPending ? t('common.processing', 'Processing...') : (editId ? t('directSales.updateSale', 'Update Sale & Payments') : t('directSales.confirmAndProceed', 'Confirm & Complete Sale'))}
               </Button>
@@ -1528,7 +1528,7 @@ export default function DirectSales() {
               <Button 
                 onClick={() => checkoutMutation.mutate()} 
                 disabled={checkoutMutation.isPending}
-                className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
+                className="rounded-lg"
               >
                 {checkoutMutation.isPending ? t('common.processing', 'Processing...') : (editId ? t('directSales.updateSale', 'Update Sale & Payments') : t('directSales.confirmAndProceed', 'Confirm & Complete Sale'))}
               </Button>
@@ -1680,7 +1680,7 @@ export default function DirectSales() {
               </Button>
               <Button 
                 onClick={() => printDirectSaleReceipt(completedSale)} 
-                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 bg-amber-600 text-white hover:bg-amber-700 font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <Printer className="w-4 h-4 mr-1.5" /> {t('receipt.receipt', 'Print Receipt')}
               </Button>
@@ -1795,7 +1795,7 @@ export default function DirectSales() {
               <Button variant="outline" onClick={() => setCompletedSale(null)}>{t("common.close", "Close")}</Button>
               <Button 
                 onClick={() => printDirectSaleReceipt(completedSale)} 
-                className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm"
+                className="rounded-lg"
               >
                 <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
               </Button>
@@ -2333,7 +2333,7 @@ export default function DirectSales() {
                   <Button
                     onClick={handleSavePrice}
                     disabled={!isPriceValid}
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl flex-1 sm:flex-initial"
+                    className="rounded-xl flex-1 sm:flex-initial"
                   >
                     {t('common.save', 'Apply Price')}
                   </Button>
@@ -2390,7 +2390,7 @@ export default function DirectSales() {
                   size="sm"
                   onClick={handleSavePrice}
                   disabled={!isPriceValid}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-sm"
+                  className="rounded-xl"
                 >
                   {t('common.save', 'Apply Price')}
                 </Button>

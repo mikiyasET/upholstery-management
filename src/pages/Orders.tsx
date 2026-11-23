@@ -448,12 +448,15 @@ export default function Orders() {
               </TableRow>
             ) : (
               paginatedOrders.map((order: any) => (
-                <TableRow key={order.id}>
+                <TableRow 
+                  key={order.id}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors group"
+                  onClick={() => navigate(`/orders/${order.id}`)}
+                >
                   <TableCell className="whitespace-nowrap">
                     <div className="flex items-center gap-1.5 flex-nowrap mb-1">
                       <span 
-                        className="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer transition-all"
-                        onClick={() => navigate(`/orders/${order.id}`)}
+                        className="font-bold text-amber-600 dark:text-amber-400 group-hover:underline transition-all"
                       >
                         {order.orderNumber}
                       </span>

@@ -1772,7 +1772,7 @@ export default function OrderDetail() {
                     missingBrandSelection ||
                     addServiceMutation.isPending
                   }
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  className="rounded-lg"
                 >
                   {addServiceMutation.isPending ? t('common.adding') : `${t('orders.create.addService')} ${selectedCategoryId ? `(${formatCurrency(currentPriceVal)})` : ''}`}
                 </Button>
@@ -2102,7 +2102,7 @@ export default function OrderDetail() {
                     (Boolean(activeMat?.brands?.length) && !selectedMaterialBrandId) ||
                     addMaterialMutation.isPending
                   }
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  className="rounded-lg"
                 >
                   {addMaterialMutation.isPending ? t('common.adding') : `${t('orders.detail.addMaterial')} ${selectedMaterialId ? `(${formatCurrency(lineTotal)})` : ''}`}
                 </Button>
@@ -2501,7 +2501,7 @@ export default function OrderDetail() {
                 size={isMobileOrTablet ? 'default' : 'sm'}
                 onClick={() => updateServiceFeeMutation.mutate(Number(serviceFeeInput) || 0)}
                 disabled={updateServiceFeeMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-sm"
+                className="rounded-xl"
               >
                 {updateServiceFeeMutation.isPending ? t('common.saving') : t('common.save')}
               </Button>
@@ -2579,7 +2579,7 @@ export default function OrderDetail() {
                     }
                   }}
                   disabled={!isValid || isPending}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                  className="rounded-lg"
                 >
                   {isPending ? t('common.saving') : t('common.save')}
                 </Button>

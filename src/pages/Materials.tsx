@@ -233,7 +233,7 @@ function AddVariantPopover({
             type="button"
             size="sm"
             onClick={handleAdd}
-            className="h-7 px-3 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white gap-1 rounded-md shadow-xs cursor-pointer"
+            className="h-7 px-3 text-xs gap-1 rounded-md cursor-pointer"
           >
             <Plus className="w-3 h-3" />
             <span>{t('materials.addVariant', 'Add Variant')}</span>
@@ -1018,7 +1018,7 @@ export default function Materials() {
                         type="button"
                         size="sm"
                         onClick={handleAddBrandGroup}
-                        className="h-8 px-3.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white gap-1 shrink-0 rounded-md shadow-sm"
+                        className="h-8 px-3.5 text-xs gap-1 shrink-0 rounded-md"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>{t('common.add', 'Add')}</span>

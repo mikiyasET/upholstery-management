@@ -97,7 +97,7 @@ export default function Receipt() {
           </Button>
           <Button 
             onClick={handlePrint} 
-            className="bg-primary text-white hover:bg-primary/90 rounded-xl shadow-md gap-2"
+            className="rounded-xl gap-2"
           >
             <Printer className="w-4 h-4" /> {t('orders.printInvoice', 'Print A4 Invoice')}
           </Button>

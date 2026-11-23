@@ -748,7 +748,7 @@ export default function Users() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeModal}>{t('common.cancel', 'Cancel')}</Button>
-            <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-amber-600 text-white hover:bg-amber-700 font-semibold shadow-sm">
+            <Button onClick={handleSave} disabled={saveMutation.isPending} className="rounded-lg">
               {saveMutation.isPending ? t('common.saving', 'Saving...') : t('users.saveRole', 'Save {{role}}', { role: getRoleDisplayName(modalRole) })}
             </Button>
           </DialogFooter>
