@@ -6,7 +6,9 @@ import { Button } from '../components/ui/button';
 import { Calendar, FileText, Printer, Eye, Search, X, CircleDollarSign, Receipt, Pencil, Plus } from 'lucide-react';
 import { formatCurrency, formatStatus, formatPaymentMethod, formatAppDate } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
-import { Sheet, SheetContent, SheetTitle } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '../components/ui/sheet';
+import { useMediaQuery } from '@mantine/hooks';
 import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 import { ActionIcon, Tooltip, Box, TextInput, Select, Button as MantineButton, Badge } from '@mantine/core';
@@ -32,6 +34,7 @@ export default function DirectSalesHistory() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isMobileOrTablet = useMediaQuery('(max-width: 74.99em)');
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('ALL');
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
@@ -378,35 +381,261 @@ export default function DirectSalesHistory() {
         />
       </div>
 
-      {/* 1. Sale Details Bottom Sheet */}
-      <Sheet open={!!selectedSale} onOpenChange={(open) => !open && setSelectedSale(null)}>
-        <SheetContent
-          side="bottom"
-          showCloseButton={false}
-          className="rounded-t-2xl sm:rounded-t-3xl min-h-[50dvh] max-h-[88dvh] border-t sm:border-x border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 sm:max-w-2xl sm:mx-auto gap-0 focus:outline-none"
-        >
-          <SheetTitle className="sr-only">
-            {t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}
-          </SheetTitle>
+      {/* Sale Details Content Helper */}
+      {(() => null)()}
 
-          {/* Drag Handle Indicator */}
-          <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+      {/* Helper render functions */}
+      {(() => {
+        return null;
+      })()}
 
-          {/* Header */}
-          <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <Receipt className="w-5 h-5" />
+      {/* Sale Details Modal / Bottom Sheet */}
+      {isMobileOrTablet ? (
+        <Sheet open={!!selectedSale} onOpenChange={(open) => !open && setSelectedSale(null)}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="rounded-t-2xl sm:rounded-t-3xl min-h-[55dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none sm:max-w-none gap-0 focus:outline-none"
+          >
+            <SheetTitle className="sr-only">
+              {t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              {selectedSale && formatAppDate(selectedSale.saleDateTime, true)}
+            </SheetDescription>
+
+            {/* Drag Handle Indicator */}
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+            {/* Sheet Header */}
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-heading text-base sm:text-lg font-bold text-foreground">
+                      {t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}
+                    </h3>
+                    {fullSaleDetails?.fsrNumber ? (
+                      <button 
+                        type="button"
+                        onClick={(e) => handleOpenFsrDialog(fullSaleDetails, e)} 
+                        className="group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 transition-all cursor-pointer shadow-xs"
+                        title={t('orders.detail.editFsr', 'Edit FSR #')}
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="font-mono">FSR: {fullSaleDetails.fsrNumber}</span>
+                        <Pencil className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenFsrDialog(fullSaleDetails || selectedSale, e)}
+                        className="group inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/70 border border-border/80 hover:border-foreground/20 transition-all cursor-pointer"
+                        title={t('orders.fsrAuditReference', 'Add Fiscal Sales Receipt paper audit number')}
+                      >
+                        <Plus className="w-3 h-3 text-muted-foreground group-hover:text-foreground shrink-0" />
+                        <Receipt className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-foreground shrink-0" />
+                        <span>{t('orders.detail.addFsr', 'Add FSR #')}</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {selectedSale && formatAppDate(selectedSale.saleDateTime, true)}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
+
+              <button
+                type="button"
+                onClick={() => setSelectedSale(null)}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
+                title={t('common.close', 'Close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6 min-h-0">
+              {isDetailsLoading ? (
+                <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1" />
+                  <p className="text-sm font-medium">{t('common.loading', 'Loading details...')}</p>
+                </div>
+              ) : fullSaleDetails ? (
+                <div className="space-y-6">
+                  {/* Customer Info */}
+                  {(fullSaleDetails.customerName || fullSaleDetails.customerPhone) && (
+                    <div className="bg-muted/30 p-3.5 sm:p-4 rounded-xl border border-border/60 text-sm">
+                      <h3 className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">{t('orders.table.customer', 'Customer')}</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                        {fullSaleDetails.customerName && (
+                          <div>
+                            <span className="text-muted-foreground mr-2">{t('common.name', 'Name')}:</span>
+                            <span className="font-semibold text-foreground">{fullSaleDetails.customerName}</span>
+                          </div>
+                        )}
+                        {fullSaleDetails.customerPhone && (
+                          <div>
+                            <span className="text-muted-foreground mr-2">{t('common.phone', 'Phone')}:</span>
+                            <span className="font-semibold text-foreground font-mono">{fullSaleDetails.customerPhone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Items */}
+                  <div>
+                    <h3 className="font-semibold mb-2.5 text-xs text-muted-foreground uppercase tracking-wider">{t('directSales.itemsPurchased', 'Items Purchased')}</h3>
+                    <div className="space-y-2 max-h-[35vh] overflow-y-auto custom-scrollbar pr-1">
+                      {fullSaleDetails.lines?.map((line: any) => (
+                        <div key={line.id} className="flex justify-between items-start text-sm bg-card border border-border/70 rounded-xl p-3 shadow-2xs">
+                          <div className="min-w-0 pr-2">
+                            <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+                              <span>{getLocName(line.material)}</span>
+                              {line.brandName && (
+                                <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold rounded border border-amber-500/30">
+                                  {line.brandName}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-muted-foreground text-xs mt-0.5">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
+                          </div>
+                          <div className="font-bold text-foreground shrink-0">
+                            {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Payment Summary */}
+                  <div className="bg-muted/30 p-4 rounded-xl border border-border/60 space-y-3">
+                    {(() => {
+                      const saleSubtotal = fullSaleDetails.subtotal !== undefined
+                        ? Number(fullSaleDetails.subtotal)
+                        : (fullSaleDetails.lines?.reduce((sum: number, line: any) =>
+                            sum + (Number(line.priceAtSaleTime || 0) * Number(line.quantity || 0)), 0) || 0);
+                      const saleDiscount = Number(fullSaleDetails.discountAmount || 0);
+                      const saleTax = Number(fullSaleDetails.taxAmount || 0);
+                      const grandTotal = getSaleTotal(fullSaleDetails);
+                      const totalPaid = fullSaleDetails.payments?.reduce((s: number, p: any) => s + Number(p.amount || 0), 0) || 0;
+                      const balanceDue = Math.max(0, grandTotal - totalPaid);
+
+                      return (
+                        <>
+                          {(saleDiscount > 0 || saleTax > 0) && (
+                            <div className="flex justify-between text-sm text-muted-foreground">
+                              <span>{t('receipt.subtotal', 'Subtotal')}</span>
+                              <span>{formatCurrency(saleSubtotal)}</span>
+                            </div>
+                          )}
+
+                          {saleDiscount > 0 && (
+                            <div className="flex justify-between text-sm text-muted-foreground">
+                              <span>{t('orders.discount', 'Discount')}</span>
+                              <span className="text-red-500">-{formatCurrency(saleDiscount)}</span>
+                            </div>
+                          )}
+
+                          {saleTax > 0 && (
+                            <div className="flex justify-between text-sm text-muted-foreground">
+                              <span>{t('receipt.vat', 'VAT (15%)')}</span>
+                              <span>{formatCurrency(saleTax)}</span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between text-sm font-semibold pt-1 border-t border-border/60">
+                            <span>{t('receipt.totalAmount', 'Total Amount')}</span>
+                            <span className="font-bold text-foreground">{formatCurrency(grandTotal)}</span>
+                          </div>
+
+                          {fullSaleDetails.payments?.length > 0 && (
+                            <div className="pt-2 border-t border-border/60">
+                              <h3 className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">{t('receipt.paymentsRecorded', 'Payments Recorded')}</h3>
+                              <div className="space-y-2">
+                                {fullSaleDetails.payments.map((p: any) => (
+                                  <div key={p.id} className="flex justify-between text-sm items-center">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 bg-background border border-border/70 rounded text-xs font-semibold">
+                                        {formatPaymentMethod(p.method)}
+                                      </span>
+                                      {p.methodDetails && (
+                                        <span className="text-xs text-muted-foreground font-mono" title={p.methodDetails}>
+                                          {t('orders.referenceNumber', 'Ref')}: {p.methodDetails.length > 15 ? p.methodDetails.slice(0, 15) + '...' : p.methodDetails}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="font-semibold">{formatCurrency(p.amount)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between items-center pt-3 border-t border-border/60 mt-3">
+                            <span className="font-bold">{t('receipt.totalPaid', 'Amount Paid')}</span>
+                            <span className="text-xl font-bold text-primary">
+                              {formatCurrency(totalPaid)}
+                            </span>
+                          </div>
+
+                          {balanceDue > 0 && (
+                            <div className="flex justify-between items-center text-sm font-bold text-amber-600 dark:text-amber-400">
+                              <span>{t('receipt.balanceDue', 'Balance Due')}</span>
+                              <span>{formatCurrency(balanceDue)}</span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-red-500">{t('common.failedToLoad', 'Failed to load details')}</div>
+              )}
+            </div>
+
+            {/* Docked Footer */}
+            <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between gap-3">
+              <Button variant="outline" onClick={() => setSelectedSale(null)} className="rounded-lg">
+                {t('common.close', 'Close')}
+              </Button>
+              {fullSaleDetails?.paymentStatus === 'PAID' ? (
+                <Button 
+                  onClick={() => fullSaleDetails && printDirectSaleReceipt(fullSaleDetails)} 
+                  className="rounded-lg"
+                  disabled={isDetailsLoading || !fullSaleDetails}
+                >
+                  <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => navigate(`/direct-sales?editId=${selectedSale?.id}`)}
+                  className="rounded-lg"
+                  disabled={isDetailsLoading || !fullSaleDetails}
+                >
+                  {t('directSales.editSale', 'Edit Sale / Add Payment')}
+                </Button>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={!!selectedSale} onOpenChange={(open) => !open && setSelectedSale(null)}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between pr-4 flex-wrap gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
-                    {t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}
-                  </h3>
+                  <span>{t('receipt.receipt', 'Receipt')} #{selectedSale?.saleNumber}</span>
                   {fullSaleDetails?.fsrNumber ? (
-                    <button
+                    <button 
                       type="button"
-                      onClick={(e) => handleOpenFsrDialog(fullSaleDetails, e)}
+                      onClick={(e) => handleOpenFsrDialog(fullSaleDetails, e)} 
                       className="group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 border border-blue-500/30 transition-all cursor-pointer shadow-xs"
                       title={t('orders.detail.editFsr', 'Edit FSR #')}
                     >
@@ -427,46 +656,31 @@ export default function DirectSalesHistory() {
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                <span className="text-sm font-normal text-muted-foreground">
                   {selectedSale && formatAppDate(selectedSale.saleDateTime, true)}
-                </p>
-              </div>
-            </div>
+                </span>
+              </DialogTitle>
+            </DialogHeader>
 
-            <button
-              type="button"
-              onClick={() => setSelectedSale(null)}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
-              title={t('common.close', 'Close')}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Scrollable Body */}
-          <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 min-h-0">
             {isDetailsLoading ? (
-              <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-2">
-                <Receipt className="w-8 h-8 opacity-30 text-muted-foreground animate-pulse" />
-                <p className="text-xs font-medium">{t('common.loading', 'Loading details...')}</p>
-              </div>
+              <div className="py-8 text-center text-muted-foreground">{t('common.loading', 'Loading details...')}</div>
             ) : fullSaleDetails ? (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {/* Customer Info */}
                 {(fullSaleDetails.customerName || fullSaleDetails.customerPhone) && (
-                  <div className="bg-muted/30 p-3.5 rounded-xl border border-border/60 text-sm">
+                  <div className="bg-muted/30 p-3 rounded-lg border text-sm">
                     <h3 className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">{t('orders.table.customer', 'Customer')}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {fullSaleDetails.customerName && (
                         <div>
                           <span className="text-muted-foreground mr-2">{t('common.name', 'Name')}:</span>
-                          <span className="font-medium text-foreground">{fullSaleDetails.customerName}</span>
+                          <span className="font-medium">{fullSaleDetails.customerName}</span>
                         </div>
                       )}
                       {fullSaleDetails.customerPhone && (
                         <div>
                           <span className="text-muted-foreground mr-2">{t('common.phone', 'Phone')}:</span>
-                          <span className="font-medium text-foreground font-mono">{fullSaleDetails.customerPhone}</span>
+                          <span className="font-medium">{fullSaleDetails.customerPhone}</span>
                         </div>
                       )}
                     </div>
@@ -475,10 +689,10 @@ export default function DirectSalesHistory() {
 
                 {/* Items */}
                 <div>
-                  <h3 className="font-semibold mb-2.5 text-xs text-muted-foreground uppercase tracking-wider">{t('directSales.itemsPurchased', 'Items Purchased')}</h3>
-                  <div className="space-y-2 max-h-[35vh] overflow-y-auto custom-scrollbar pr-1">
+                  <h3 className="font-semibold mb-3 text-xs text-muted-foreground uppercase tracking-wider">{t('directSales.itemsPurchased', 'Items Purchased')}</h3>
+                  <div className="space-y-2 max-h-[30vh] overflow-y-auto custom-scrollbar pr-1">
                     {fullSaleDetails.lines?.map((line: any) => (
-                      <div key={line.id} className="flex justify-between items-start text-sm bg-card border border-border/70 rounded-xl p-3 shadow-2xs">
+                      <div key={line.id} className="flex justify-between items-start text-sm bg-card border rounded-lg p-3">
                         <div>
                           <div className="font-medium flex items-center gap-1.5 flex-wrap">
                             <span>{getLocName(line.material)}</span>
@@ -488,9 +702,9 @@ export default function DirectSalesHistory() {
                               </span>
                             )}
                           </div>
-                          <div className="text-muted-foreground text-xs mt-0.5">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
+                          <div className="text-muted-foreground text-xs">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
                         </div>
-                        <div className="font-semibold text-foreground">
+                        <div className="font-semibold">
                           {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
                         </div>
                       </div>
@@ -499,7 +713,7 @@ export default function DirectSalesHistory() {
                 </div>
 
                 {/* Payment Summary */}
-                <div className="bg-muted/30 p-4 rounded-xl border border-border/60 space-y-3">
+                <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
                   {(() => {
                     const saleSubtotal = fullSaleDetails.subtotal !== undefined
                       ? Number(fullSaleDetails.subtotal)
@@ -523,7 +737,7 @@ export default function DirectSalesHistory() {
                         {saleDiscount > 0 && (
                           <div className="flex justify-between text-sm text-muted-foreground">
                             <span>{t('orders.discount', 'Discount')}</span>
-                            <span className="text-red-500 font-medium">-{formatCurrency(saleDiscount)}</span>
+                            <span className="text-red-500">-{formatCurrency(saleDiscount)}</span>
                           </div>
                         )}
 
@@ -534,19 +748,19 @@ export default function DirectSalesHistory() {
                           </div>
                         )}
 
-                        <div className="flex justify-between text-sm font-semibold pt-1 border-t border-border/60">
+                        <div className="flex justify-between text-sm font-semibold pt-1 border-t">
                           <span>{t('receipt.totalAmount', 'Total Amount')}</span>
-                          <span className="font-bold text-foreground text-base">{formatCurrency(grandTotal)}</span>
+                          <span className="font-bold text-foreground">{formatCurrency(grandTotal)}</span>
                         </div>
 
                         {fullSaleDetails.payments?.length > 0 && (
-                          <div className="pt-2 border-t border-border/60">
+                          <div className="pt-2 border-t">
                             <h3 className="font-semibold mb-2 text-xs text-muted-foreground uppercase tracking-wider">{t('receipt.paymentsRecorded', 'Payments Recorded')}</h3>
                             <div className="space-y-2">
                               {fullSaleDetails.payments.map((p: any) => (
                                 <div key={p.id} className="flex justify-between text-sm items-center">
                                   <div className="flex items-center gap-2">
-                                    <span className="px-2 py-0.5 bg-background border border-border/60 rounded text-xs font-medium">
+                                    <span className="px-2 py-0.5 bg-background border rounded text-xs font-medium">
                                       {formatPaymentMethod(p.method)}
                                     </span>
                                     {p.methodDetails && (
@@ -555,15 +769,15 @@ export default function DirectSalesHistory() {
                                       </span>
                                     )}
                                   </div>
-                                  <span className="font-medium text-foreground">{formatCurrency(p.amount)}</span>
+                                  <span className="font-medium">{formatCurrency(p.amount)}</span>
                                 </div>
                               ))}
                             </div>
                           </div>
                         )}
 
-                        <div className="flex justify-between items-center pt-3 border-t border-border/60 mt-3">
-                          <span className="font-bold text-foreground">{t('receipt.totalPaid', 'Amount Paid')}</span>
+                        <div className="flex justify-between items-center pt-3 border-t mt-3">
+                          <span className="font-bold">{t('receipt.totalPaid', 'Amount Paid')}</span>
                           <span className="text-xl font-bold text-primary">
                             {formatCurrency(totalPaid)}
                           </span>
@@ -583,116 +797,199 @@ export default function DirectSalesHistory() {
             ) : (
               <div className="py-8 text-center text-red-500">{t('common.failedToLoad', 'Failed to load details')}</div>
             )}
-          </div>
 
-          {/* Docked Footer */}
-          <div className="p-3.5 sm:p-4 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between gap-3">
-            <Button variant="outline" onClick={() => setSelectedSale(null)} className="rounded-xl">
-              {t('common.close', 'Close')}
-            </Button>
-            {fullSaleDetails?.paymentStatus === 'PAID' ? (
-              <Button
-                onClick={() => fullSaleDetails && printDirectSaleReceipt(fullSaleDetails)}
-                className="rounded-xl"
-                disabled={isDetailsLoading || !fullSaleDetails}
-              >
-                <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
-              </Button>
-            ) : (
-              <Button
-                onClick={() => navigate(`/direct-sales?editId=${selectedSale?.id}`)}
-                className="rounded-xl"
-                disabled={isDetailsLoading || !fullSaleDetails}
-              >
-                {t('directSales.editSale', 'Edit Sale / Add Payment')}
-              </Button>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* 2. FSR Update Bottom Sheet */}
-      <Sheet open={isFsrModalOpen} onOpenChange={setIsFsrModalOpen}>
-        <SheetContent
-          side="bottom"
-          showCloseButton={false}
-          className="rounded-t-2xl sm:rounded-t-3xl min-h-[40dvh] max-h-[85dvh] border-t sm:border-x border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 sm:max-w-md sm:mx-auto gap-0 focus:outline-none z-[300]"
-        >
-          <SheetTitle className="sr-only">
-            {t('orders.updateFsr', 'Update FSR Number')}
-          </SheetTitle>
-
-          {/* Drag Handle Indicator */}
-          <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
-
-          {/* Header */}
-          <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <Receipt className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-heading text-base font-bold text-foreground truncate">
-                  {t('orders.updateFsr', 'Update FSR Number')}
-                </h3>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
-                  {t('orders.fsrAuditReference', 'Fiscal Sales Receipt (FSR) paper audit reference number.')}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsFsrModalOpen(false)}
-              className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
-              title={t('common.close', 'Close')}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 min-h-0">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {t('orders.fsrNumber', 'FSR Number')}
-              </label>
-              <ModernInput
-                icon={Receipt}
-                inputSize="default"
-                placeholder={t('orders.create.fsrPlaceholder', 'e.g. FSR-00123')}
-                value={fsrInputValue}
-                onChange={(e) => setFsrInputValue(e.target.value)}
-                className="font-mono tracking-wider font-semibold uppercase text-base sm:text-sm"
-                autoFocus
-              />
-            </div>
-            {fsrSaleTarget?.fsrNumber && (
-              <p className="text-xs text-muted-foreground flex items-center justify-between">
-                <span>{t('orders.detail.currentFsr', 'Current')}: <span className="font-mono font-semibold text-foreground">{fsrSaleTarget.fsrNumber}</span></span>
-                <button
-                  type="button"
-                  onClick={() => setFsrInputValue('')}
-                  className="text-red-500 hover:underline text-xs cursor-pointer font-medium"
+            <DialogFooter className="sm:justify-between border-t pt-4 mt-2">
+              <Button variant="outline" onClick={() => setSelectedSale(null)}>{t('common.close', 'Close')}</Button>
+              {fullSaleDetails?.paymentStatus === 'PAID' ? (
+                <Button 
+                  onClick={() => fullSaleDetails && printDirectSaleReceipt(fullSaleDetails)} 
+                  className="rounded-lg"
+                  disabled={isDetailsLoading || !fullSaleDetails}
                 >
-                  {t('common.clear', 'Clear')}
-                </button>
-              </p>
-            )}
-          </div>
+                  <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => navigate(`/direct-sales?editId=${selectedSale?.id}`)}
+                  className="rounded-lg"
+                  disabled={isDetailsLoading || !fullSaleDetails}
+                >
+                  {t('directSales.editSale', 'Edit Sale / Add Payment')}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-          {/* Docked Footer */}
-          <div className="p-3.5 sm:p-4 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsFsrModalOpen(false)}
-              disabled={updateFsrMutation.isPending}
-              className="rounded-xl"
-            >
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <div className="flex items-center gap-2">
+      {/* FSR Update Modal / Bottom Sheet */}
+      {isMobileOrTablet ? (
+        <Sheet open={isFsrModalOpen} onOpenChange={setIsFsrModalOpen}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="rounded-t-2xl sm:rounded-t-3xl min-h-[40dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none sm:max-w-none gap-0 focus:outline-none z-[300]"
+          >
+            <SheetTitle className="sr-only">
+              {t('orders.updateFsr', 'Update FSR Number')}
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              {t('orders.fsrAuditReference', 'Fiscal Sales Receipt (FSR) paper audit reference number.')}
+            </SheetDescription>
+
+            {/* Drag Handle Indicator */}
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+
+            {/* Header */}
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
+                    {t('orders.updateFsr', 'Update FSR Number')}
+                  </h3>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {t('orders.fsrAuditReference', 'Fiscal Sales Receipt (FSR) paper audit reference number.')}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsFsrModalOpen(false)}
+                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer shrink-0 ml-2"
+                title={t('common.close', 'Close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-4 min-h-0">
+              <div className="space-y-4 py-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('orders.fsrNumber', 'FSR Number')}
+                  </label>
+                  <ModernInput
+                    icon={Receipt}
+                    inputSize="default"
+                    placeholder={t('orders.create.fsrPlaceholder', 'e.g. FSR-00123')}
+                    value={fsrInputValue}
+                    onChange={(e) => setFsrInputValue(e.target.value)}
+                    className="font-mono tracking-wider font-semibold uppercase"
+                    autoFocus
+                  />
+                </div>
+                {fsrSaleTarget?.fsrNumber && (
+                  <p className="text-xs text-muted-foreground flex items-center justify-between">
+                    <span>{t('orders.detail.currentFsr', 'Current')}: <span className="font-mono font-semibold text-foreground">{fsrSaleTarget.fsrNumber}</span></span>
+                    <button
+                      type="button"
+                      onClick={() => setFsrInputValue('')}
+                      className="text-red-500 hover:underline text-xs cursor-pointer font-medium"
+                    >
+                      {t('common.clear', 'Clear')}
+                    </button>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Docked Footer */}
+            <div className="p-3.5 sm:p-5 border-t border-border/60 bg-muted/20 shrink-0 flex items-center justify-between gap-2 sm:gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsFsrModalOpen(false)}
+                disabled={updateFsrMutation.isPending}
+                className="rounded-lg"
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <div className="flex items-center gap-2">
+                {fsrSaleTarget?.fsrNumber && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      if (fsrSaleTarget) {
+                        updateFsrMutation.mutate({ id: fsrSaleTarget.id, newFsr: '' });
+                      }
+                    }}
+                    disabled={updateFsrMutation.isPending}
+                    className="rounded-lg"
+                  >
+                    {t('common.remove', 'Remove')}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                  onClick={() => {
+                    if (fsrSaleTarget) {
+                      updateFsrMutation.mutate({ id: fsrSaleTarget.id, newFsr: fsrInputValue });
+                    }
+                  }}
+                  disabled={updateFsrMutation.isPending}
+                >
+                  {updateFsrMutation.isPending ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isFsrModalOpen} onOpenChange={setIsFsrModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-blue-500" />
+                <span>{t('orders.updateFsr', 'Update FSR Number')}</span>
+              </DialogTitle>
+              <DialogDescription>
+                {t('orders.fsrAuditReference', 'Fiscal Sales Receipt (FSR) paper audit reference number.')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t('orders.fsrNumber', 'FSR Number')}
+                </label>
+                <ModernInput
+                  icon={Receipt}
+                  inputSize="default"
+                  placeholder={t('orders.create.fsrPlaceholder', 'e.g. FSR-00123')}
+                  value={fsrInputValue}
+                  onChange={(e) => setFsrInputValue(e.target.value)}
+                  className="font-mono tracking-wider font-semibold uppercase"
+                  autoFocus
+                />
+              </div>
+              {fsrSaleTarget?.fsrNumber && (
+                <p className="text-xs text-muted-foreground flex items-center justify-between">
+                  <span>{t('orders.detail.currentFsr', 'Current')}: <span className="font-mono font-semibold text-foreground">{fsrSaleTarget.fsrNumber}</span></span>
+                  <button
+                    type="button"
+                    onClick={() => setFsrInputValue('')}
+                    className="text-red-500 hover:underline text-xs"
+                  >
+                    {t('common.clear', 'Clear')}
+                  </button>
+                </p>
+              )}
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsFsrModalOpen(false)}
+                disabled={updateFsrMutation.isPending}
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
               {fsrSaleTarget?.fsrNumber && (
                 <Button
                   type="button"
@@ -703,14 +1000,14 @@ export default function DirectSalesHistory() {
                     }
                   }}
                   disabled={updateFsrMutation.isPending}
-                  className="rounded-xl"
+                  className="mr-auto"
                 >
                   {t('common.remove', 'Remove')}
                 </Button>
               )}
               <Button
                 type="button"
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
                   if (fsrSaleTarget) {
                     updateFsrMutation.mutate({ id: fsrSaleTarget.id, newFsr: fsrInputValue });
@@ -720,10 +1017,10 @@ export default function DirectSalesHistory() {
               >
                 {updateFsrMutation.isPending ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
               </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

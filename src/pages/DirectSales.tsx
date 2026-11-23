@@ -21,6 +21,8 @@ import { printDirectSaleReceipt } from '../lib/receipt-printer';
 import { PermissionGate } from '../components/PermissionGate';
 import { LazyImage } from '../components/common/LazyImage';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import successLottie from '../assets/success.lottie';
 
 type MaterialBrandStock = {
   id: string;
@@ -1543,7 +1545,7 @@ export default function DirectSales() {
           <SheetContent
             side="bottom"
             showCloseButton={false}
-            className="rounded-t-2xl sm:rounded-t-3xl min-h-[45dvh] max-h-[88dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none"
+            className="rounded-t-3xl min-h-[60dvh] max-h-[92dvh] border-t border-border bg-card shadow-2xl p-0 overflow-hidden flex flex-col w-full inset-x-0 max-w-none gap-0 focus:outline-none relative"
           >
             <SheetTitle className="sr-only">{t('directSales.saleCompleted', 'Sale Completed')}</SheetTitle>
             <SheetDescription className="sr-only">{completedSale?.saleNumber}</SheetDescription>
@@ -1551,84 +1553,111 @@ export default function DirectSales() {
             {/* Drag Handle Indicator */}
             <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
 
-            {/* Header */}
-            <div className="px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-border/60 bg-muted/20 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-6 h-6" />
+            {/* Close Button Top-Right */}
+            <button
+              type="button"
+              onClick={() => setCompletedSale(null)}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer z-20"
+              title={t('common.close', 'Close')}
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Scrollable Container containing Hero Lottie & Details */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-2 space-y-4 min-h-0 text-sm text-foreground">
+              {/* Hero Celebration Section with Big Lottie */}
+              <div className="flex flex-col items-center justify-center pt-1 pb-2 text-center shrink-0">
+                <div className="relative w-40 h-40 sm:w-48 sm:h-48 -my-2 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-green-500/15 dark:bg-green-500/25 rounded-full blur-2xl pointer-events-none" />
+                  <DotLottieReact
+                    src={successLottie}
+                    autoplay
+                    loop={false}
+                    className="w-full h-full relative z-10"
+                  />
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-heading text-base sm:text-lg font-bold text-foreground truncate">
-                    {t('directSales.saleCompleted', 'Sale Completed')}
-                  </h3>
-                  <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
+                <h3 className="font-heading text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                  {t('directSales.saleCompleted', 'Sale Completed!')}
+                </h3>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap justify-center text-xs">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full font-mono font-bold bg-muted/80 text-foreground border border-border shadow-2xs">
+                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                     {completedSale?.saleNumber}
-                  </p>
+                  </span>
+                  {completedSale?.fsrNumber && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
+                      <Receipt className="w-3.5 h-3.5 text-blue-500" />
+                      FSR: {completedSale.fsrNumber}
+                    </span>
+                  )}
+                  <span className="text-muted-foreground">
+                    {completedSale && formatAppDate(completedSale.saleDateTime, true)}
+                  </span>
+                </div>
+
+                {/* Grand Total Hero Card */}
+                <div className="mt-3.5 w-full max-w-sm px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-green-500/15 to-emerald-500/10 border border-green-500/30 flex items-center justify-between shadow-2xs">
+                  <div className="text-left">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-400 block">
+                      {t('receipt.totalPaid', 'Total Paid')}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {completedSale?.payments?.length 
+                        ? `${completedSale.payments.length} ${completedSale.payments.length > 1 ? t('payment.payments', 'payments') : t('payment.payment', 'payment')}` 
+                        : t('receipt.directSale', 'Direct Sale')}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl sm:text-2xl font-extrabold font-mono text-green-600 dark:text-green-400 tracking-tight">
+                      {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || Number(completedSale?.totalAmount || 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setCompletedSale(null)}
-                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted active:scale-95 transition-all cursor-pointer"
-                title={t('common.close', 'Close')}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Scrollable Body */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-3.5 min-h-0 text-sm text-foreground">
-              {/* Header info */}
-              <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground pb-2 border-b border-border">
-                <span>{completedSale && formatAppDate(completedSale.saleDateTime, true)}</span>
-                <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
-              </div>
-
-              {/* Customer & FSR */}
-              {(completedSale?.customerName || completedSale?.customerPhone || completedSale?.fsrNumber) && (
-                <div className="bg-muted/30 p-3.5 rounded-xl border border-border text-xs sm:text-sm space-y-1.5">
-                  {completedSale.customerName && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t('orders.table.customer', 'Customer')}:</span>
-                      <span className="font-medium text-foreground">{completedSale.customerName}</span>
+              {/* Customer Details */}
+              {(completedSale?.customerName || completedSale?.customerPhone) && (
+                <div className="bg-muted/30 p-3 sm:p-3.5 rounded-xl border border-border/70 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4" />
                     </div>
-                  )}
-                  {completedSale.customerPhone && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t('common.phone', 'Phone')}:</span>
-                      <span className="font-medium text-foreground">{completedSale.customerPhone}</span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-foreground truncate">{completedSale.customerName || t('receipt.walkInCustomer', 'Walk-in Client')}</div>
+                      {completedSale.customerPhone && (
+                        <div className="text-muted-foreground text-xs font-mono">{completedSale.customerPhone}</div>
+                      )}
                     </div>
-                  )}
-                  {completedSale.fsrNumber && (
-                    <div className="flex justify-between pt-1 border-t border-border/50">
-                      <span className="text-muted-foreground">{t('orders.fsrNumber', 'FSR Number')}:</span>
-                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{completedSale.fsrNumber}</span>
-                    </div>
-                  )}
+                  </div>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-background border border-border text-muted-foreground font-medium shrink-0">
+                    {t('orders.table.customer', 'Customer')}
+                  </span>
                 </div>
               )}
 
               {/* Line items */}
-              <div className="space-y-1.5">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t('directSales.itemsPurchased', 'Items Purchased')} ({completedSale?.lines?.length || 0})
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider px-1">
+                  <span>{t('directSales.itemsPurchased', 'Items Purchased')}</span>
+                  <span className="text-[11px] font-normal lowercase bg-muted px-2 py-0.5 rounded-full text-foreground/80 font-mono">
+                    {completedSale?.lines?.length || 0} {t('common.items', 'items')}
+                  </span>
                 </div>
-                <div className="space-y-1.5 max-h-[30vh] overflow-y-auto custom-scrollbar pr-0.5">
+                <div className="space-y-1.5 max-h-[25vh] overflow-y-auto custom-scrollbar pr-0.5">
                   {completedSale?.lines?.map((line: any) => (
-                    <div key={line.id} className="flex justify-between items-start text-xs sm:text-sm bg-muted/20 border border-border/60 rounded-xl p-2.5 sm:p-3">
-                      <div>
+                    <div key={line.id} className="flex justify-between items-start text-xs sm:text-sm bg-card border border-border/70 rounded-xl p-3 shadow-2xs hover:border-foreground/20 transition-all">
+                      <div className="min-w-0 pr-2">
                         <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
                           <span>{getLocName(line.material)}</span>
                           {line.brandName && (
-                            <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
+                            <span className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/30">
                               {line.brandName}
                             </span>
                           )}
                         </div>
                         <div className="text-muted-foreground text-[11px] sm:text-xs mt-0.5 font-mono">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
                       </div>
-                      <div className="font-bold text-foreground font-mono">
+                      <div className="font-bold text-foreground font-mono shrink-0">
                         {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
                       </div>
                     </div>
@@ -1636,8 +1665,8 @@ export default function DirectSales() {
                 </div>
               </div>
 
-              {/* Financial summary */}
-              <div className="bg-muted/30 p-3.5 sm:p-4 rounded-xl border border-border space-y-2 text-xs sm:text-sm">
+              {/* Financial summary & Payments */}
+              <div className="bg-muted/30 p-3.5 sm:p-4 rounded-xl border border-border/70 space-y-2 text-xs sm:text-sm">
                 {Number(completedSale?.taxAmount) > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t('receipt.vat', 'VAT (15%)')}</span>
@@ -1646,26 +1675,26 @@ export default function DirectSales() {
                 )}
                 {completedSale?.payments?.length > 0 && (
                   <div className="pt-2 border-t border-border space-y-1.5">
-                    <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                    <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider px-0.5">
                       {t('receipt.paymentsRecorded', 'Payments Recorded')}
                     </div>
                     {completedSale.payments.map((p: any) => (
-                      <div key={p.id} className="flex justify-between items-center text-xs sm:text-sm">
-                        <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] sm:text-xs font-medium text-foreground">
-                          {formatPaymentMethod(p.method)}
-                          {p.methodDetails && ` (${p.methodDetails})`}
-                        </span>
-                        <span className="font-semibold text-foreground font-mono">{formatCurrency(p.amount)}</span>
+                      <div key={p.id} className="flex justify-between items-center text-xs sm:text-sm bg-background/60 p-2 rounded-lg border border-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-muted border border-border text-[11px] font-semibold text-foreground">
+                            {formatPaymentMethod(p.method)}
+                          </span>
+                          {p.methodDetails && (
+                            <span className="text-[11px] text-muted-foreground font-mono">
+                              ({p.methodDetails})
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-bold text-foreground font-mono">{formatCurrency(p.amount)}</span>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-border text-sm sm:text-base font-bold">
-                  <span className="text-foreground">{t('receipt.totalPaid', 'Total Paid')}</span>
-                  <span className="text-base sm:text-lg text-primary font-mono">
-                    {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0)}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -1674,130 +1703,165 @@ export default function DirectSales() {
               <Button 
                 variant="outline" 
                 onClick={() => setCompletedSale(null)}
-                className="h-11 sm:h-12 px-5 sm:px-6 rounded-xl font-medium shrink-0 cursor-pointer text-sm sm:text-base"
+                className="h-12 px-5 sm:px-6 rounded-xl font-semibold shrink-0 cursor-pointer text-sm sm:text-base"
               >
                 {t("common.close", "Close")}
               </Button>
               <Button 
                 onClick={() => printDirectSaleReceipt(completedSale)} 
-                className="h-11 sm:h-12 px-6 sm:px-8 rounded-xl flex-1 font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="h-12 px-6 sm:px-8 rounded-xl flex-1 font-bold shadow-lg bg-green-600 hover:bg-green-700 active:scale-[0.98] text-white transition-all cursor-pointer flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                <Printer className="w-4 h-4 mr-1.5" /> {t('receipt.receipt', 'Print Receipt')}
+                <Printer className="w-5 h-5 mr-1" /> {t('receipt.receipt', 'Print Receipt')}
               </Button>
             </div>
           </SheetContent>
         </Sheet>
       ) : (
         <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
-          <DialogContent className="sm:max-w-[440px] bg-card text-card-foreground border-border">
-            <DialogHeader className="print:hidden pb-3 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-6 h-6" />
+          <DialogContent className="sm:max-w-[480px] bg-card text-card-foreground border-border p-0 overflow-hidden rounded-2xl shadow-2xl">
+            <div className="p-4 sm:p-6 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
+              {/* Hero Celebration Section with Big Lottie */}
+              <div className="flex flex-col items-center justify-center pt-2 pb-1 text-center shrink-0">
+                <div className="relative w-40 h-40 flex items-center justify-center -my-2">
+                  <div className="absolute inset-0 bg-green-500/15 dark:bg-green-500/25 rounded-full blur-2xl pointer-events-none" />
+                  <DotLottieReact
+                    src={successLottie}
+                    autoplay
+                    loop={false}
+                    className="w-full h-full relative z-10"
+                  />
                 </div>
-                <div>
-                  <DialogTitle className="text-lg font-bold text-foreground">{t('directSales.saleCompleted', 'Sale Completed')}</DialogTitle>
-                  <p className="text-xs text-muted-foreground">{completedSale?.saleNumber}</p>
+                <DialogTitle className="font-heading text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                  {t('directSales.saleCompleted', 'Sale Completed!')}
+                </DialogTitle>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap justify-center text-xs">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full font-mono font-bold bg-muted/80 text-foreground border border-border shadow-2xs">
+                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                    {completedSale?.saleNumber}
+                  </span>
+                  {completedSale?.fsrNumber && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-2xs">
+                      <Receipt className="w-3.5 h-3.5 text-blue-500" />
+                      FSR: {completedSale.fsrNumber}
+                    </span>
+                  )}
+                  <span className="text-muted-foreground">
+                    {completedSale && formatAppDate(completedSale.saleDateTime, true)}
+                  </span>
+                </div>
+
+                {/* Grand Total Hero Card */}
+                <div className="mt-3.5 w-full max-w-sm px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-green-500/15 to-emerald-500/10 border border-green-500/30 flex items-center justify-between shadow-2xs">
+                  <div className="text-left">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-green-700 dark:text-green-400 block">
+                      {t('receipt.totalPaid', 'Total Paid')}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {completedSale?.payments?.length 
+                        ? `${completedSale.payments.length} ${completedSale.payments.length > 1 ? t('payment.payments', 'payments') : t('payment.payment', 'payment')}` 
+                        : t('receipt.directSale', 'Direct Sale')}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl sm:text-2xl font-extrabold font-mono text-green-600 dark:text-green-400 tracking-tight">
+                      {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || Number(completedSale?.totalAmount || 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </DialogHeader>
 
-            <div className="space-y-4 py-2 text-sm text-foreground">
-              {/* Header info */}
-              <div className="flex items-center justify-between text-xs text-muted-foreground pb-2 border-b border-border">
-                <span>{completedSale && formatAppDate(completedSale.saleDateTime, true)}</span>
-                <span className="font-semibold text-primary">{t('receipt.directSale', 'Direct Sale')}</span>
-              </div>
-
-              {/* Customer & FSR */}
-              {(completedSale?.customerName || completedSale?.customerPhone || completedSale?.fsrNumber) && (
-                <div className="bg-muted/30 p-2.5 rounded-lg border border-border text-xs space-y-1">
-                  {completedSale.customerName && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t('orders.table.customer', 'Customer')}:</span>
-                      <span className="font-medium text-foreground">{completedSale.customerName}</span>
+              {/* Customer Info */}
+              {(completedSale?.customerName || completedSale?.customerPhone) && (
+                <div className="bg-muted/30 p-3 rounded-xl border border-border/70 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <User className="w-3.5 h-3.5" />
                     </div>
-                  )}
-                  {completedSale.customerPhone && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t('common.phone', 'Phone')}:</span>
-                      <span className="font-medium text-foreground">{completedSale.customerPhone}</span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-foreground truncate">{completedSale.customerName}</div>
+                      {completedSale.customerPhone && (
+                        <div className="text-muted-foreground font-mono">{completedSale.customerPhone}</div>
+                      )}
                     </div>
-                  )}
-                  {completedSale.fsrNumber && (
-                    <div className="flex justify-between pt-1 border-t border-border/50">
-                      <span className="text-muted-foreground">{t('orders.fsrNumber', 'FSR Number')}:</span>
-                      <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{completedSale.fsrNumber}</span>
-                    </div>
-                  )}
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-background border border-border text-muted-foreground font-medium shrink-0">
+                    {t('orders.table.customer', 'Customer')}
+                  </span>
                 </div>
               )}
 
               {/* Line items */}
-              <div className="space-y-2 max-h-[22vh] overflow-y-auto custom-scrollbar pr-1">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {t('directSales.itemsPurchased', 'Items Purchased')}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider px-0.5">
+                  <span>{t('directSales.itemsPurchased', 'Items Purchased')}</span>
+                  <span className="text-[10px] font-normal lowercase bg-muted px-2 py-0.5 rounded-full text-foreground/80 font-mono">
+                    {completedSale?.lines?.length || 0} {t('common.items', 'items')}
+                  </span>
                 </div>
-                {completedSale?.lines?.map((line: any) => (
-                  <div key={line.id} className="flex justify-between items-start text-xs bg-muted/20 border border-border/60 rounded-lg p-2.5">
-                    <div>
-                      <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
-                        <span>{getLocName(line.material)}</span>
-                        {line.brandName && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30">
-                            {line.brandName}
-                          </span>
-                        )}
+                <div className="space-y-1.5 max-h-[22vh] overflow-y-auto custom-scrollbar pr-0.5">
+                  {completedSale?.lines?.map((line: any) => (
+                    <div key={line.id} className="flex justify-between items-start text-xs bg-muted/20 border border-border/60 rounded-xl p-2.5">
+                      <div className="min-w-0 pr-2">
+                        <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+                          <span>{getLocName(line.material)}</span>
+                          {line.brandName && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/30">
+                              {line.brandName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-muted-foreground text-[11px] font-mono mt-0.5">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
                       </div>
-                      <div className="text-muted-foreground text-[11px]">{line.quantity}x @ {formatCurrency(line.priceAtSaleTime)}</div>
+                      <div className="font-bold text-foreground font-mono shrink-0">
+                        {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
+                      </div>
                     </div>
-                    <div className="font-bold text-foreground">
-                      {formatCurrency(Number(line.priceAtSaleTime) * Number(line.quantity))}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* Financial summary */}
-              <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-2 text-xs">
+              {/* Financial summary & Payments */}
+              <div className="bg-muted/30 p-3 rounded-xl border border-border/70 space-y-2 text-xs">
                 {Number(completedSale?.taxAmount) > 0 && (
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t('receipt.vat', 'VAT (15%)')}</span>
-                    <span className="font-medium text-foreground">{formatCurrency(completedSale.taxAmount)}</span>
+                    <span className="font-medium text-foreground font-mono">{formatCurrency(completedSale.taxAmount)}</span>
                   </div>
                 )}
                 {completedSale?.payments?.length > 0 && (
                   <div className="pt-2 border-t border-border space-y-1.5">
-                    <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">
+                    <div className="font-semibold text-muted-foreground uppercase text-[10px] tracking-wider px-0.5">
                       {t('receipt.paymentsRecorded', 'Payments Recorded')}
                     </div>
                     {completedSale.payments.map((p: any) => (
-                      <div key={p.id} className="flex justify-between items-center text-xs">
-                        <span className="px-2 py-0.5 rounded bg-background border border-border text-[11px] font-medium text-foreground">
-                          {formatPaymentMethod(p.method)}
-                          {p.methodDetails && ` (${p.methodDetails})`}
-                        </span>
-                        <span className="font-semibold text-foreground">{formatCurrency(p.amount)}</span>
+                      <div key={p.id} className="flex justify-between items-center text-xs bg-background/60 p-2 rounded-lg border border-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md bg-muted border border-border text-[11px] font-semibold text-foreground">
+                            {formatPaymentMethod(p.method)}
+                          </span>
+                          {p.methodDetails && (
+                            <span className="text-[11px] text-muted-foreground font-mono">
+                              ({p.methodDetails})
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-bold text-foreground font-mono">{formatCurrency(p.amount)}</span>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-border text-sm font-bold">
-                  <span className="text-foreground">{t('receipt.totalPaid', 'Total Paid')}</span>
-                  <span className="text-base text-primary">
-                    {formatCurrency(completedSale?.payments?.reduce((s: number, p: any) => s + Number(p.amount), 0) || 0)}
-                  </span>
-                </div>
               </div>
             </div>
 
-            <DialogFooter className="print:hidden sm:justify-between border-t border-border pt-4 mt-2">
-              <Button variant="outline" onClick={() => setCompletedSale(null)}>{t("common.close", "Close")}</Button>
+            <DialogFooter className="print:hidden p-3.5 sm:p-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
+              <Button variant="outline" onClick={() => setCompletedSale(null)} className="rounded-xl">
+                {t("common.close", "Close")}
+              </Button>
               <Button 
                 onClick={() => printDirectSaleReceipt(completedSale)} 
-                className="rounded-lg"
+                className="rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-2 shadow-md"
               >
-                <Printer className="w-4 h-4 mr-2" /> {t('receipt.receipt', 'Print Receipt')}
+                <Printer className="w-4 h-4 mr-1" /> {t('receipt.receipt', 'Print Receipt')}
               </Button>
             </DialogFooter>
           </DialogContent>
