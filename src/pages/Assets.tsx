@@ -50,6 +50,10 @@ import {
   UploadCloud,
   X,
   ListFilter,
+  Eye,
+  Tag,
+  FileText,
+  Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
@@ -157,9 +161,16 @@ export default function Assets() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  // Audit History Modal
-  const [selectedAssetForHistory, setSelectedAssetForHistory] = useState<Asset | null>(null);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  // Asset Detail Modal (Overview & Audit Trail)
+  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<Asset | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState<'overview' | 'history'>('overview');
+
+  const handleOpenDetail = (asset: Asset, initialTab: 'overview' | 'history' = 'overview') => {
+    setSelectedAssetForDetail(asset);
+    setDetailTab(initialTab);
+    setIsDetailOpen(true);
+  };
 
   // Trashing & Restoring Confirmations
   const [assetToTrash, setAssetToTrash] = useState<Asset | null>(null);
@@ -212,15 +223,15 @@ export default function Assets() {
     staleTime: 30 * 1000,
   });
 
-  // 3. Detailed Asset Query for History Modal
+  // 3. Detailed Asset Query for Detail Modal & History
   const { data: detailedAsset, isLoading: isDetailedLoading } = useQuery<Asset>({
-    queryKey: ['asset-detailed', selectedAssetForHistory?.id],
+    queryKey: ['asset-detailed', selectedAssetForDetail?.id],
     queryFn: async () => {
-      if (!selectedAssetForHistory?.id) throw new Error('No asset selected');
-      const res = await api.get(`/assets/${selectedAssetForHistory.id}`);
+      if (!selectedAssetForDetail?.id) throw new Error('No asset selected');
+      const res = await api.get(`/assets/${selectedAssetForDetail.id}`);
       return res.data;
     },
-    enabled: !!selectedAssetForHistory?.id && isHistoryOpen,
+    enabled: !!selectedAssetForDetail?.id && isDetailOpen,
   });
 
   // Create / Update Mutation
@@ -341,11 +352,6 @@ export default function Assets() {
       setImageFile(file);
       setImagePreviewUrl(URL.createObjectURL(file));
     }
-  };
-
-  const handleOpenHistory = (asset: Asset) => {
-    setSelectedAssetForHistory(asset);
-    setIsHistoryOpen(true);
   };
 
   // Pagination calculation
@@ -571,15 +577,12 @@ export default function Assets() {
               <TableHead>{t('assets.nameEn', 'Name (EN)')}</TableHead>
               <TableHead>{t('assets.nameAm', 'Name (AM)')}</TableHead>
               <TableHead>{t('assets.quantity', 'Quantity')}</TableHead>
-              <TableHead>{t('assets.category', 'Category')}</TableHead>
-              <TableHead>{t('assets.location', 'Location')}</TableHead>
-              {activeTab === 'trash' ? (
+              <TableHead className="whitespace-nowrap">{t('assets.category', 'Category')}</TableHead>
+              {activeTab === 'trash' && (
                 <>
                   <TableHead>{t('assets.changedBy', 'Deleted By')}</TableHead>
                   <TableHead>{t('assets.scheduledPurgeDate', '30-Day Auto-Purge')}</TableHead>
                 </>
-              ) : (
-                <TableHead>{t('assets.history', 'Audit Trail')}</TableHead>
               )}
               <TableHead className="text-right">{t('common.actions', 'Actions')}</TableHead>
             </TableRow>
@@ -587,13 +590,13 @@ export default function Assets() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={activeTab === 'trash' ? 10 : 9} className="text-center py-10">
+                <TableCell colSpan={activeTab === 'trash' ? 9 : 7} className="text-center py-10">
                   {t('common.loading', 'Loading assets...')}
                 </TableCell>
               </TableRow>
             ) : paginatedAssets.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={activeTab === 'trash' ? 10 : 9} className="text-center py-12">
+                <TableCell colSpan={activeTab === 'trash' ? 9 : 7} className="text-center py-12">
                   <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
                     <Boxes className="h-10 w-10 stroke-1 opacity-40" />
                     <p className="font-medium text-sm">
@@ -609,9 +612,13 @@ export default function Assets() {
                 const daysRemaining = calculateDaysRemaining(asset.scheduledPurgeAt);
 
                 return (
-                  <TableRow key={asset.id} className="hover:bg-muted/40 transition-colors">
+                  <TableRow
+                    key={asset.id}
+                    className="hover:bg-muted/40 transition-colors cursor-pointer group"
+                    onClick={() => handleOpenDetail(asset)}
+                  >
                     {/* Thumbnail Image */}
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {asset.imageUrl ? (
                         <LazyImage
                           src={asset.imageUrl}
@@ -659,9 +666,12 @@ export default function Assets() {
                     </TableCell>
 
                     {/* Category */}
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {asset.category ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium text-muted-foreground border border-border">
+                        <span
+                          className="text-xs px-2.5 py-0.5 rounded-full bg-muted font-medium text-muted-foreground border border-border whitespace-nowrap inline-block"
+                          title={getCategoryLabel(asset.category)}
+                        >
                           {getCategoryLabel(asset.category)}
                         </span>
                       ) : (
@@ -669,20 +679,8 @@ export default function Assets() {
                       )}
                     </TableCell>
 
-                    {/* Location */}
-                    <TableCell>
-                      {asset.location ? (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin size={12} className="text-amber-500 shrink-0" />
-                          <span>{asset.location}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-
                     {/* Trash Tab Extra Info */}
-                    {activeTab === 'trash' ? (
+                    {activeTab === 'trash' && (
                       <>
                         <TableCell>
                           <div className="text-xs">
@@ -718,26 +716,23 @@ export default function Assets() {
                           </div>
                         </TableCell>
                       </>
-                    ) : (
-                      /* Active Tab: Log Count Badge & Quick History */
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                          onClick={() => handleOpenHistory(asset)}
-                        >
-                          <History size={14} className="text-primary" />
-                          <span>
-                            {asset._count?.logs || 0} {t('assets.history', 'logs')}
-                          </span>
-                        </Button>
-                      </TableCell>
                     )}
 
                     {/* Actions */}
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
+                        {/* View Asset Details */}
+                        <Tooltip label={t('assets.viewDetails', 'View details')}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleOpenDetail(asset)}
+                          >
+                            <Eye size={15} />
+                          </Button>
+                        </Tooltip>
+
                         {activeTab === 'trash' ? (
                           <>
                             {/* Restore Button */}
@@ -764,18 +759,6 @@ export default function Assets() {
                           </>
                         ) : (
                           <>
-                            {/* View Audit History */}
-                            <Tooltip label="View complete audit trail">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                onClick={() => handleOpenHistory(asset)}
-                              >
-                                <History size={15} />
-                              </Button>
-                            </Tooltip>
-
                             {/* Edit Asset */}
                             <PermissionGate permission="assets.edit">
                               <Tooltip label="Edit asset details">
@@ -1047,148 +1030,411 @@ export default function Assets() {
       </Dialog>
 
       {/* ======================================================== */}
-      {/* 7. AUDIT HISTORY & DIFF TRAIL MODAL */}
+      {/* 7. COMPANY ASSET DETAIL MODAL (OVERVIEW & AUDIT HISTORY) */}
       {/* ======================================================== */}
-      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DialogContent className="sm:max-w-[650px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-primary" />
-              <span>{t('assets.auditHistory', 'Asset Audit History')}</span>
-            </DialogTitle>
-          </DialogHeader>
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[88vh] overflow-y-auto p-0 gap-0 rounded-2xl border-border bg-card">
+          {(() => {
+            const activeAsset = detailedAsset || selectedAssetForDetail;
+            if (!activeAsset) return null;
+            const daysRemaining = calculateDaysRemaining(activeAsset.scheduledPurgeAt);
 
-          {isDetailedLoading ? (
-            <div className="py-12 text-center text-muted-foreground text-sm">
-              {t('common.loading', 'Loading audit trail...')}
-            </div>
-          ) : !detailedAsset ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">
-              {t('assets.noHistory', 'No audit logs found.')}
-            </div>
-          ) : (
-            <div className="space-y-4 py-2">
-              {/* Asset Summary Banner */}
-              <div className="p-3.5 rounded-xl bg-card border border-border flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-muted">
-                      {detailedAsset.assetTag}
-                    </span>
-                    <span className="font-bold text-foreground">{detailedAsset.nameEn}</span>
-                    <span className="text-xs text-muted-foreground">({detailedAsset.nameAm})</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Current Quantity: <strong>{detailedAsset.quantity} {detailedAsset.unit}</strong> •{' '}
-                    Location: <strong>{detailedAsset.location || '—'}</strong>
-                  </p>
-                </div>
-                <Badge size="lg" variant="light" color="amber">
-                  {detailedAsset.logs?.length || 0} Total Events
-                </Badge>
-              </div>
-
-              {/* Timeline of Logs */}
-              <div className="space-y-3 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-border before:z-0">
-                {detailedAsset.logs && detailedAsset.logs.length > 0 ? (
-                  detailedAsset.logs.map((log) => {
-                    const actionColors: Record<string, string> = {
-                      CREATE: 'teal',
-                      UPDATE: 'blue',
-                      TRASH: 'red',
-                      RESTORE: 'violet',
-                      PERMANENT_DELETE: 'gray',
-                    };
-
-                    return (
-                      <div
-                        key={log.id}
-                        className="relative z-10 pl-8 space-y-2 pb-3 border-b border-border/50 last:border-b-0"
-                      >
-                        {/* Dot on Timeline */}
-                        <div className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full bg-background border-2 border-primary" />
-
-                        {/* Log Header: Action, User, Timestamp */}
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              size="sm"
-                              variant="filled"
-                              color={actionColors[log.action] || 'gray'}
-                            >
-                              {log.action}
-                            </Badge>
-                            <span className="text-xs font-semibold text-foreground flex items-center gap-1">
-                              <User size={12} className="text-muted-foreground" />
-                              {log.changedBy?.name || 'System User'}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-muted">
-                              {log.changedBy?.role || 'USER'}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <Clock size={11} />
-                            {formatAppDate(log.createdAt, true)}
+            return (
+              <>
+                {/* Header */}
+                <div className="p-5 border-b border-border bg-muted/20">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 shrink-0">
+                        <Boxes className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-secondary text-secondary-foreground border border-border">
+                            {activeAsset.assetTag}
                           </span>
+                          <Badge
+                            size="sm"
+                            variant="filled"
+                            color={activeAsset.isDeleted ? 'red' : 'teal'}
+                          >
+                            {activeAsset.isDeleted
+                              ? t('assets.deletedBadge', 'Deleted (30-Day Retention)')
+                              : t('common.active', 'Active Inventory')}
+                          </Badge>
+                        </div>
+                        <h3 className="text-lg font-bold text-foreground mt-1">
+                          {activeAsset.nameEn}
+                          {activeAsset.nameAm && (
+                            <span className="text-sm font-medium text-muted-foreground ml-2">
+                              ({activeAsset.nameAm})
+                            </span>
+                          )}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-Navigation Tabs inside Dialog: Overview vs Audit History */}
+                  <div className="flex items-center gap-2 mt-4 pt-2 border-t border-border/50">
+                    <MantineButton
+                      variant={detailTab === 'overview' ? 'filled' : 'subtle'}
+                      color="amber"
+                      size="xs"
+                      radius="md"
+                      leftSection={<Boxes size={14} />}
+                      onClick={() => setDetailTab('overview')}
+                    >
+                      {t('assets.tabOverview', 'Overview & Specs')}
+                    </MantineButton>
+                    <MantineButton
+                      variant={detailTab === 'history' ? 'filled' : 'subtle'}
+                      color="amber"
+                      size="xs"
+                      radius="md"
+                      leftSection={<History size={14} />}
+                      rightSection={
+                        <Badge size="xs" variant="filled" color="gray">
+                          {detailedAsset?.logs?.length ?? activeAsset._count?.logs ?? 0}
+                        </Badge>
+                      }
+                      onClick={() => setDetailTab('history')}
+                    >
+                      {t('assets.tabHistory', 'Audit History')}
+                    </MantineButton>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-5 space-y-4">
+                  {detailTab === 'overview' ? (
+                    <>
+                      {/* Image + Quick Specs Banner */}
+                      <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl bg-muted/30 border border-border">
+                        {/* Thumbnail / Large Preview */}
+                        <div className="shrink-0 flex justify-center">
+                          {activeAsset.imageUrl ? (
+                            <div
+                              className="relative h-28 w-28 rounded-xl overflow-hidden border border-border cursor-pointer group shadow-xs shrink-0"
+                              onClick={() =>
+                                setPreviewImage(getImageUrl(activeAsset.imageUrl)!)
+                              }
+                            >
+                              <LazyImage
+                                src={activeAsset.imageUrl}
+                                alt={activeAsset.nameEn}
+                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                                <Eye size={16} className="mr-1" />
+                                {t('common.preview', 'Preview')}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-28 w-28 rounded-xl bg-muted flex flex-col items-center justify-center text-muted-foreground border border-border gap-1 shrink-0">
+                              <ImageOff className="h-6 w-6 opacity-40" />
+                              <span className="text-[10px]">{t('common.noImage', 'No Photo')}</span>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Audit Note */}
-                        {log.notes && (
-                          <p className="text-xs italic text-muted-foreground bg-muted/40 p-2 rounded-md border border-border/60">
-                            "{log.notes}"
-                          </p>
-                        )}
-
-                        {/* Changed Fields Diff */}
-                        {log.changes && Object.keys(log.changes).length > 0 && (
-                          <div className="bg-card rounded-lg border border-border p-2.5 space-y-1.5 text-xs">
-                            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                              {t('assets.changes', 'Fields Modified')}
+                        {/* Key Metrics Grid */}
+                        <div className="grid grid-cols-2 gap-2.5 flex-1 text-xs">
+                          {/* Quantity Available */}
+                          <div className="p-3 rounded-lg bg-card border border-border/80 shadow-2xs space-y-1">
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Boxes size={13} className="text-amber-500" />
+                              {t('assets.quantity', 'Quantity')}
+                            </span>
+                            <p className="text-base font-bold text-foreground">
+                              {activeAsset.quantity} {activeAsset.unit}
                             </p>
-                            <div className="grid gap-1">
-                              {Object.entries(log.changes).map(([field, delta]: [string, any]) => (
-                                <div
-                                  key={field}
-                                  className="flex items-center justify-between gap-2 p-1 rounded bg-muted/20"
-                                >
-                                  <span className="font-mono text-[11px] font-semibold text-foreground capitalize">
-                                    {field}:
-                                  </span>
-                                  <div className="flex items-center gap-2 text-[11px]">
-                                    <span className="line-through text-red-500 font-medium">
-                                      {delta.from !== undefined && delta.from !== null
-                                        ? String(delta.from)
-                                        : '(empty)'}
-                                    </span>
-                                    <ArrowRight size={11} className="text-muted-foreground" />
-                                    <span className="text-teal-600 dark:text-teal-400 font-bold">
-                                      {delta.to !== undefined && delta.to !== null
-                                        ? String(delta.to)
-                                        : '(cleared)'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
+                          </div>
+
+                          {/* Storage Location */}
+                          <div className="p-3 rounded-lg bg-card border border-border/80 shadow-2xs space-y-1">
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <MapPin size={13} className="text-amber-500" />
+                              {t('assets.location', 'Storage Location')}
+                            </span>
+                            <p className="text-sm font-semibold text-foreground truncate">
+                              {activeAsset.location || '—'}
+                            </p>
+                          </div>
+
+                          {/* Category */}
+                          <div className="p-3 rounded-lg bg-card border border-border/80 shadow-2xs space-y-1">
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <ListFilter size={13} className="text-amber-500" />
+                              {t('assets.category', 'Category')}
+                            </span>
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {activeAsset.category
+                                ? getCategoryLabel(activeAsset.category)
+                                : '—'}
+                            </p>
+                          </div>
+
+                          {/* Asset Tag */}
+                          <div className="p-3 rounded-lg bg-card border border-border/80 shadow-2xs space-y-1">
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Tag size={13} className="text-amber-500" />
+                              {t('assets.assetTag', 'Asset Tag')}
+                            </span>
+                            <p className="font-mono text-xs font-bold text-foreground truncate">
+                              {activeAsset.assetTag}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Trash Retention Info (if in trash) */}
+                      {activeAsset.isDeleted && (
+                        <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold flex items-center gap-1.5">
+                              <ShieldAlert size={15} />
+                              {t('assets.trashAlertBanner', '30-Day Mandatory Retention Active')}
+                            </span>
+                            <Badge size="sm" variant="filled" color={daysRemaining <= 3 ? 'red' : 'amber'}>
+                              <Clock size={11} className="mr-1 inline" />
+                              {daysRemaining === 0
+                                ? t('assets.autoPurgesToday', 'Purges today')
+                                : t('assets.autoPurgesIn', 'Purges in {{days}}d', {
+                                    days: daysRemaining,
+                                  })}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground pt-1 border-t border-red-500/20">
+                            <div>
+                              Deleted By: <strong className="text-foreground">{activeAsset.deletedBy?.name || 'User'}</strong>
+                            </div>
+                            <div>
+                              Deleted At: <strong className="text-foreground">{activeAsset.deletedAt ? formatAppDate(activeAsset.deletedAt, true) : '—'}</strong>
+                            </div>
+                            <div className="col-span-2">
+                              Auto-Purge Date: <strong className="text-foreground">{activeAsset.scheduledPurgeAt ? formatAppDate(activeAsset.scheduledPurgeAt, true) : '—'}</strong>
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Description & Technical Specs */}
+                      <div className="p-4 rounded-xl bg-card border border-border space-y-2">
+                        <div className="flex items-center gap-1.5 font-semibold text-xs text-foreground">
+                          <FileText size={14} className="text-primary" />
+                          <span>{t('assets.technicalNotes', 'Description / Technical Specs')}</span>
+                        </div>
+                        {activeAsset.description ? (
+                          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap bg-muted/30 p-3 rounded-lg border border-border/60">
+                            {activeAsset.description}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">
+                            {t('assets.noTechnicalNotes', 'No additional technical notes or serial numbers recorded.')}
+                          </p>
                         )}
                       </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">
-                    {t('assets.noHistory', 'No logs recorded for this asset.')}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsHistoryOpen(false)}>
-              {t('common.close', 'Close')}
-            </Button>
-          </DialogFooter>
+                      {/* Metadata Tracking Info */}
+                      <div className="p-3.5 rounded-xl bg-card border border-border text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={13} className="text-muted-foreground shrink-0" />
+                          <span>{t('assets.registeredBy', 'Registered')}:</span>
+                          <strong className="text-foreground">
+                            {activeAsset.createdAt
+                              ? formatAppDate(activeAsset.createdAt, true)
+                              : '—'}
+                          </strong>
+                          {activeAsset.createdBy && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted">
+                              by {activeAsset.createdBy.name}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={13} className="text-muted-foreground shrink-0" />
+                          <span>{t('assets.lastUpdated', 'Last Modified')}:</span>
+                          <strong className="text-foreground">
+                            {activeAsset.updatedAt
+                              ? formatAppDate(activeAsset.updatedAt, true)
+                              : '—'}
+                          </strong>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* Audit History Timeline */
+                    <div className="space-y-4">
+                      {isDetailedLoading ? (
+                        <div className="py-12 text-center text-muted-foreground text-xs">
+                          {t('common.loading', 'Loading audit trail...')}
+                        </div>
+                      ) : (
+                        <div className="space-y-3 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-border before:z-0">
+                          {detailedAsset?.logs && detailedAsset.logs.length > 0 ? (
+                            detailedAsset.logs.map((log) => {
+                              const actionColors: Record<string, string> = {
+                                CREATE: 'teal',
+                                UPDATE: 'blue',
+                                TRASH: 'red',
+                                RESTORE: 'violet',
+                                PERMANENT_DELETE: 'gray',
+                              };
+
+                              return (
+                                <div
+                                  key={log.id}
+                                  className="relative z-10 pl-8 space-y-2 pb-3 border-b border-border/50 last:border-b-0"
+                                >
+                                  {/* Dot on Timeline */}
+                                  <div className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full bg-background border-2 border-primary" />
+
+                                  {/* Log Header: Action, User, Timestamp */}
+                                  <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <Badge
+                                        size="sm"
+                                        variant="filled"
+                                        color={actionColors[log.action] || 'gray'}
+                                      >
+                                        {log.action}
+                                      </Badge>
+                                      <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                        <User size={12} className="text-muted-foreground" />
+                                        {log.changedBy?.name || 'System User'}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground uppercase px-1.5 py-0.5 rounded bg-muted">
+                                        {log.changedBy?.role || 'USER'}
+                                      </span>
+                                    </div>
+                                    <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                      <Clock size={11} />
+                                      {formatAppDate(log.createdAt, true)}
+                                    </span>
+                                  </div>
+
+                                  {/* Audit Note */}
+                                  {log.notes && (
+                                    <p className="text-xs italic text-muted-foreground bg-muted/40 p-2 rounded-md border border-border/60">
+                                      "{log.notes}"
+                                    </p>
+                                  )}
+
+                                  {/* Changed Fields Diff */}
+                                  {log.changes && Object.keys(log.changes).length > 0 && (
+                                    <div className="bg-card rounded-lg border border-border p-2.5 space-y-1.5 text-xs">
+                                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                        {t('assets.changes', 'Fields Modified')}
+                                      </p>
+                                      <div className="grid gap-1">
+                                        {Object.entries(log.changes).map(([field, delta]: [string, any]) => (
+                                          <div
+                                            key={field}
+                                            className="flex items-center justify-between gap-2 p-1 rounded bg-muted/20"
+                                          >
+                                            <span className="font-mono text-[11px] font-semibold text-foreground capitalize">
+                                              {field}:
+                                            </span>
+                                            <div className="flex items-center gap-2 text-[11px]">
+                                              <span className="line-through text-red-500 font-medium">
+                                                {delta.from !== undefined && delta.from !== null
+                                                  ? String(delta.from)
+                                                  : '(empty)'}
+                                              </span>
+                                              <ArrowRight size={11} className="text-muted-foreground" />
+                                              <span className="text-teal-600 dark:text-teal-400 font-bold">
+                                                {delta.to !== undefined && delta.to !== null
+                                                  ? String(delta.to)
+                                                  : '(cleared)'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-muted-foreground py-4 text-center">
+                              {t('assets.noHistory', 'No logs recorded for this asset.')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-4 border-t border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {!activeAsset.isDeleted ? (
+                      <>
+                        <PermissionGate permission="assets.edit">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs font-semibold"
+                            onClick={() => {
+                              const assetToEdit = activeAsset;
+                              setIsDetailOpen(false);
+                              handleOpenForm(assetToEdit);
+                            }}
+                          >
+                            <Edit2 size={14} />
+                            {t('assets.editAsset', 'Edit Asset')}
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="assets.remove">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400 border-red-500/30 hover:bg-red-500/10"
+                            onClick={() => {
+                              const assetToDelete = activeAsset;
+                              setIsDetailOpen(false);
+                              setAssetToTrash(assetToDelete);
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            {t('assets.moveToTrash', 'Move to Deleted')}
+                          </Button>
+                        </PermissionGate>
+                      </>
+                    ) : (
+                      <PermissionGate permission="assets.remove">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400 border-teal-500/30 hover:bg-teal-500/10"
+                          onClick={() => {
+                            const assetToRestore = activeAsset;
+                            setIsDetailOpen(false);
+                            setAssetToRestore(assetToRestore);
+                          }}
+                        >
+                          <RotateCcw size={14} />
+                          {t('assets.restore', 'Restore Asset')}
+                        </Button>
+                      </PermissionGate>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsDetailOpen(false)}
+                    className="w-full sm:w-auto"
+                  >
+                    {t('common.close', 'Close')}
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

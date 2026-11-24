@@ -1,42 +1,36 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
-import { Center, Loader } from "@mantine/core";
 
 import { AppLayout } from "./components/layout";
-
-// Lazy load pages for code splitting & minimal initial bundle
-const Login = lazy(() => import("./pages/Login"));
-const Materials = lazy(() => import("./pages/Materials"));
-const Services = lazy(() => import("./pages/Services"));
-const Cars = lazy(() => import("./pages/Cars"));
-const Storage = lazy(() => import("./pages/Storage"));
-const Customers = lazy(() => import("./pages/Customers"));
-const CustomerDetail = lazy(() => import("./pages/CustomerDetail"));
-const Orders = lazy(() => import("./pages/Orders"));
-const OrderDetail = lazy(() => import("./pages/OrderDetail"));
-const CreateOrder = lazy(() => import("./pages/CreateOrder"));
-const Receipt = lazy(() => import("./pages/Receipt"));
-const DirectSales = lazy(() => import("./pages/DirectSales"));
-const DirectSalesHistory = lazy(() => import("./pages/DirectSalesHistory"));
-const Reports = lazy(() => import("./pages/Reports"));
-const DailyWorkload = lazy(() => import("./pages/DailyWorkload"));
-const Users = lazy(() => import("./pages/Users"));
-const Assets = lazy(() => import("./pages/Assets"));
-const LowStockAlerts = lazy(() => import("./pages/LowStockAlerts"));
-const StockHistory = lazy(() => import("./pages/StockHistory"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Settings = lazy(() => import("./pages/Settings"));
+import { PageLoadingFallback } from "./components/common";
+import {
+  DashboardPage as Dashboard,
+  OrdersPage as Orders,
+  CreateOrderPage as CreateOrder,
+  OrderDetailPage as OrderDetail,
+  DirectSalesPage as DirectSales,
+  DirectSalesHistoryPage as DirectSalesHistory,
+  CustomersPage as Customers,
+  CustomerDetailPage as CustomerDetail,
+  MaterialsPage as Materials,
+  ServicesPage as Services,
+  CarsPage as Cars,
+  StoragePage as Storage,
+  LowStockAlertsPage as LowStockAlerts,
+  StockHistoryPage as StockHistory,
+  ReportsPage as Reports,
+  DailyWorkloadPage as DailyWorkload,
+  UsersPage as Users,
+  AssetsPage as Assets,
+  SettingsPage as Settings,
+  ReceiptPage as Receipt,
+  LoginPage as Login,
+} from "./lib/routePreloader";
 
 import type { ReactNode } from "react";
 import type { PermissionKey } from "./lib/permissions";
 import { checkPermission } from "./lib/permissions";
-
-const PageFallback = () => (
-  <Center h={400} w="100%">
-    <Loader color="amber" size="md" />
-  </Center>
-);
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { user } = useAuthStore();
@@ -65,7 +59,7 @@ const PermissionRoute = ({ permission, children }: { permission: PermissionKey |
 
 export default function App() {
   return (
-    <Suspense fallback={<PageFallback />}>
+    <Suspense fallback={<PageLoadingFallback />}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route

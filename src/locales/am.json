@@ -1220,7 +1220,7 @@
   "services": {
     "title": "አገልግሎቶች",
     "newService": "አዲስ አገልግሎት",
-    "subtitle": "የአገልግሎት አይነቶችን፣ የዋጋ ምድቦችን እና የሚያስፈልጉ ዕቃዎችን ያስተዳድሩ።",
+    "subtitle": "የአገልግሎት አይነቶችን እና የተሽከርካሪ የዋጋ ምድቦችን ያስተዳድሩ።",
     "searchPlaceholder": "አገልግሎቶችን ፈልግ...",
     "noServices": "ምንም አገልግሎቶች አልተገኙም።",
     "pricing": "ዋጋ",
@@ -1270,12 +1270,12 @@
     "materialsCountLabel": "ዕቃዎች",
     "oneMaterial": "ዕቃ",
     "oneService": "አገልግሎት",
-    "viewDetailsHint": "ምድቦችን እና የሚያስፈልጉ ዕቃዎችን ለማየት ይጫኑ",
+    "viewDetailsHint": "ምድቦችን እና ዋጋዎችን ለማየት ይጫኑ",
     "allServicesSubtitle": "ሙሉ የወርክሾፕ እና የዲኮር አገልግሎቶች ዝርዝር",
     "startingFrom": "ከ",
     "editServiceSubtitle": "የአገልግሎት መረጃን፣ ስሞችን እና ምድብን ያዘምኑ",
     "createServiceSubtitle": "አዲስ አገልግሎት ወደ ካታሎግዎ ያክሉ",
-    "categorySubtitle": "የተሽከርካሪ ምድብ ዋጋን እና የሚያስፈልጉ ዕቃዎችን ይወስኑ",
+    "categorySubtitle": "የተሽከርካሪ ምድብ ዋጋን ይወስኑ",
     "alerts": {
       "serviceSaved": "አገልግሎት በተሳካ ሁኔታ ተቀምጧል",
       "errorSavingService": "አገልግሎት በማስቀመጥ ላይ ስህተት ተከስቷል",
@@ -1664,6 +1664,14 @@
     "movedToTrashSuccessfully": "ንብረቱ ወደ ተሰረዙ ንብረቶች ተዛውሯል (የ30 ቀናት ቆይታ ተጀምሯል)",
     "noAssetsFound": "ምንም ንብረት አልተገኘም።",
     "noTrashItems": "በተሰረዙ ንብረቶች ዝርዝር ውስጥ ምንም ንብረት የለም።",
+    "assetDetail": "የድርጅት ንብረት ዝርዝር መረጃ",
+    "viewDetails": "ዝርዝር እይ",
+    "tabOverview": "አጠቃላይ መረጃ እና ዝርዝር",
+    "tabHistory": "የለውጥ ታሪክ",
+    "registeredBy": "የተመዘገበው",
+    "lastUpdated": "የመጨረሻ ለውጥ",
+    "technicalNotes": "ዝርዝር መግለጫ / የቴክኒክ ማስታወሻ",
+    "noTechnicalNotes": "ምንም ተጨማሪ የቴክኒክ ማስታወሻ ወይም የመለያ ቁጥር አልተመዘገበም።",
     "categories": {
       "machines": "ማሽኖች እና ከባድ መሣሪያዎች",
       "powerTools": "የኤሌክትሪክ መሣሪያዎች",
@@ -1795,5 +1803,15 @@
       "to": "እስከ",
       "selectSingleDay": "ቀን"
     }
+  },
+  "errors": {
+    "connectionIssue": "የግንኙነት ችግር ተከስቷል",
+    "connectionIssueMessage": "ገጹን በዝግተኛ ኢንተርኔት ምክንያት መጫን አልተቻለም። እባክዎ ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።",
+    "pageLoadFailed": "ስህተት ተከስቷል",
+    "pageLoadFailedMessage": "ይህንን ገጽ በማቅረብ ላይ ያልተጠበቀ ስህተት ተፈጥሯል። እባክዎ ገጹን እንደገና ይሞክሩ።",
+    "tryAgain": "እንደገና ሞክር",
+    "reloadPage": "ገጹን አድስ",
+    "technicalDetails": "የስህተት ዝርዝር",
+    "loadingPage": "ገጹ በመጫን ላይ ነው..."
   }
 }

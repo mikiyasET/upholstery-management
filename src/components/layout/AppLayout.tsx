@@ -1,9 +1,10 @@
 import { AppShell, Box, useComputedColorScheme } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { Outlet, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
+import { ErrorBoundary, PageLoadingFallback } from "../common";
 import { preloadPlateAssets } from "../../utils/plateAssets";
 
 function ColorSchemeSync() {
@@ -124,16 +125,20 @@ export function AppLayout() {
         )}
 
         <AppShell.Main style={{ maxWidth: "100vw", overflowX: "hidden" }}>
-          <Box
-            className="animate-fade-in"
-            style={{
-              maxWidth: isDirectSales ? "100%" : 1600,
-              margin: "0 auto",
-              width: "100%",
-            }}
-          >
-            <Outlet />
-          </Box>
+          <ErrorBoundary>
+            <Suspense key={location.pathname} fallback={<PageLoadingFallback />}>
+              <Box
+                className="animate-fade-in"
+                style={{
+                  maxWidth: isDirectSales ? "100%" : 1600,
+                  margin: "0 auto",
+                  width: "100%",
+                }}
+              >
+                <Outlet />
+              </Box>
+            </Suspense>
+          </ErrorBoundary>
         </AppShell.Main>
       </AppShell>
     </>

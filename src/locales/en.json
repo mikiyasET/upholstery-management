@@ -1220,7 +1220,7 @@
   "services": {
     "title": "Services",
     "newService": "New Service",
-    "subtitle": "Manage your service offerings, pricing categories, and required materials.",
+    "subtitle": "Manage your service offerings and vehicle pricing categories.",
     "searchPlaceholder": "Search services...",
     "noServices": "No services found.",
     "pricing": "Pricing",
@@ -1270,12 +1270,12 @@
     "materialsCountLabel": "Materials",
     "oneMaterial": "Material",
     "oneService": "service",
-    "viewDetailsHint": "Click to view categories & required materials",
+    "viewDetailsHint": "Click to view categories & pricing",
     "allServicesSubtitle": "Full list of workshop and decor services",
     "startingFrom": "From",
     "editServiceSubtitle": "Update service information, bilingual names, and category group",
     "createServiceSubtitle": "Add a new craft or installation service to your catalog",
-    "categorySubtitle": "Set vehicle category pricing and material consumption",
+    "categorySubtitle": "Set vehicle category pricing",
     "alerts": {
       "serviceSaved": "Service saved successfully",
       "errorSavingService": "Error saving service",
@@ -1664,6 +1664,14 @@
     "movedToTrashSuccessfully": "Asset moved to deleted list (30-day retention active)",
     "noAssetsFound": "No assets found matching your criteria.",
     "noTrashItems": "No assets found in deleted list.",
+    "assetDetail": "Company Asset Detail",
+    "viewDetails": "View Details",
+    "tabOverview": "Overview & Specs",
+    "tabHistory": "Audit History",
+    "registeredBy": "Registered",
+    "lastUpdated": "Last Modified",
+    "technicalNotes": "Description / Technical Specs",
+    "noTechnicalNotes": "No additional technical notes or serial numbers recorded.",
     "categories": {
       "machines": "Machines & Heavy Equipment",
       "powerTools": "Power Tools",
@@ -1795,5 +1803,15 @@
       "to": "To",
       "selectSingleDay": "Date"
     }
+  },
+  "errors": {
+    "connectionIssue": "Network Connection Issue",
+    "connectionIssueMessage": "Unable to load page content due to a slow or dropped connection. Please check your network and try again.",
+    "pageLoadFailed": "Something went wrong",
+    "pageLoadFailedMessage": "An unexpected error occurred while rendering this page. Please try refreshing or retrying.",
+    "tryAgain": "Try Again",
+    "reloadPage": "Reload Page",
+    "technicalDetails": "Technical Details",
+    "loadingPage": "Loading page..."
   }
 }

@@ -7,6 +7,7 @@ import { ModalsProvider } from "@mantine/modals";
 import { Notifications } from "@mantine/notifications";
 import { theme } from "./theme";
 import App from "./App.tsx";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 // Mantine & Global Styles
 import "@mantine/core/styles.css";
@@ -36,15 +37,17 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <MantineProvider theme={theme} defaultColorScheme="dark">
-        <ModalsProvider>
-          <Notifications position="top-right" />
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </ModalsProvider>
-      </MantineProvider>
-    </QueryClientProvider>
+    <ErrorBoundary isRoot>
+      <QueryClientProvider client={queryClient}>
+        <MantineProvider theme={theme} defaultColorScheme="dark">
+          <ModalsProvider>
+            <Notifications position="top-right" />
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </ModalsProvider>
+        </MantineProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>
 );

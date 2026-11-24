@@ -38,6 +38,7 @@ import { useAuthStore } from "../../store/authStore";
 import { useQuery } from "@tanstack/react-query";
 import api from "../../lib/api";
 import { BrandLogo } from "../common";
+import { preloadRoute } from "../../lib/routePreloader";
 import logoWhite from "../../assets/logo-white.svg";
 import logoBlack from "../../assets/logo-black.svg";
 
@@ -443,6 +444,8 @@ export function AppSidebar({
                         >
                           <UnstyledButton
                             className={`nav-item-btn-collapsed ${active ? "active" : ""}`}
+                            onPointerEnter={() => preloadRoute(item.path)}
+                            onTouchStart={() => preloadRoute(item.path)}
                             onClick={() => {
                               navigate(item.path);
                               onNavigate?.();
@@ -485,6 +488,8 @@ export function AppSidebar({
                       <UnstyledButton
                         key={item.path}
                         className={`nav-item-btn ${active ? "active" : ""}`}
+                        onPointerEnter={() => preloadRoute(item.path)}
+                        onTouchStart={() => preloadRoute(item.path)}
                         onClick={() => {
                           navigate(item.path);
                           onNavigate?.();

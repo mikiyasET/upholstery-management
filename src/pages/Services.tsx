@@ -13,7 +13,6 @@ import {
   Eye,
   LayoutGrid,
   List,
-  Boxes,
   Car,
   Image as ImageIcon,
   Upload,
@@ -26,8 +25,6 @@ import {
   formatCurrency,
   formatInputNumber,
   parseInputNumber,
-  formatUnit,
-  isUnitIntegerOnly,
 } from '../lib/utils';
 import {
   Table,
@@ -62,25 +59,12 @@ import {
 import { ImagePreviewModal } from '../components/ui/image-preview-modal';
 import { PageHeader, ExecutiveAddButton, TablePagination } from '../components/common';
 
-type Material = {
-  id: string;
-  nameEn: string;
-  nameAm: string;
-  unit: string;
-};
-
-type MaterialUsage = {
-  materialId: string;
-  quantity: number | string;
-  quantityUsed?: number | string;
-};
-
 type ServiceCategory = {
   id: string;
   nameEn: string;
   nameAm: string;
   price: number;
-  materialUsages: MaterialUsage[];
+  materialUsages?: any[];
 };
 
 type ServiceGroup = {
@@ -141,7 +125,6 @@ export default function Services() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [editingCat, setEditingCat] = useState<ServiceCategory | null>(null);
   const [catFormData, setCatFormData] = useState({ nameEn: '', nameAm: '', price: '' });
-  const [materialUsages, setMaterialUsages] = useState<MaterialUsage[]>([]);
   const [catToDelete, setCatToDelete] = useState<{ serviceId: string; catId: string; name: string } | null>(null);
 
   // --- Manage Service Types / Groups State ---
@@ -173,21 +156,13 @@ export default function Services() {
     },
   });
 
-  const { data: materials } = useQuery<Material[]>({
-    queryKey: ['materials'],
-    queryFn: async () => {
-      const res = await api.get('/catalog/materials');
-      return res.data;
-    },
-  });
-
   // Active service being inspected in the detail modal (reactive to query cache)
   const activeDetailService = useMemo(() => {
     if (!selectedDetailServiceId || !services) return null;
     return services.find((s) => s.id === selectedDetailServiceId) || null;
   }, [selectedDetailServiceId, services]);
 
-  // Helper for computing price range and materials for a service
+  // Helper for computing price range for a service
   const getServiceStats = (service: Service) => {
     const categories = service.categories || [];
     const prices = categories
@@ -195,29 +170,6 @@ export default function Services() {
       .filter((p) => !isNaN(p) && p > 0);
     const minPrice = prices.length > 0 ? Math.min(...prices) : null;
     const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
-
-    const matIdSet = new Set<string>();
-    const matCounts: number[] = [];
-    categories.forEach((c) => {
-      const uCount = (c.materialUsages || []).filter((u) => u.materialId).length;
-      matCounts.push(uCount);
-      (c.materialUsages || []).forEach((mu) => {
-        if (mu.materialId) matIdSet.add(mu.materialId);
-      });
-    });
-    const distinctMats = Array.from(matIdSet)
-      .map((id) => materials?.find((m) => m.id === id))
-      .filter(Boolean) as Material[];
-
-    const minMats = matCounts.length > 0 ? Math.min(...matCounts) : 0;
-    const maxMats = matCounts.length > 0 ? Math.max(...matCounts) : 0;
-
-    const materialsRange =
-      maxMats === 0
-        ? '-'
-        : minMats === maxMats
-        ? `${minMats} ${minMats === 1 ? t('services.oneMaterial', 'Material') : t('services.materialsCountLabel', 'Materials')}`
-        : `${minMats} - ${maxMats} ${t('services.materialsCountLabel', 'Materials')}`;
 
     return {
       categoriesCount: categories.length,
@@ -229,8 +181,6 @@ export default function Services() {
           : minPrice === maxPrice
           ? formatPrice(minPrice)
           : `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`,
-      distinctMats,
-      materialsRange,
     };
   };
 
@@ -335,22 +285,11 @@ export default function Services() {
   // --- Category Mutations ---
   const saveCatMutation = useMutation({
     mutationFn: async () => {
-      for (const mu of materialUsages) {
-        const mat = materials?.find((m) => m.id === mu.materialId);
-        if (mat && isUnitIntegerOnly(mat.unit) && !Number.isInteger(Number(mu.quantity))) {
-          toast.error(t('storage.integerRequired', 'Quantity for PCS items must be a whole number (no decimals allowed)'));
-          throw new Error('PCS items require integer quantity');
-        }
-      }
-
       const payload = {
         nameEn: catFormData.nameEn.trim(),
         nameAm: catFormData.nameAm.trim(),
         price: parseInputNumber(catFormData.price),
-        materialUsages: materialUsages.map((mu) => ({
-          materialId: mu.materialId,
-          quantity: Number(mu.quantity) || 0,
-        })),
+        materialUsages: [],
       };
 
       if (editingCat) {
@@ -413,32 +352,11 @@ export default function Services() {
         nameAm: cat.nameAm,
         price: cat.price ? formatInputNumber(cat.price.toString()) : '',
       });
-      setMaterialUsages(
-        (cat.materialUsages || []).map((mu: any) => ({
-          materialId: mu.materialId,
-          quantity: (mu.quantityUsed ?? mu.quantity ?? 0).toString(),
-        }))
-      );
     } else {
       setEditingCat(null);
       setCatFormData({ nameEn: '', nameAm: '', price: '' });
-      setMaterialUsages([]);
     }
     setIsCatDialogOpen(true);
-  };
-
-  const addMaterialUsage = () => {
-    setMaterialUsages([...materialUsages, { materialId: '', quantity: '1' }]);
-  };
-
-  const updateMaterialUsage = (index: number, field: keyof MaterialUsage, value: any) => {
-    const updated = [...materialUsages];
-    updated[index] = { ...updated[index], [field]: value };
-    setMaterialUsages(updated);
-  };
-
-  const removeMaterialUsage = (index: number) => {
-    setMaterialUsages(materialUsages.filter((_, i) => i !== index));
   };
 
   // --- Filter and Search Logic ---
@@ -473,7 +391,7 @@ export default function Services() {
       {/* 1. Executive PageHeader */}
       <PageHeader
         title={t('common.services', 'Services Catalog')}
-        subtitle={t('services.subtitle', 'Manage your service offerings, pricing categories, and required materials.')}
+        subtitle={t('services.subtitle', 'Manage your service offerings and vehicle pricing categories.')}
         badge={services ? `${services.length} Services` : undefined}
         onRefresh={() => refetch()}
         isRefreshing={isFetching}
@@ -639,14 +557,11 @@ export default function Services() {
           <Table page={currentPage} pageSize={pageSize}>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[320px] max-w-[350px] px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                <TableHead className="w-[380px] max-w-[420px] px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   {t('common.services', 'Service')}
                 </TableHead>
-                <TableHead className="w-[180px] px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                <TableHead className="px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   {t('services.pricing', 'Pricing')}
-                </TableHead>
-                <TableHead className="w-[180px] px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                  {t('services.materialsRequired', 'Required Materials')}
                 </TableHead>
                 <TableHead className="w-[120px] text-right px-3 py-2.5 text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                   {t('common.actions', 'Action')}
@@ -655,7 +570,7 @@ export default function Services() {
             </TableHeader>
             <TableBody>
               {paginatedServices.map((service) => {
-                const { priceRange, materialsRange } = getServiceStats(service);
+                const { priceRange } = getServiceStats(service);
 
                 return (
                   <TableRow
@@ -664,7 +579,7 @@ export default function Services() {
                     onClick={() => setSelectedDetailServiceId(service.id)}
                   >
                     {/* 1. Service Info & Thumbnail */}
-                    <TableCell className="w-[320px] max-w-[350px] px-3 py-2.5">
+                    <TableCell className="w-[380px] max-w-[420px] px-3 py-2.5">
                       <div className="flex items-center gap-3">
                         <div
                           className="w-10 h-10 rounded-xl bg-muted border border-border shrink-0 flex items-center justify-center overflow-hidden shadow-2xs"
@@ -719,20 +634,13 @@ export default function Services() {
                     </TableCell>
 
                     {/* 2. Pricing */}
-                    <TableCell className="w-[180px] px-3 py-2.5 whitespace-nowrap">
+                    <TableCell className="px-3 py-2.5 whitespace-nowrap">
                       <span className="text-xs sm:text-sm font-semibold font-mono text-foreground">
                         {priceRange}
                       </span>
                     </TableCell>
 
-                    {/* 3. Required Materials Range */}
-                    <TableCell className="w-[180px] px-3 py-2.5 whitespace-nowrap">
-                      <span className="text-xs sm:text-sm font-medium text-foreground">
-                        {materialsRange}
-                      </span>
-                    </TableCell>
-
-                    {/* 4. Row Actions */}
+                    {/* 3. Row Actions */}
                     <TableCell className="w-[120px] text-right px-3 py-2.5 whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         {/* View Details */}
@@ -804,7 +712,7 @@ export default function Services() {
         /* ======================== COMPACT GRID VIEW ======================== */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedServices.map((service) => {
-            const { categoriesCount, priceRange, materialsRange, distinctMats } = getServiceStats(service);
+            const { categoriesCount, priceRange } = getServiceStats(service);
             const categories = service.categories || [];
 
             return (
@@ -907,18 +815,12 @@ export default function Services() {
                     </div>
                   )}
 
-                  {distinctMats.length > 0 && (
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                      <span className="flex items-center gap-1">
-                        <Boxes className="w-3 h-3 text-emerald-500" />
-                        <span>{materialsRange}</span>
-                      </span>
-                      <span className="text-primary font-semibold text-xs flex items-center gap-0.5 group-hover:underline">
-                        <span>{t('services.viewDetails', 'Details')}</span>
-                        <Eye className="w-3 h-3 ml-0.5" />
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-end text-[11px] text-muted-foreground pt-1">
+                    <span className="text-primary font-semibold text-xs flex items-center gap-0.5 group-hover:underline">
+                      <span>{t('services.viewDetails', 'Details')}</span>
+                      <Eye className="w-3 h-3 ml-0.5" />
+                    </span>
+                  </div>
                 </div>
               </Card>
             );
@@ -1018,7 +920,7 @@ export default function Services() {
               {(() => {
                 const stats = getServiceStats(activeDetailService);
                 return (
-                  <div className="px-6 py-3 bg-muted/25 border-b border-border grid grid-cols-3 gap-3">
+                  <div className="px-6 py-3 bg-muted/25 border-b border-border grid grid-cols-2 gap-3">
                     <div className="bg-card p-3 rounded-xl border border-border shadow-2xs">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                         {t('services.pricingCategories', 'Vehicle Categories')}
@@ -1035,24 +937,16 @@ export default function Services() {
                         {stats.priceRange}
                       </span>
                     </div>
-                    <div className="bg-card p-3 rounded-xl border border-border shadow-2xs">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                        {t('services.materialsRequired', 'Materials in BOM')}
-                      </span>
-                      <span className="text-base font-bold text-foreground mt-0.5 block">
-                        {stats.distinctMats.length}
-                      </span>
-                    </div>
                   </div>
                 );
               })()}
 
-              {/* Modal Body: Categories & Materials */}
+              {/* Modal Body: Categories */}
               <div className="px-6 py-5 overflow-y-auto space-y-4 flex-1 custom-scrollbar">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      {t('services.pricingCategories', 'Pricing Categories & Materials')}
+                      {t('services.pricingCategories', 'Pricing Categories')}
                     </h3>
                   </div>
                   <PermissionGate permission="catalog.services.add">
@@ -1127,36 +1021,6 @@ export default function Services() {
                             </PermissionGate>
                           </div>
                         </div>
-
-                        {/* Bill of Materials for this Category */}
-                        {cat.materialUsages && cat.materialUsages.length > 0 ? (
-                          <div className="pt-3 border-t border-border/60">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                              <Boxes className="w-3.5 h-3.5 text-emerald-500" />
-                              <span>{t('services.materialsRequired', 'Materials Required')}:</span>
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {cat.materialUsages.map((u) => {
-                                const m = materials?.find((mat) => mat.id === u.materialId);
-                                return m ? (
-                                  <span
-                                    key={u.materialId}
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/70 text-foreground text-xs font-medium border border-border shadow-2xs"
-                                  >
-                                    <span className="font-semibold">{getLocName(m)}:</span>
-                                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                                      {(u.quantityUsed ?? u.quantity).toString()} {formatUnit(m.unit)}
-                                    </span>
-                                  </span>
-                                ) : null;
-                              })}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground italic">
-                            {t('services.noMaterialsRequired', 'No specific materials required')}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1595,7 +1459,7 @@ export default function Services() {
                 : t('services.createCategory', 'Create Category')}
             </DialogTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {t('services.categorySubtitle', 'Set vehicle category pricing and material consumption')}
+              {t('services.categorySubtitle', 'Set vehicle category pricing')}
             </p>
           </DialogHeader>
 
@@ -1639,91 +1503,6 @@ export default function Services() {
                 onChange={(e) => setCatFormData({ ...catFormData, price: formatInputNumber(e.target.value) })}
                 placeholder="0.00"
               />
-            </div>
-
-            {/* Bill of Materials (BOM) Editor */}
-            <div className="space-y-3 border-t border-border/80 pt-4 mt-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-xs font-bold text-foreground uppercase tracking-wider block">
-                    {t('services.materialsUsed', 'Materials Used')}
-                  </Label>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {t('services.materialsUsedDesc', 'Automatically deducted when order is completed')}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addMaterialUsage}
-                  className="h-8 text-xs px-3 rounded-lg border border-dashed border-primary/40 text-primary hover:bg-primary/10 font-medium"
-                >
-                  <Plus className="mr-1 h-3 w-3" /> {t('services.addMaterial', 'Add Material')}
-                </Button>
-              </div>
-
-              {materialUsages.map((mu, idx) => (
-                <div key={idx} className="flex items-center gap-2 bg-muted/30 p-2.5 rounded-xl border border-border w-full">
-                  <Select
-                    value={mu.materialId}
-                    onValueChange={(v) => {
-                      const newMatId = v || '';
-                      const m = materials?.find((x) => x.id === newMatId);
-                      let curQty = mu.quantity;
-                      if (isUnitIntegerOnly(m?.unit) && String(curQty).includes('.')) {
-                        curQty = String(Math.round(Number(curQty)) || 1);
-                      }
-                      updateMaterialUsage(idx, 'materialId', newMatId);
-                      updateMaterialUsage(idx, 'quantity', curQty);
-                    }}
-                  >
-                    <SelectTrigger className="header-input flex-1 h-9 bg-card">
-                      <SelectValue placeholder={t('services.selectMaterial', 'Select Material...')}>
-                        {(val: string) => {
-                          if (!val) return <span className="text-muted-foreground">{t('services.selectMaterial', 'Select Material...')}</span>;
-                          const m = materials?.find((x) => x.id === val);
-                          return m ? `${getLocName(m)} (${formatUnit(m.unit)})` : val;
-                        }}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materials?.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {getLocName(m)} ({formatUnit(m.unit)})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="text"
-                    value={mu.quantity}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const m = materials?.find((mat) => mat.id === mu.materialId);
-                      const isInt = isUnitIntegerOnly(m?.unit);
-                      const regex = isInt ? /^\d*$/ : /^\d*\.?\d*$/;
-                      if (regex.test(val)) {
-                        updateMaterialUsage(idx, 'quantity', val);
-                      }
-                    }}
-                    className="header-input w-[100px] h-9 bg-card font-mono text-xs"
-                    placeholder={t('orders.detail.quantity', 'Qty')}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeMaterialUsage(idx)}
-                    className="h-9 w-9 p-0 text-rose-500 hover:bg-rose-500/10 rounded-lg shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              {materialUsages.length === 0 && (
-                <div className="text-center py-4 rounded-xl border border-dashed border-border/70 p-3 text-xs text-muted-foreground italic">
-                  {t('services.noMaterialsRequired', 'No materials assigned to this category.')}
-                </div>
-              )}
             </div>
           </div>
 
